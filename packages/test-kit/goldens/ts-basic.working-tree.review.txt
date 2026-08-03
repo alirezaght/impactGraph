@@ -1,0 +1,8 @@
+findings:
+matched|DealService|symbol:src/services/deal-service.ts#DealService|req-0d28f757
+matched|buildDealService|symbol:src/services/deal-service.ts#buildDealService|req-0d28f757
+matched|deal-service.ts|file:src/services/deal-service.ts|req-0d28f757
+unexpected|rogue.ts|file:src/rogue.ts|-
+
+coverage:
+req-0d28f757|implemented

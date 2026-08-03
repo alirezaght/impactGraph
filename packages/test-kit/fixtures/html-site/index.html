@@ -1,0 +1,29 @@
+<!doctype html>
+<!--
+  PRD §42.2 fixture: a plain static site. HTML is read for its RELATIONSHIPS only (§30) — the
+  scripts and styles it pulls in from this repository, and the routes and forms it points at.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Deals</title>
+    <link rel="stylesheet" href="./assets/site.css" />
+    <script src="scripts/deals.js" defer></script>
+    <script src="https://cdn.example.com/analytics.js"></script>
+  </head>
+  <body>
+    <header>
+      <a href="/deals">Deals</a>
+      <a href="./about.html">About</a>
+      <a href="mailto:hello@example.com">Contact</a>
+    </header>
+    <main>
+      <img src="./assets/logo.svg" alt="" />
+      <form method="post" action="/api/deals">
+        <input name="name" />
+        <button type="submit">Create</button>
+      </form>
+      <form action="/api/deals/search"></form>
+    </main>
+  </body>
+</html>

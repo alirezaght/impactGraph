@@ -1,0 +1,56 @@
+{
+  "$ref": "#/definitions/Tool_refresh_configuration_OutputV1",
+  "definitions": {
+    "Tool_refresh_configuration_OutputV1": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "subject": {
+                "type": "string",
+                "minLength": 1
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["kind", "subject", "detail"],
+            "additionalProperties": false
+          }
+        },
+        "needsReview": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tool_refresh_configuration_OutputV1/properties/applied/items"
+          }
+        },
+        "changedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "previousChangeAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "changeCountBefore": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": ["applied", "needsReview", "changedFiles", "changeCountBefore"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

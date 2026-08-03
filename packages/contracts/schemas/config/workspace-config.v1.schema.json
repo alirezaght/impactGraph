@@ -1,0 +1,72 @@
+{
+  "$ref": "#/definitions/WorkspaceConfigV1",
+  "definitions": {
+    "WorkspaceConfigV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "ignore": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "disabledFrameworks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "privacyMode": {
+          "type": "string",
+          "enum": ["local-only", "selected-snippets", "full-context", "external-agent"]
+        },
+        "provider": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "type": "string",
+              "enum": ["none", "external-agent", "anthropic", "openai-compatible", "local"]
+            },
+            "modelId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "baseUrl": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["strategy"],
+          "additionalProperties": false
+        },
+        "automation": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["autonomous", "review", "manual"]
+            },
+            "safeOperations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": ["mode"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["schemaVersion"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

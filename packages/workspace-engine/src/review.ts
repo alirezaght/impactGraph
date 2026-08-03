@@ -1,0 +1,163 @@
+import { compareImplementation } from '@impactgraph/application';
+import { createGitCliAdapter } from '@impactgraph/git';
+
+import { loadApprovedAnalysis } from './analyses.js';
+import { failWith } from './failure.js';
+import { loadGraphAt, withIndexStore } from './graphs.js';
+import { performIndexRun } from './indexing.js';
+import { appendLearningProposal, reviewCoChangeProposal } from './learning.js';
+import { buildReviewOutput } from './reports/review-output.js';
+import { persistReviewDocument } from './review-artifacts.js';
+import { evaluateConfiguredRules, loadProjectKnowledge } from './rules.js';
+import { GIT_FAILURES } from './snapshot.js';
+import { loadSpecification } from './specifications.js';
+
+import type { Failable } from './failure.js';
+import type { GitDiffResult, RuleViolation } from '@impactgraph/application';
+import type {
+  ImpactAnalysis,
+  ImplementationReview,
+  ReviewTarget,
+  Specification,
+} from '@impactgraph/domain';
+
+// The review workflow (PRD §23–§25): reindex current state, diff, compare against the frozen
+// approved analysis, evaluate §27 rules. Fully deterministic and offline; the approved
+// analysis is never modified.
+
+export interface ReviewBundle {
+  readonly review: ImplementationReview;
+  readonly analysis: ImpactAnalysis;
+  readonly violations: readonly RuleViolation[];
+}
+
+const readDiff = async (
+  rootDir: string,
+  target: ReviewTarget,
+): Promise<Failable<GitDiffResult>> => {
+  const git = createGitCliAdapter();
+  const diff =
+    target === 'working-tree'
+      ? await git.readWorkingTreeDiff(rootDir)
+      : await git.readCommitDiff(rootDir);
+  if (!diff.ok) {
+    return failWith(GIT_FAILURES[diff.error.code], diff.error.message);
+  }
+  return { ok: true, value: diff.value };
+};
+
+export const runReviewPipeline = async (
+  rootDir: string,
+  target: ReviewTarget,
+): Promise<Failable<ReviewBundle>> => {
+  const analysis = await loadApprovedAnalysis(rootDir);
+  if (!analysis.ok) {
+    return analysis;
+  }
+  const specification = await loadSpecification(
+    rootDir,
+    analysis.value.specificationId,
+    analysis.value.specificationVersion,
+  );
+  if (!specification.ok) {
+    return specification;
+  }
+  const diff = await readDiff(rootDir, target);
+  if (!diff.ok) {
+    return diff;
+  }
+  const indexed = await performIndexRun(rootDir);
+  if (!indexed.ok) {
+    return { ok: false, error: indexed.failure };
+  }
+  return compareAgainstApproved({
+    rootDir,
+    target,
+    analysis: analysis.value,
+    specification: specification.value,
+    diff: diff.value,
+    reviewSnapshotId: indexed.value.snapshot.id,
+  });
+};
+
+interface CompareInputs {
+  readonly rootDir: string;
+  readonly target: ReviewTarget;
+  readonly analysis: ImpactAnalysis;
+  readonly specification: Specification;
+  readonly diff: GitDiffResult;
+  readonly reviewSnapshotId: string;
+}
+
+const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<ReviewBundle>> => {
+  const { rootDir, analysis, specification, diff, reviewSnapshotId, target } = inputs;
+  return withIndexStore(rootDir, async (store) => {
+    const approvedGraph = await loadGraphAt(store, analysis.repositorySnapshotId, 'approved');
+    if (!approvedGraph.ok) {
+      return approvedGraph;
+    }
+    if (approvedGraph.value.nodes.size === 0 && analysis.requirementImpacts.length > 0) {
+      return failWith(
+        'indexingFailure',
+        `approved snapshot ${analysis.repositorySnapshotId} is no longer in the local index — the cache was rebuilt since approval`,
+      );
+    }
+    const currentGraph = await loadGraphAt(store, reviewSnapshotId, 'current');
+    if (!currentGraph.ok) {
+      return currentGraph;
+    }
+    const review = compareImplementation({
+      reviewId: `review-${analysis.id}-${Date.now().toString(36)}`,
+      analysis,
+      specification,
+      approvedGraph: approvedGraph.value,
+      currentGraph: currentGraph.value,
+      changes: diff.changes,
+      reviewSnapshotId,
+      target,
+      createdAt: new Date().toISOString(),
+    });
+    if (!review.ok) {
+      return failWith('internalError', 'review failed validation');
+    }
+    const violations = evaluateConfiguredRules(rootDir, currentGraph.value, [
+      ...review.value.changedFiles,
+    ]);
+    if (!violations.ok) {
+      return violations;
+    }
+    // Story 11.2: persist the review so accepted-deviation decisions have an artifact to
+    // append to (§24.1). A later re-run is a NEW artifact — acceptance never carries over.
+    const persisted = persistReviewDocument(
+      rootDir,
+      buildReviewOutput(review.value, analysis, violations.value),
+    );
+    if (!persisted.ok) {
+      return persisted;
+    }
+    recordReviewLearning(rootDir, review.value.changedFiles);
+    return {
+      ok: true,
+      value: { review: review.value, analysis, violations: violations.value },
+    };
+  });
+};
+
+/** §Z9: review outcomes feed the learning-proposal queue — best effort, never blocking. */
+const recordReviewLearning = (rootDir: string, changedFiles: readonly string[]): void => {
+  const knowledge = loadProjectKnowledge(rootDir);
+  if (!knowledge.ok) {
+    return;
+  }
+  const proposal = reviewCoChangeProposal(changedFiles, knowledge.value.rules);
+  if (proposal === undefined) {
+    return;
+  }
+  appendLearningProposal(rootDir, {
+    schemaVersion: 1,
+    timestamp: new Date().toISOString(),
+    kind: 'review-co-change',
+    detail: proposal.reason,
+    suggestedOperation: proposal,
+  });
+};

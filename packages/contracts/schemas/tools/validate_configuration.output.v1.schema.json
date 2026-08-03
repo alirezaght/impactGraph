@@ -1,0 +1,50 @@
+{
+  "$ref": "#/definitions/Tool_validate_configuration_OutputV1",
+  "definitions": {
+    "Tool_validate_configuration_OutputV1": {
+      "type": "object",
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "enum": ["config.yml", "architecture.yml", "aliases.yml", "rules.yml"]
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "valid": {
+                "type": "boolean"
+              },
+              "messages": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["file", "present", "valid", "messages"],
+            "additionalProperties": false
+          }
+        },
+        "crossFileMessages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["valid", "files", "crossFileMessages"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

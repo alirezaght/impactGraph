@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_approve_analysis_InputV1",
+  "definitions": {
+    "Tool_approve_analysis_InputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmedByUser": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": ["analysisId", "confirmedByUser"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

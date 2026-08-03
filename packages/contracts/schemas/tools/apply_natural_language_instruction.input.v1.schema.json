@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_apply_natural_language_instruction_InputV1",
+  "definitions": {
+    "Tool_apply_natural_language_instruction_InputV1": {
+      "type": "object",
+      "properties": {
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "approvedByUser": {
+          "type": "boolean"
+        }
+      },
+      "required": ["instruction"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

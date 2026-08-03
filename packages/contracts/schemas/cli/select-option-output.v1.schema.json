@@ -1,0 +1,53 @@
+{
+  "$ref": "#/definitions/CliSelectOptionOutputV1",
+  "definitions": {
+    "CliSelectOptionOutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "select-option"
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "optionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "decisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "answeredQuestionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "analysisId",
+        "optionId",
+        "specificationId",
+        "specificationVersion",
+        "decisionId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

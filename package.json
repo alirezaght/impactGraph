@@ -1,0 +1,68 @@
+{
+  "name": "impactgraph-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ImpactGraph \u2014 local-first architectural reasoning system (VS Code extension + CLI + MCP server). Root workspace: quality gates, lint/format, hooks, CI glue.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.15.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit && pnpm -r --if-present typecheck",
+    "test:unit": "vitest run --project unit --passWithNoTests",
+    "test:application": "vitest run --project application --passWithNoTests",
+    "test:contract": "vitest run --project contract --passWithNoTests",
+    "test:analyzers": "vitest run --project analyzers --passWithNoTests",
+    "test:cli": "vitest run --project cli --passWithNoTests",
+    "test:webview": "vitest run --project webview --passWithNoTests",
+    "test:quality": "vitest run --project quality --passWithNoTests",
+    "test:integration:vscode": "pnpm --filter ./apps/vscode-extension run test:integration:vscode",
+    "quality:loc": "tsx scripts/quality/effective-loc/src/cli.ts",
+    "quality:secrets": "tsx scripts/quality/secret-scan.ts",
+    "quality:gates": "pnpm format:check && pnpm lint && pnpm quality:loc && pnpm typecheck && pnpm test:unit && pnpm test:application && pnpm test:contract && pnpm test:analyzers && pnpm test:cli && pnpm test:extension && pnpm test:quality",
+    "prepare": "husky",
+    "test:extension": "vitest run --project extension --passWithNoTests",
+    "eval:impact": "vitest run --project analyzers packages/workspace-engine/src/evaluation.test.ts --reporter=verbose"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "prettier --write",
+      "eslint --fix --max-warnings 0",
+      "tsx scripts/quality/effective-loc/src/cli.ts --files"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*": "tsx scripts/quality/secret-scan.ts --staged"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@eslint/js": "^9.9.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.9.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-boundaries": "^5.0.0",
+    "eslint-plugin-import-x": "^4.0.0",
+    "fast-glob": "^3.3.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0",
+    "zod": "^3.23.0"
+  }
+}

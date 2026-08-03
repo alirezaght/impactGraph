@@ -1,0 +1,33 @@
+{
+  "$ref": "#/definitions/Tool_select_architectural_option_OutputV1",
+  "definitions": {
+    "Tool_select_architectural_option_OutputV1": {
+      "type": "object",
+      "properties": {
+        "specificationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "decisionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionRecorded": {
+          "type": "boolean",
+          "const": true
+        },
+        "answeredQuestionId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["specificationId", "specificationVersion", "decisionId", "decisionRecorded"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

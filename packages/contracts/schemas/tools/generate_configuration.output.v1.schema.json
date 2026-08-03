@@ -1,0 +1,41 @@
+{
+  "$ref": "#/definitions/Tool_generate_configuration_OutputV1",
+  "definitions": {
+    "Tool_generate_configuration_OutputV1": {
+      "type": "object",
+      "properties": {
+        "applied": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "subject": {
+                "type": "string",
+                "minLength": 1
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["kind", "subject", "detail"],
+            "additionalProperties": false
+          }
+        },
+        "needsReview": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tool_generate_configuration_OutputV1/properties/applied/items"
+          }
+        }
+      },
+      "required": ["applied", "needsReview"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

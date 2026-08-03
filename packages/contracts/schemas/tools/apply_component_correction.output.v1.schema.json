@@ -1,0 +1,29 @@
+{
+  "$ref": "#/definitions/Tool_apply_component_correction_OutputV1",
+  "definitions": {
+    "Tool_apply_component_correction_OutputV1": {
+      "type": "object",
+      "properties": {
+        "rollbackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "const": "architecture.yml"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "const": "human-confirmed"
+        }
+      },
+      "required": ["rollbackId", "file", "kind", "source"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

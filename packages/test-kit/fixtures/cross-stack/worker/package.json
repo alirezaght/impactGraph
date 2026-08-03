@@ -1,0 +1,10 @@
+{
+  "name": "deals-worker",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.0.0",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/event-emitter": "^2.0.0"
+  }
+}

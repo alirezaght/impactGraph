@@ -1,0 +1,14 @@
+nodes:
+file:about.html|file|repository|about.html|static-analysis
+file:assets/logo.svg|file|repository|logo.svg|static-analysis
+file:assets/site.css|file|repository|site.css|static-analysis
+file:index.html|file|repository|index.html|static-analysis
+file:scripts/deals.js|file|repository|deals.js|static-analysis
+symbol:scripts/deals.js#submitDeal|symbol|repository|submitDeal|static-analysis
+
+edges:
+CONTAINS|file:scripts/deals.js->symbol:scripts/deals.js#submitDeal|static-analysis
+IMPORTS|file:about.html->file:assets/site.css|static-analysis
+IMPORTS|file:index.html->file:assets/logo.svg|static-analysis
+IMPORTS|file:index.html->file:assets/site.css|static-analysis
+IMPORTS|file:index.html->file:scripts/deals.js|static-analysis

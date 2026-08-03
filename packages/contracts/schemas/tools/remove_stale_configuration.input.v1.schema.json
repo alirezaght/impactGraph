@@ -1,0 +1,25 @@
+{
+  "$ref": "#/definitions/Tool_remove_stale_configuration_InputV1",
+  "definitions": {
+    "Tool_remove_stale_configuration_InputV1": {
+      "type": "object",
+      "properties": {
+        "subjects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 100
+        },
+        "confirmedByUser": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": ["confirmedByUser"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

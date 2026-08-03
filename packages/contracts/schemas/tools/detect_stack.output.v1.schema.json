@@ -1,0 +1,31 @@
+{
+  "$ref": "#/definitions/Tool_detect_stack_OutputV1",
+  "definitions": {
+    "Tool_detect_stack_OutputV1": {
+      "type": "object",
+      "properties": {
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "frameworks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["languages", "frameworks", "signals"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

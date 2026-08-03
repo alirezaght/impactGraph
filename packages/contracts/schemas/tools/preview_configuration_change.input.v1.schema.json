@@ -1,0 +1,539 @@
+{
+  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1",
+  "definitions": {
+    "Tool_preview_configuration_change_InputV1": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "add-ignore"
+                },
+                "glob": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "confidence": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": ["kind", "glob", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "remove-ignore"
+                },
+                "glob": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "glob", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "add-alias"
+                },
+                "alias": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "canonical": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "alias", "canonical", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "remove-alias"
+                },
+                "alias": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "alias", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "add-exclusion"
+                },
+                "component": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "component", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "remove-exclusion"
+                },
+                "component": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "component", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "add-context"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 1
+                },
+                "description": {
+                  "type": "string"
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "name", "paths", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "assign-component"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "context": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "path", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "add-rule"
+                },
+                "rule": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "type": {
+                          "type": "string",
+                          "const": "dependency-direction"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "sourceRole": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sourceContext": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "forbiddenTargetRole": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "forbiddenTargetContext": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["id", "type"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "type": {
+                          "type": "string",
+                          "const": "accompanying-change"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "whenChanged": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "requireChanged": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["id", "type", "whenChanged", "requireChanged"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "rule", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "remove-rule"
+                },
+                "ruleId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "ruleId", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "set-privacy-mode"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": ["local-only", "selected-snippets", "full-context", "external-agent"]
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "mode", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "set-automation-mode"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": ["autonomous", "review", "manual"]
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "mode", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "confirm-value"
+                },
+                "subjectKind": {
+                  "type": "string",
+                  "enum": [
+                    "context",
+                    "component",
+                    "alias",
+                    "exclusion",
+                    "rule",
+                    "detection",
+                    "ignore"
+                  ]
+                },
+                "subject": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "subjectKind", "subject", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "rename-component"
+                },
+                "from": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "from", "to", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "assign-context"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "context": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "path", "context", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "set-component-role"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "role": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "path", "role", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "mark-component"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "marker": {
+                  "type": "string",
+                  "enum": ["generated", "ignored", "infrastructure", "shared"]
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "path", "marker", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "set-component-owner"
+                },
+                "component": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "component", "owner", "reason"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "set-relationship-confirmation"
+                },
+                "edgeId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "confirmed": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/reason"
+                },
+                "confidence": {
+                  "$ref": "#/definitions/Tool_preview_configuration_change_InputV1/properties/operation/anyOf/0/properties/confidence"
+                }
+              },
+              "required": ["kind", "edgeId", "confirmed", "reason"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": ["operation"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

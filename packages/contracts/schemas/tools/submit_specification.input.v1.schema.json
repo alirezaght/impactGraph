@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_submit_specification_InputV1",
+  "definitions": {
+    "Tool_submit_specification_InputV1": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["name", "content"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

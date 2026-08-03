@@ -1,0 +1,337 @@
+{
+  "$ref": "#/definitions/Tool_export_implementation_context_OutputV1",
+  "definitions": {
+    "Tool_export_implementation_context_OutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "export"
+        },
+        "context": {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "type": "number",
+              "const": 1
+            },
+            "specification": {
+              "type": "object",
+              "properties": {
+                "schemaVersion": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["schemaVersion", "id"],
+              "additionalProperties": true
+            },
+            "approvedAnalysis": {
+              "$ref": "#/definitions/Tool_export_implementation_context_OutputV1/properties/context/properties/specification"
+            },
+            "repositorySnapshot": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "branch": {
+                  "type": "string"
+                },
+                "commitSha": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dirtyWorkingTree": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["id", "commitSha", "dirtyWorkingTree", "createdAt"],
+              "additionalProperties": false
+            },
+            "requiredImpacts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "requirementId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "nodeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "likelihood": {
+                    "type": "string",
+                    "enum": ["required", "likely", "possible", "unlikely"]
+                  },
+                  "impactType": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "directness": {
+                    "type": "string",
+                    "enum": ["direct", "indirect"]
+                  },
+                  "confidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "explanation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expectedChanges": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "dependencyPath": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "evidenceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "requirementId",
+                  "nodeId",
+                  "name",
+                  "likelihood",
+                  "impactType",
+                  "directness",
+                  "confidence",
+                  "explanation",
+                  "expectedChanges",
+                  "dependencyPath",
+                  "evidenceIds"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "likelyImpacts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Tool_export_implementation_context_OutputV1/properties/context/properties/requiredImpacts/items"
+              }
+            },
+            "rejectedImpacts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Tool_export_implementation_context_OutputV1/properties/context/properties/requiredImpacts/items"
+              }
+            },
+            "architectureConstraints": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "dependency-direction"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "sourceRole": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "sourceContext": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "forbiddenTargetRole": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "forbiddenTargetContext": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["id", "type"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "type": {
+                        "type": "string",
+                        "const": "accompanying-change"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "whenChanged": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "requireChanged": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["id", "type", "whenChanged", "requireChanged"],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "expectedTests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "nodeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["name", "reason"],
+                "additionalProperties": false
+              }
+            },
+            "expectedMigrations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Tool_export_implementation_context_OutputV1/properties/context/properties/expectedTests/items"
+              }
+            },
+            "expectedInfrastructureChanges": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Tool_export_implementation_context_OutputV1/properties/context/properties/expectedTests/items"
+              }
+            },
+            "openWarnings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "requirementId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["code", "message"],
+                "additionalProperties": false
+              }
+            },
+            "reviewCriteria": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["required-impact", "architecture-rule"]
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "nodeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "ruleId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["id", "kind", "description"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "specification",
+            "approvedAnalysis",
+            "repositorySnapshot",
+            "requiredImpacts",
+            "likelyImpacts",
+            "rejectedImpacts",
+            "architectureConstraints",
+            "expectedTests",
+            "expectedMigrations",
+            "expectedInfrastructureChanges",
+            "openWarnings",
+            "reviewCriteria"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": ["schemaVersion", "command", "context"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

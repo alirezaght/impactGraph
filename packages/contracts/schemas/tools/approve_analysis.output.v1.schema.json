@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_approve_analysis_OutputV1",
+  "definitions": {
+    "Tool_approve_analysis_OutputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "const": "approved"
+        }
+      },
+      "required": ["analysisId", "status"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

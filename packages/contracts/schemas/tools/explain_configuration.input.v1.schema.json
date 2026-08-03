@@ -1,0 +1,22 @@
+{
+  "$ref": "#/definitions/Tool_explain_configuration_InputV1",
+  "definitions": {
+    "Tool_explain_configuration_InputV1": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "subjectKind": {
+          "type": "string",
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
+        }
+      },
+      "required": ["subject"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

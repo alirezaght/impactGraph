@@ -1,0 +1,169 @@
+import { err, ok } from '../errors/result.js';
+import { validationError, validationIssue } from '../errors/validation.js';
+import { deepFreeze } from '../freeze.js';
+
+import type { Result } from '../errors/result.js';
+import type { ValidationError, ValidationIssue } from '../errors/validation.js';
+import type { EvidenceId, RepositorySnapshotId } from '../ids.js';
+
+// Evidence kinds per docs/engineering/provenance-model.md ("what sort of proof").
+// file-presence and symbol-declaration ground facts the indexer observes directly
+// (a file existing; a symbol being declared at a range).
+export const EVIDENCE_KINDS = [
+  'import-statement',
+  'call-site',
+  'decorator',
+  'terraform-resource',
+  'co-change-history',
+  'config-entry',
+  'human-statement',
+  'model-output-reference',
+  'file-presence',
+  'symbol-declaration',
+] as const;
+
+export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+
+export interface SourceRange {
+  readonly startLine: number;
+  readonly startColumn: number;
+  readonly endLine: number;
+  readonly endColumn: number;
+}
+
+export interface FileSource {
+  readonly kind: 'file';
+  readonly filePath: string;
+  readonly range?: SourceRange;
+  readonly symbolName?: string;
+}
+
+export interface ConfigSource {
+  readonly kind: 'config';
+  readonly filePath: string;
+  readonly configKey: string;
+}
+
+export interface GitCommitSource {
+  readonly kind: 'git-commit';
+  readonly commitSha: string;
+}
+
+/** Concrete source binding: file range/symbol, config key, or git commit (PRD §18.5). */
+export type EvidenceSource = FileSource | ConfigSource | GitCommitSource;
+
+export interface EvidenceRecord {
+  readonly id: EvidenceId;
+  readonly kind: EvidenceKind;
+  readonly source: EvidenceSource;
+  /** Evidence describes one snapshot, never "the repository now" (provenance-model.md). */
+  readonly repositorySnapshotId: RepositorySnapshotId;
+  readonly createdAt: string;
+}
+
+export interface CreateEvidenceRecordInput {
+  readonly id: string;
+  readonly kind: string;
+  readonly source: EvidenceSource;
+  readonly repositorySnapshotId: string;
+  readonly createdAt: string;
+}
+
+export const isValidTimestamp = (value: string): boolean =>
+  value.includes('T') && Number.isFinite(Date.parse(value));
+
+export const blankIdIssue = (value: string, path: string): ValidationIssue[] =>
+  value.trim().length === 0 ? [validationIssue('blank-id', path, `${path} must not be blank`)] : [];
+
+const rangeIssues = (range: SourceRange, path: string): ValidationIssue[] => {
+  const positions = [range.startLine, range.startColumn, range.endLine, range.endColumn];
+  if (positions.some((p) => !Number.isInteger(p) || p < 1)) {
+    return [validationIssue('invalid-source', path, 'range positions must be integers >= 1')];
+  }
+  const inverted =
+    range.endLine < range.startLine ||
+    (range.endLine === range.startLine && range.endColumn < range.startColumn);
+  return inverted ? [validationIssue('invalid-source', path, 'range end precedes its start')] : [];
+};
+
+const fileSourceIssues = (source: FileSource, path: string): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
+  if (source.filePath.trim().length === 0) {
+    issues.push(
+      validationIssue('invalid-source', `${path}.filePath`, 'filePath must not be blank'),
+    );
+  }
+  if (source.range !== undefined) {
+    issues.push(...rangeIssues(source.range, `${path}.range`));
+  }
+  return issues;
+};
+
+export const collectSourceIssues = (source: EvidenceSource, path: string): ValidationIssue[] => {
+  switch (source.kind) {
+    case 'file':
+      return fileSourceIssues(source, path);
+    case 'config':
+      return source.filePath.trim().length === 0 || source.configKey.trim().length === 0
+        ? [validationIssue('invalid-source', path, 'config source needs filePath and configKey')]
+        : [];
+    case 'git-commit':
+      return source.commitSha.trim().length === 0
+        ? [validationIssue('invalid-source', path, 'git-commit source needs a commit sha')]
+        : [];
+  }
+};
+
+// Records own their data: copy the source so freezing never mutates caller-provided input.
+const copySource = (source: EvidenceSource): EvidenceSource => {
+  switch (source.kind) {
+    case 'file': {
+      const base: FileSource = { kind: 'file', filePath: source.filePath };
+      const ranged = source.range === undefined ? base : { ...base, range: { ...source.range } };
+      return source.symbolName === undefined
+        ? ranged
+        : { ...ranged, symbolName: source.symbolName };
+    }
+    case 'config':
+      return { kind: 'config', filePath: source.filePath, configKey: source.configKey };
+    case 'git-commit':
+      return { kind: 'git-commit', commitSha: source.commitSha };
+  }
+};
+
+const collectEvidenceIssues = (input: CreateEvidenceRecordInput): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [
+    ...blankIdIssue(input.id, 'id'),
+    ...blankIdIssue(input.repositorySnapshotId, 'repositorySnapshotId'),
+    ...collectSourceIssues(input.source, 'source'),
+  ];
+  if (!(EVIDENCE_KINDS as readonly string[]).includes(input.kind)) {
+    issues.push(
+      validationIssue('unknown-evidence-kind', 'kind', `unknown evidence kind '${input.kind}'`),
+    );
+  }
+  if (!isValidTimestamp(input.createdAt)) {
+    issues.push(
+      validationIssue('invalid-timestamp', 'createdAt', 'createdAt must be an ISO-8601 timestamp'),
+    );
+  }
+  return issues;
+};
+
+export const createEvidenceRecord = (
+  input: CreateEvidenceRecordInput,
+): Result<EvidenceRecord, ValidationError> => {
+  const issues = collectEvidenceIssues(input);
+  if (issues.length > 0) {
+    return err(validationError(issues));
+  }
+  return ok(
+    deepFreeze({
+      id: input.id as EvidenceId,
+      kind: input.kind as EvidenceKind,
+      source: copySource(input.source),
+      repositorySnapshotId: input.repositorySnapshotId as RepositorySnapshotId,
+      createdAt: input.createdAt,
+    }),
+  );
+};

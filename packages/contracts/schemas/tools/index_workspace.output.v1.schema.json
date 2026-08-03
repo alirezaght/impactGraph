@@ -1,0 +1,87 @@
+{
+  "$ref": "#/definitions/Tool_index_workspace_OutputV1",
+  "definitions": {
+    "Tool_index_workspace_OutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "index"
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branch": {
+              "type": "string"
+            },
+            "commitSha": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dirtyWorkingTree": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["id", "commitSha", "dirtyWorkingTree", "createdAt"],
+          "additionalProperties": false
+        },
+        "fileCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changedFileCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reusedFileCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ignoredCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodeCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "edgeCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "snapshot",
+        "fileCount",
+        "changedFileCount",
+        "reusedFileCount",
+        "ignoredCount",
+        "nodeCount",
+        "edgeCount",
+        "warnings"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,113 @@
+{
+  "$ref": "#/definitions/EvidenceRecordArtifactV1",
+  "definitions": {
+    "EvidenceRecordArtifactV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "file"
+                },
+                "filePath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "range": {
+                  "type": "object",
+                  "properties": {
+                    "startLine": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "startColumn": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "endLine": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "endColumn": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": ["startLine", "startColumn", "endLine", "endColumn"],
+                  "additionalProperties": false
+                },
+                "symbolName": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["kind", "filePath"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "config"
+                },
+                "filePath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "configKey": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["kind", "filePath", "configKey"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "git-commit"
+                },
+                "commitSha": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["kind", "commitSha"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "repositorySnapshotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["schemaVersion", "id", "kind", "source", "repositorySnapshotId", "createdAt"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

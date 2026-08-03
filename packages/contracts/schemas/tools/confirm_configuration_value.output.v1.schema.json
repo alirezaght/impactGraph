@@ -1,0 +1,33 @@
+{
+  "$ref": "#/definitions/Tool_confirm_configuration_value_OutputV1",
+  "definitions": {
+    "Tool_confirm_configuration_value_OutputV1": {
+      "type": "object",
+      "properties": {
+        "rollbackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "file": {
+          "type": "string",
+          "const": "architecture.yml"
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subjectKind": {
+          "type": "string",
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
+        },
+        "confirmationCount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": ["rollbackId", "file", "subject", "subjectKind", "confirmationCount"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

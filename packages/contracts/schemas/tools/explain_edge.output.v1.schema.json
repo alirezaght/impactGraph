@@ -1,0 +1,191 @@
+{
+  "$ref": "#/definitions/Tool_explain_edge_OutputV1",
+  "definitions": {
+    "Tool_explain_edge_OutputV1": {
+      "type": "object",
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["nodeId", "name"],
+          "additionalProperties": false
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["nodeId", "name"],
+          "additionalProperties": false
+        },
+        "knowledge": {
+          "type": "object",
+          "properties": {
+            "provenance": {
+              "type": "string",
+              "minLength": 1
+            },
+            "knowledgeCategory": {
+              "type": "string",
+              "minLength": 1
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "confidenceSignals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "contribution": {
+                    "type": "number"
+                  }
+                },
+                "required": ["type", "contribution"],
+                "additionalProperties": false
+              }
+            },
+            "evidence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "range": {
+                    "type": "object",
+                    "properties": {
+                      "startLine": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "startColumn": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endLine": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "endColumn": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["startLine", "startColumn", "endLine", "endColumn"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["id", "source"],
+                "additionalProperties": false
+              }
+            },
+            "repositorySnapshotId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "analysisRunId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "provenance",
+            "knowledgeCategory",
+            "confidence",
+            "confidenceSignals",
+            "evidence",
+            "repositorySnapshotId",
+            "analysisRunId"
+          ],
+          "additionalProperties": false
+        },
+        "effective": {
+          "type": "object",
+          "properties": {
+            "edgeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "status": {
+              "type": "string",
+              "enum": ["confirmed", "rejected", "undecided"]
+            },
+            "excluded": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "level": {
+              "type": "string",
+              "enum": [
+                "human-confirmed",
+                "agent-approved",
+                "repo-metadata",
+                "deterministic-detection",
+                "ai-inferred",
+                "defaults"
+              ]
+            },
+            "rank": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "provenance": {
+              "type": "string",
+              "minLength": 1
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["edgeId", "status", "excluded", "level", "rank", "provenance", "detail"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["edgeId", "type", "source", "target", "knowledge"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

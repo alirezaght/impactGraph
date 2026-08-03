@@ -1,0 +1,49 @@
+{
+  "$ref": "#/definitions/CliAcceptDeviationOutputV1",
+  "definitions": {
+    "CliAcceptDeviationOutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "review-accept"
+        },
+        "reviewId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": ["missing", "unexpected", "divergent"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acceptedDeviationCount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "reviewId",
+        "nodeId",
+        "category",
+        "reason",
+        "acceptedDeviationCount"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

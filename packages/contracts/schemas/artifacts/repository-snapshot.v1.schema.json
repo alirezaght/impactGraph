@@ -1,0 +1,82 @@
+{
+  "$ref": "#/definitions/RepositorySnapshotArtifactV1",
+  "definitions": {
+    "RepositorySnapshotArtifactV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repositoryIdentity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "head": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "branch"
+                },
+                "branch": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "commitSha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{4,40}$"
+                }
+              },
+              "required": ["kind", "branch", "commitSha"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "detached"
+                },
+                "commitSha": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{4,40}$"
+                }
+              },
+              "required": ["kind", "commitSha"],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "dirtyWorkingTree": {
+          "type": "boolean"
+        },
+        "indexVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "repositoryIdentity",
+        "head",
+        "dirtyWorkingTree",
+        "indexVersion",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,17 @@
+{
+  "$ref": "#/definitions/Tool_analyze_impact_InputV1",
+  "definitions": {
+    "Tool_analyze_impact_InputV1": {
+      "type": "object",
+      "properties": {
+        "specificationId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["specificationId"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

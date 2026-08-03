@@ -1,0 +1,25 @@
+{
+  "name": "@impactgraph/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "impactgraph CLI (PRD \u00a720) \u2014 thin composition root over the shared core engine.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/main.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@impactgraph/application": "workspace:*",
+    "@impactgraph/contracts": "workspace:*",
+    "@impactgraph/domain": "workspace:*",
+    "@impactgraph/persistence": "workspace:*",
+    "@impactgraph/workspace-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@impactgraph/test-kit": "workspace:*",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

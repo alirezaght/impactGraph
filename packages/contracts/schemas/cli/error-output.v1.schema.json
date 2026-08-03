@@ -1,0 +1,40 @@
+{
+  "$ref": "#/definitions/CliErrorOutputV1",
+  "definitions": {
+    "CliErrorOutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "error": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": [
+                "internalError",
+                "warningsFound",
+                "reviewDiscrepancies",
+                "configurationError",
+                "indexingFailure",
+                "providerFailure",
+                "unsupportedProject"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["category", "message"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["schemaVersion", "error"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

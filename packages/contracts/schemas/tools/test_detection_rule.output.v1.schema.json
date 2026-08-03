@@ -1,0 +1,112 @@
+{
+  "$ref": "#/definitions/Tool_test_detection_rule_OutputV1",
+  "definitions": {
+    "Tool_test_detection_rule_OutputV1": {
+      "type": "object",
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filePath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "matched": {
+          "type": "boolean"
+        },
+        "detectionReason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wouldEmitNodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "provenance": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["id", "category", "type", "name", "provenance"],
+            "additionalProperties": false
+          }
+        },
+        "wouldEmitEdges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "targetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "provenance": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["id", "type", "sourceId", "targetId", "provenance"],
+            "additionalProperties": false
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "persisted": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "ruleId",
+        "filePath",
+        "matched",
+        "detectionReason",
+        "wouldEmitNodes",
+        "wouldEmitEdges",
+        "warnings",
+        "persisted"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

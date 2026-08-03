@@ -1,0 +1,20 @@
+{
+  "$ref": "#/definitions/Tool_get_review_report_InputV1",
+  "definitions": {
+    "Tool_get_review_report_InputV1": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "type": "string",
+          "enum": ["working-tree", "commit"]
+        },
+        "reviewId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

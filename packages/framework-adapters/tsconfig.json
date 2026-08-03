@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // Node types are needed by this package's own golden test, which reads fixture files.
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

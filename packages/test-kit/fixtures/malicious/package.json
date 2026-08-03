@@ -1,0 +1,5 @@
+{
+  "name": "malicious",
+  "version": "1.0.0",
+  "description": "Adversarial fixture (PRD §42.5): injection strings, hostile names, secrets. NEVER executed — parsed only."
+}

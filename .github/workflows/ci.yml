@@ -1,0 +1,321 @@
+# ImpactGraph CI — quality gates per docs/engineering/quality-gates.md.
+#
+# Fast lane: format, lint, effective-loc, typecheck, per-suite tests, security, build.
+# Slow lane (needs fast gates): test-vscode-integration (xvfb), package-extension.
+# Jobs that require product apps are guarded with hashFiles() until those apps exist —
+# the setup must be green on day one (product source starts empty).
+#
+# NOTE: `pnpm install --frozen-lockfile` requires pnpm-lock.yaml. The lockfile MUST be
+# committed with the first local `pnpm install`; until then CI install fails by design
+# (an unpinned dependency tree is not an acceptable fallback).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  # Dedicated, visible job: the 300-effective-LOC limit (ADR-0012) is a first-class gate,
+  # not a lint detail.
+  effective-loc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm quality:loc
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:unit
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-unit
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  test-application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:application
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-application
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  test-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:contract
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-contract
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  test-analyzers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:analyzers
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-analyzers
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  test-webview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:webview
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-webview
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  test-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:quality
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-quality
+          path: |
+            **/test-results/**
+            **/coverage/**
+          if-no-files-found: ignore
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Secret scan (full tree)
+        run: pnpm quality:secrets
+      - name: Dependency audit (blocking at high)
+        run: pnpm audit --audit-level=high
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --if-present build
+
+  # Guarded: contract schema snapshots do not exist until packages/contracts ships
+  # versioned JSON Schemas (docs/engineering/data-contracts.md, ADR-0009).
+  schema-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip — no published schemas yet
+        if: hashFiles('packages/contracts/schemas/**') == ''
+        run: echo "packages/contracts/schemas does not exist yet — schema compatibility check skipped."
+      - uses: pnpm/action-setup@v4
+        if: hashFiles('packages/contracts/schemas/**') != ''
+      - uses: actions/setup-node@v4
+        if: hashFiles('packages/contracts/schemas/**') != ''
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        if: hashFiles('packages/contracts/schemas/**') != ''
+        run: pnpm install --frozen-lockfile
+      - name: Schema backward-compatibility check
+        if: hashFiles('packages/contracts/schemas/**') != ''
+        # Placeholder until the compat checker lands with packages/contracts: compare
+        # committed schema snapshots against the previous version per ADR-0009 rules
+        # (additive-only within a major; breaking change requires a version bump).
+        run: pnpm --filter contracts run --if-present schema:compat
+
+  # ------------------------------------------------------------------
+  # Slow lane — only after the fast gates pass
+  # ------------------------------------------------------------------
+
+  test-vscode-integration:
+    if: hashFiles('apps/vscode-extension/package.json') != ''
+    needs:
+      - format
+      - lint
+      - effective-loc
+      - typecheck
+      - test-unit
+      - test-application
+      - test-contract
+      - test-quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The downloaded VS Code build is large and version-pinned by @vscode/test-electron;
+      # caching it turns a ~300 MB download into a cache hit on every rerun.
+      - uses: actions/cache@v4
+        with:
+          path: apps/vscode-extension/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('apps/vscode-extension/package.json') }}
+          restore-keys: vscode-test-${{ runner.os }}-
+      # Blocking gate (docs/engineering/quality-gates.md): the two lanes (trusted + untrusted)
+      # build the extension and the test bundles themselves — see apps/vscode-extension/src/test.
+      - name: VS Code integration tests (Electron under xvfb)
+        run: xvfb-run -a pnpm test:integration:vscode
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report-vscode-integration
+          path: |
+            **/test-results/**
+            **/.vscode-test/logs/**
+          if-no-files-found: ignore
+
+  package-extension:
+    if: hashFiles('apps/vscode-extension/package.json') != ''
+    needs:
+      - format
+      - lint
+      - effective-loc
+      - typecheck
+      - test-unit
+      - test-application
+      - test-contract
+      - test-quality
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --if-present build
+      - name: Package extension (validation only — publishing is release.yml + human)
+        run: cd apps/vscode-extension && pnpm dlx @vscode/vsce package --no-dependencies
+      - uses: actions/upload-artifact@v4
+        with:
+          name: impactgraph-vsix
+          path: apps/vscode-extension/*.vsix
+          if-no-files-found: error

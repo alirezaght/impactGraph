@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: java-spring
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.example.deals: INFO
+
+# The other half of `@Value("${deals.events-topic}")` in DealEventPublisher. The annotation states
+# the KEY, this line states the VALUE, and neither file knows about the other — which is exactly
+# why the join belongs to the Spring framework adapter and cites both sites as evidence.
+#
+# `deals.audit-topic` is deliberately ABSENT: that placeholder must resolve to nothing.
+deals:
+  events-topic: deal-audit-events

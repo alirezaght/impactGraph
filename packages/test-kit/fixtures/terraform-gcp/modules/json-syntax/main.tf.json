@@ -1,0 +1,41 @@
+{
+  "//": "PRD §42.2 fixture: Terraform's JSON syntax. The same language as the HCL files beside it, so the graph it produces must be the same KIND of graph — real addresses, real node types, real line-and-column evidence. `//` is Terraform's own comment key and names no block type, so it is skipped.",
+  "variable": {
+    "topic_prefix": {
+      "type": "string",
+      "description": "Prefix for the topics this module declares."
+    }
+  },
+  "resource": {
+    "google_pubsub_topic": {
+      "json_events": {
+        "name": "json-events"
+      },
+      "json_events_shard": {
+        "count": 2,
+        "name": "${var.topic_prefix}-shard"
+      }
+    },
+    "google_pubsub_subscription": {
+      "json_events_worker": {
+        "name": "json-events-worker",
+        "topic": "${google_pubsub_topic.json_events.name}",
+        "ack_deadline_seconds": 20
+      }
+    },
+    "google_secret_manager_secret_iam_member": [
+      {
+        "json_worker_db_password": {
+          "secret_id": "db-password",
+          "role": "roles/secretmanager.secretAccessor",
+          "member": "serviceAccount:json-worker@${var.topic_prefix}.iam.gserviceaccount.com"
+        }
+      }
+    ]
+  },
+  "output": {
+    "json_events_topic": {
+      "value": "${google_pubsub_topic.json_events.name}"
+    }
+  }
+}

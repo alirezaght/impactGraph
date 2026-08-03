@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.vscode-test/
+
+# VS Code extension packaging
+*.vsix
+
+# ImpactGraph runtime caches (the derived SQLite index is disposable — ADR-0006).
+# Committed .impactgraph/ config (YAML) stays tracked; only caches are ignored.
+.impactgraph/cache/
+
+# Environment files — never committed (privacy invariant, PRD §35)
+.env
+.env.*
+
+# Logs
+pnpm-debug.log*
+
+# OS noise
+.DS_Store

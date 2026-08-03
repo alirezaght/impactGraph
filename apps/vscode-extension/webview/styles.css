@@ -1,0 +1,162 @@
+/*
+ * Webview styles. Colour comes from VS Code theme variables so high-contrast themes work; every
+ * meaning-bearing distinction (knowledge category, directness, severity) also has a text badge
+ * and a border style, so the UI survives grayscale and forced-colours (PRD §37).
+ */
+
+body {
+  font-family: var(--vscode-font-family, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  color: var(--vscode-editor-foreground, #ddd);
+  background: var(--vscode-editor-background, #1e1e1e);
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.panel {
+  flex: 1 1 22rem;
+  min-width: 18rem;
+  /* Resizable panels (§37): the user can drag each column wider. */
+  resize: horizontal;
+  overflow: auto;
+  max-height: 90vh;
+  border: 1px solid var(--vscode-panel-border, #444);
+  padding: 0.5rem;
+}
+
+h2,
+h3,
+h4 {
+  margin: 0.6rem 0 0.3rem;
+}
+
+button {
+  font: inherit;
+  color: var(--vscode-button-foreground, #fff);
+  background: var(--vscode-button-background, #0e639c);
+  border: 1px solid var(--vscode-button-border, transparent);
+  padding: 0.2rem 0.5rem;
+  margin: 0.1rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--vscode-focusBorder, #007fd4);
+  outline-offset: 1px;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--vscode-input-foreground, #ddd);
+  background: var(--vscode-input-background, #3c3c3c);
+  border: 1px solid var(--vscode-input-border, #555);
+}
+
+/* --- the three knowledge categories: shape-independent, colour-independent --- */
+.badge {
+  display: inline-block;
+  padding: 0 0.3rem;
+  margin-left: 0.3rem;
+  font-size: 0.85em;
+  letter-spacing: 0.04em;
+  border-width: 2px;
+  border-color: currentColor;
+}
+
+.badge--deterministic {
+  border-style: solid;
+}
+
+.badge--ai-inferred {
+  border-style: dashed;
+}
+
+.badge--human-confirmed {
+  border-style: double;
+  border-width: 4px;
+}
+
+.badge--reserved,
+.badge--unclassified {
+  border-style: dotted;
+}
+
+.node-row,
+.requirement,
+.question {
+  border-bottom: 1px solid var(--vscode-panel-border, #444);
+  padding: 0.3rem 0;
+  list-style: none;
+}
+
+.node-list,
+.requirement-list,
+.question-list,
+.source-list,
+.evidence-records,
+.decision-list,
+.collapsed-groups,
+.confidence-signals {
+  padding-left: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.graph-canvas {
+  width: 100%;
+  height: 22rem;
+  border: 1px solid var(--vscode-panel-border, #444);
+}
+
+.empty-state,
+.absent {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.warning,
+.graph-degraded {
+  border-left: 4px solid var(--vscode-editorWarning-foreground, #cca700);
+  padding-left: 0.4rem;
+}
+
+.errors {
+  border: 2px solid var(--vscode-editorError-foreground, #f48771);
+  padding: 0.4rem;
+}
+
+.evidence-summary dt {
+  font-weight: 600;
+  margin-top: 0.3rem;
+}
+
+.evidence-summary dd {
+  margin: 0 0 0.2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

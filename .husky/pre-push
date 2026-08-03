@@ -1,0 +1,1 @@
+pnpm typecheck && pnpm test:unit && pnpm test:application && pnpm test:contract && pnpm test:quality

@@ -1,0 +1,161 @@
+{
+  "$ref": "#/definitions/CliArchitectureOutputV1",
+  "definitions": {
+    "CliArchitectureOutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "architecture"
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fileCount": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": ["name", "fileCount"],
+            "additionalProperties": false
+          }
+        },
+        "nodeCountsByType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "edgeCountsByType": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "totalNodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalEdges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "corrections": {
+          "type": "object",
+          "properties": {
+            "renamed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rolesSet": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "contextsAssigned": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "marked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ownersSet": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "confirmedRelationships": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rejectedRelationships": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "merged": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "renamed",
+            "rolesSet",
+            "contextsAssigned",
+            "marked",
+            "confirmedRelationships",
+            "rejectedRelationships",
+            "merged"
+          ],
+          "additionalProperties": false
+        },
+        "effectiveTotalEdges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejectedEdges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "edgeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "human-confirmed",
+                  "agent-approved",
+                  "repo-metadata",
+                  "deterministic-detection",
+                  "ai-inferred",
+                  "defaults"
+                ]
+              }
+            },
+            "required": ["edgeId", "level"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "snapshotId",
+        "workspaces",
+        "packages",
+        "nodeCountsByType",
+        "edgeCountsByType",
+        "totalNodes",
+        "totalEdges"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,17 @@
+{
+  "$ref": "#/definitions/Tool_explain_edge_InputV1",
+  "definitions": {
+    "Tool_explain_edge_InputV1": {
+      "type": "object",
+      "properties": {
+        "edgeId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["edgeId"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

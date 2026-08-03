@@ -1,0 +1,344 @@
+{
+  "name": "impactgraph",
+  "displayName": "ImpactGraph",
+  "description": "Local-first architectural reasoning: evidence-backed impact analysis for specifications.",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "publisher": "impactgraph",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "workspaceContains:.impactgraph/config.yml"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Indexing and analysis are disabled in untrusted workspaces (repository content is never executed, but it is parsed)."
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "impactgraph",
+          "title": "ImpactGraph",
+          "icon": "$(type-hierarchy-sub)"
+        }
+      ]
+    },
+    "views": {
+      "impactgraph": [
+        {
+          "id": "impactgraph.specifications",
+          "name": "Specifications"
+        },
+        {
+          "id": "impactgraph.currentImpact",
+          "name": "Current Impact"
+        },
+        {
+          "id": "impactgraph.architecture",
+          "name": "Architecture"
+        },
+        {
+          "id": "impactgraph.review",
+          "name": "Review"
+        },
+        {
+          "id": "impactgraph.issues",
+          "name": "Issues"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "impactgraph.specifications",
+        "contents": "Enter or import a specification to start.\n[Open Impact Review](command:impactgraph.openImpactReview)\n[Import Specification](command:impactgraph.importSpecification)\n[Analyze Specification](command:impactgraph.analyzeSpecification)"
+      },
+      {
+        "view": "impactgraph.currentImpact",
+        "contents": "No analysis yet.\n[Analyze Specification](command:impactgraph.analyzeSpecification)"
+      },
+      {
+        "view": "impactgraph.review",
+        "contents": "No review yet.\n[Review Working Tree](command:impactgraph.reviewWorkingTree)\n[Review Current Commit](command:impactgraph.reviewCurrentCommit)"
+      },
+      {
+        "view": "impactgraph.architecture",
+        "contents": "No index yet.\n[Initialize Workspace](command:impactgraph.initializeWorkspace)\n[Reindex Workspace](command:impactgraph.reindexWorkspace)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "impactgraph.initializeWorkspace",
+        "title": "ImpactGraph: Initialize Workspace"
+      },
+      {
+        "command": "impactgraph.reindexWorkspace",
+        "title": "ImpactGraph: Reindex Workspace"
+      },
+      {
+        "command": "impactgraph.showIndexStatus",
+        "title": "ImpactGraph: Show Index Status"
+      },
+      {
+        "command": "impactgraph.clearLocalCache",
+        "title": "ImpactGraph: Clear Local Cache"
+      },
+      {
+        "command": "impactgraph.analyzeSpecification",
+        "title": "ImpactGraph: Analyze Specification"
+      },
+      {
+        "command": "impactgraph.reviewWorkingTree",
+        "title": "ImpactGraph: Review Working Tree"
+      },
+      {
+        "command": "impactgraph.reviewCurrentCommit",
+        "title": "ImpactGraph: Review Current Commit"
+      },
+      {
+        "command": "impactgraph.approveImpactAnalysis",
+        "title": "ImpactGraph: Approve Impact Analysis"
+      },
+      {
+        "command": "impactgraph.exportImplementationContext",
+        "title": "ImpactGraph: Export Implementation Context"
+      },
+      {
+        "command": "impactgraph.configurePrivacy",
+        "title": "ImpactGraph: Configure Privacy"
+      },
+      {
+        "command": "impactgraph.openReviewReport",
+        "title": "ImpactGraph: Open Review Report"
+      },
+      {
+        "command": "impactgraph.acceptImpact",
+        "title": "ImpactGraph: Accept Impact"
+      },
+      {
+        "command": "impactgraph.rejectImpact",
+        "title": "ImpactGraph: Reject Impact"
+      },
+      {
+        "command": "impactgraph.configureModelProvider",
+        "title": "ImpactGraph: Configure Model Provider"
+      },
+      {
+        "command": "impactgraph.openConfigurationHistory",
+        "title": "ImpactGraph: Open Configuration History"
+      },
+      {
+        "command": "impactgraph.undoLastConfigurationChange",
+        "title": "ImpactGraph: Undo Last Configuration Change"
+      },
+      {
+        "command": "impactgraph.refreshIssues",
+        "title": "ImpactGraph: Refresh Issues"
+      },
+      {
+        "command": "impactgraph.restoreConfigurationVersion",
+        "title": "ImpactGraph: Restore Configuration Version"
+      },
+      {
+        "command": "impactgraph.showArchitecturalDependencies",
+        "title": "ImpactGraph: Show Architectural Dependencies"
+      },
+      {
+        "command": "impactgraph.showRequirementImpacts",
+        "title": "ImpactGraph: Show Requirement Impacts"
+      },
+      {
+        "command": "impactgraph.analyzeSelection",
+        "title": "ImpactGraph: Analyze Selection"
+      },
+      {
+        "command": "impactgraph.openAiAuditLog",
+        "title": "ImpactGraph: Open AI Audit Log"
+      },
+      {
+        "command": "impactgraph.filterImpacts",
+        "title": "ImpactGraph: Filter Impacts"
+      },
+      {
+        "command": "impactgraph.clearImpactFilters",
+        "title": "ImpactGraph: Clear Impact Filters"
+      },
+      {
+        "command": "impactgraph.addManualImpact",
+        "title": "ImpactGraph: Add Manual Impact"
+      },
+      {
+        "command": "impactgraph.markAsDomainComponent",
+        "title": "ImpactGraph: Mark as Domain Component"
+      },
+      {
+        "command": "impactgraph.assignToContext",
+        "title": "ImpactGraph: Assign to Context"
+      },
+      {
+        "command": "impactgraph.ignorePath",
+        "title": "ImpactGraph: Ignore Path"
+      },
+      {
+        "command": "impactgraph.revealNode",
+        "title": "ImpactGraph: Reveal Declaration"
+      },
+      {
+        "command": "impactgraph.openImpactReview",
+        "title": "ImpactGraph: Open Impact Review"
+      },
+      {
+        "command": "impactgraph.importSpecification",
+        "title": "ImpactGraph: Import Specification"
+      },
+      {
+        "command": "impactgraph.saveSpecificationVersion",
+        "title": "ImpactGraph: Save Specification Version"
+      },
+      {
+        "command": "impactgraph.compareSpecificationVersions",
+        "title": "ImpactGraph: Compare Specification Versions"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "impactgraph.acceptImpact",
+          "when": "false"
+        },
+        {
+          "command": "impactgraph.rejectImpact",
+          "when": "false"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "impactgraph.showArchitecturalDependencies",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@1"
+        },
+        {
+          "command": "impactgraph.showRequirementImpacts",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@2"
+        },
+        {
+          "command": "impactgraph.analyzeSelection",
+          "when": "editorHasSelection",
+          "group": "impactgraph@3"
+        },
+        {
+          "command": "impactgraph.markAsDomainComponent",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@4"
+        },
+        {
+          "command": "impactgraph.assignToContext",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@5"
+        },
+        {
+          "command": "impactgraph.ignorePath",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@6"
+        },
+        {
+          "command": "impactgraph.importSpecification",
+          "when": "resourceScheme == file",
+          "group": "impactgraph@7"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "impactgraph.acceptImpact",
+          "when": "view == impactgraph.currentImpact && viewItem == impact",
+          "group": "impactgraph@1"
+        },
+        {
+          "command": "impactgraph.rejectImpact",
+          "when": "view == impactgraph.currentImpact && viewItem == impact",
+          "group": "impactgraph@2"
+        },
+        {
+          "command": "impactgraph.markAsDomainComponent",
+          "when": "view == impactgraph.architecture && viewItem =~ /^(package|file)$/",
+          "group": "impactgraph@1"
+        },
+        {
+          "command": "impactgraph.assignToContext",
+          "when": "view == impactgraph.architecture && viewItem =~ /^(package|file)$/",
+          "group": "impactgraph@2"
+        },
+        {
+          "command": "impactgraph.ignorePath",
+          "when": "view == impactgraph.architecture && viewItem =~ /^(package|file)$/",
+          "group": "impactgraph@3"
+        }
+      ]
+    },
+    "yamlValidation": [
+      {
+        "fileMatch": ".impactgraph/config.yml",
+        "url": "./dist/schemas/workspace-config.v1.schema.json"
+      },
+      {
+        "fileMatch": ".impactgraph/architecture.yml",
+        "url": "./dist/schemas/architecture-config.v1.schema.json"
+      },
+      {
+        "fileMatch": ".impactgraph/aliases.yml",
+        "url": "./dist/schemas/aliases-config.v1.schema.json"
+      },
+      {
+        "fileMatch": ".impactgraph/rules.yml",
+        "url": "./dist/schemas/rules-config.v1.schema.json"
+      }
+    ],
+    "configuration": {
+      "properties": {
+        "impactgraph.telemetry.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Opt-in local telemetry (§36). OFF by default. When enabled (and VS Code telemetry is on), allowlisted usage events (command ids, duration buckets, error categories) are written to the visible \"ImpactGraph Telemetry\" output channel. Nothing is transmitted anywhere."
+        }
+      },
+      "title": "ImpactGraph"
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p webview/tsconfig.json",
+    "test:integration:vscode": "node esbuild.mjs && node src/test/build.mjs && node dist/test/runner.js"
+  },
+  "dependencies": {
+    "@impactgraph/application": "workspace:*",
+    "@impactgraph/contracts": "workspace:*",
+    "@impactgraph/domain": "workspace:*",
+    "@impactgraph/git": "workspace:*",
+    "@impactgraph/persistence": "workspace:*",
+    "@impactgraph/repository-intelligence": "workspace:*",
+    "@impactgraph/workspace-engine": "workspace:*",
+    "better-sqlite3": "^13.0.2",
+    "cytoscape": "^3.34.0",
+    "cytoscape-fcose": "^2.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/cytoscape": "^3.31.0",
+    "@types/cytoscape-fcose": "^2.2.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.0",
+    "jsdom": "^30.0.1",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$ref": "#/definitions/Tool_preview_configuration_change_OutputV1",
+  "definitions": {
+    "Tool_preview_configuration_change_OutputV1": {
+      "type": "object",
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": ["safe", "material"]
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "newDocument": {
+          "type": "object",
+          "additionalProperties": {}
+        }
+      },
+      "required": ["classification", "file", "newDocument"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

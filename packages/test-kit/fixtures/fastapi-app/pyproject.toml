@@ -1,0 +1,9 @@
+[project]
+name = "fastapi-app"
+version = "1.0.0"
+description = "PRD §42.2 fixture: a small FastAPI service (awaiting the Epic 16 Python adapter)."
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.111", "pydantic>=2.7", "uvicorn>=0.30"]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.27", "pytest>=8.2"]

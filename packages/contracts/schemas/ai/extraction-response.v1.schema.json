@@ -1,0 +1,125 @@
+{
+  "$ref": "#/definitions/ExtractionResponseV1",
+  "definitions": {
+    "ExtractionResponseV1": {
+      "type": "object",
+      "properties": {
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "statement": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "functional",
+                  "business-rule",
+                  "exception",
+                  "state-transition",
+                  "data",
+                  "integration",
+                  "security",
+                  "performance",
+                  "operational",
+                  "observability",
+                  "testing",
+                  "documentation"
+                ]
+              },
+              "concepts": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "maxItems": 50
+              },
+              "actors": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "maxItems": 20
+              },
+              "priority": {
+                "type": "string",
+                "enum": ["must", "should", "could"]
+              },
+              "sourceExcerpt": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              }
+            },
+            "required": ["statement", "type", "concepts", "actors"],
+            "additionalProperties": false
+          },
+          "maxItems": 200
+        },
+        "actors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "maxItems": 50
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "maxItems": 50
+        },
+        "openQuestions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["blocking", "important", "minor"]
+              },
+              "affectedRequirementStatements": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "maxItems": 20
+              }
+            },
+            "required": ["question", "reason", "severity", "affectedRequirementStatements"],
+            "additionalProperties": false
+          },
+          "maxItems": 50
+        }
+      },
+      "required": ["requirements", "actors", "constraints", "openQuestions"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

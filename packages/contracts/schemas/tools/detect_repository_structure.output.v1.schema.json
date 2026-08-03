@@ -1,0 +1,155 @@
+{
+  "$ref": "#/definitions/Tool_detect_repository_structure_OutputV1",
+  "definitions": {
+    "Tool_detect_repository_structure_OutputV1": {
+      "type": "object",
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "directory": {
+                "type": "string"
+              },
+              "manifestPath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceRoots": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "testRoots": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "buildConfigFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "entryPoints": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "fileCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "effectiveName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "context": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "markers": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["generated", "ignored", "infrastructure", "shared"]
+                }
+              },
+              "correctionLevels": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "human-confirmed",
+                    "agent-approved",
+                    "repo-metadata",
+                    "deterministic-detection",
+                    "ai-inferred",
+                    "defaults"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "nodeId",
+              "name",
+              "directory",
+              "sourceRoots",
+              "testRoots",
+              "buildConfigFiles",
+              "entryPoints",
+              "fileCount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totals": {
+          "type": "object",
+          "properties": {
+            "packages": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sourceRoots": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "testRoots": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "buildConfigFiles": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "entryPoints": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["packages", "sourceRoots", "testRoots", "buildConfigFiles", "entryPoints"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["snapshotId", "workspaces", "packages", "totals"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

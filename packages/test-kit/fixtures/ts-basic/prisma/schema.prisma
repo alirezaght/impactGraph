@@ -1,0 +1,12 @@
+datasource db {
+  provider = "postgresql"
+}
+
+model Deal {
+  id        String  @id
+  expired   Boolean
+}
+
+model User {
+  id String @id
+}

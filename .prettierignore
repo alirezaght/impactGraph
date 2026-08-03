@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist
+out
+build
+coverage
+.vscode-test
+scripts/quality/effective-loc/fixtures
+CHANGELOG.md

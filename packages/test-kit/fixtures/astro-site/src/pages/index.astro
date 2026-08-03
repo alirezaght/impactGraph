@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const deals = await getCollection('deals');
+---
+
+<Base title="Deals">
+  <h1>Open deals</h1>
+  <ul>
+    {deals.map((deal) => <li>{deal.data.name}</li>)}
+  </ul>
+  <!-- Repository-local: Astro resolves a script src against this file, so it is an IMPORTS edge. -->
+  <script src="../scripts/deal-filter.ts"></script>
+  <!-- Root-relative (Astro's public/ directory) and remote: neither names a file this adapter can
+       see, so both stay reference facts on the CallFact channel and produce no edge. -->
+  <img src="/hero.svg" alt="" />
+  <script src="https://cdn.example.com/analytics.js"></script>
+</Base>

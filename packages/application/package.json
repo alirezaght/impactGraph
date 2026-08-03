@@ -1,0 +1,22 @@
+{
+  "name": "@impactgraph/application",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Use cases and ports. Depends only on @impactgraph/domain; adapters implement the ports.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@impactgraph/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$ref": "#/definitions/Tool_accept_review_deviation_InputV1",
+  "definitions": {
+    "Tool_accept_review_deviation_InputV1": {
+      "type": "object",
+      "properties": {
+        "reviewId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "enum": ["missing", "unexpected", "divergent"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "confirmedByUser": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": ["nodeId", "reason", "confirmedByUser"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

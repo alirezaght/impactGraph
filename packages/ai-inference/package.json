@@ -1,0 +1,27 @@
+{
+  "name": "@impactgraph/ai-inference",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ModelProvider implementations, prompt assembly, output validation (PRD §8–9, ADR-0010). The only package allowed to import provider SDKs (in src/providers/).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@impactgraph/application": "workspace:*",
+    "@impactgraph/contracts": "workspace:*",
+    "@impactgraph/domain": "workspace:*",
+    "zod": "^3.23.0",
+    "zod-to-json-schema": "^3.23.0"
+  },
+  "devDependencies": {
+    "@impactgraph/test-kit": "workspace:*",
+    "typescript": "^5.5.0"
+  }
+}

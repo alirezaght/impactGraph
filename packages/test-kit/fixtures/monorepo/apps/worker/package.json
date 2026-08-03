@@ -1,0 +1,8 @@
+{
+  "name": "@fixture/worker",
+  "version": "1.0.0",
+  "main": "./src/main.ts",
+  "dependencies": {
+    "@fixture/api": "workspace:*"
+  }
+}

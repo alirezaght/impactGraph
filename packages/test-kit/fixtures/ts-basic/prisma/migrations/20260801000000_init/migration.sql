@@ -1,0 +1,8 @@
+CREATE TABLE "Deal" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "expired" BOOLEAN NOT NULL
+);
+
+CREATE TABLE "User" (
+  "id" TEXT NOT NULL PRIMARY KEY
+);

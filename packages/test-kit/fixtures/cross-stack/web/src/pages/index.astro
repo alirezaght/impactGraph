@@ -1,0 +1,18 @@
+---
+// PRD §42.2 / §C12 fixture — the frontend half of one multi-stack system. The form below posts to
+// a path the FastAPI service in ../../api serves; matching the two is Story 16.6's job, and this
+// file states nothing about it beyond the URL.
+const heading = 'Deals';
+---
+
+<h1>{heading}</h1>
+
+<form action="/api/deals" method="post">
+  <input name="name" />
+  <button type="submit">Create</button>
+</form>
+
+<a href="/api/deals">Browse deals</a>
+<a href="https://example.com/external">External, never matched</a>
+<a href="/api/deal">One character off, never matched</a>
+<img src="/api/deals" alt="an asset reference, not an endpoint call" />

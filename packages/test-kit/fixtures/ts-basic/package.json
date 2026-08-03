@@ -1,0 +1,8 @@
+{
+  "name": "ts-basic",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "prisma": "^5.0.0"
+  }
+}

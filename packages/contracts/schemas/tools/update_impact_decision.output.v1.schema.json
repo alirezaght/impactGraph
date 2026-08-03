@@ -1,0 +1,25 @@
+{
+  "$ref": "#/definitions/Tool_update_impact_decision_OutputV1",
+  "definitions": {
+    "Tool_update_impact_decision_OutputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decisionCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": ["analysisId", "status", "decisionCount"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

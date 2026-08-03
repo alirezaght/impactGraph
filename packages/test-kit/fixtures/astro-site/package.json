@@ -1,0 +1,13 @@
+{
+  "name": "astro-site",
+  "version": "1.0.0",
+  "description": "PRD §42.2 fixture: a small Astro site with pages, a layout, content collections, and an API route (awaiting the Epic 16 Astro adapter).",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build"
+  },
+  "dependencies": {
+    "astro": "^4.11.0"
+  }
+}

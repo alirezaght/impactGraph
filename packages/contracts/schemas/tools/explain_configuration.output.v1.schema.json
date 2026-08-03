@@ -1,0 +1,119 @@
+{
+  "$ref": "#/definitions/Tool_explain_configuration_OutputV1",
+  "definitions": {
+    "Tool_explain_configuration_OutputV1": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "found": {
+          "type": "boolean"
+        },
+        "subjectKind": {
+          "type": "string",
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
+        },
+        "file": {
+          "type": "string",
+          "enum": ["config.yml", "architecture.yml", "aliases.yml", "rules.yml"]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "confirmed": {
+          "type": "boolean"
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "rollbackId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "timestamp": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actorKind": {
+              "type": "string",
+              "enum": ["user", "agent"]
+            },
+            "agentId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": ["rollbackId", "timestamp", "actorKind", "reason"],
+          "additionalProperties": false
+        },
+        "auditTrail": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rollbackId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "timestamp": {
+                "type": "string",
+                "minLength": 1
+              },
+              "operationKind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["rollbackId", "timestamp", "operationKind", "file"],
+            "additionalProperties": false
+          }
+        },
+        "affects": {
+          "type": "object",
+          "properties": {
+            "nodeCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sampleNodeIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["nodeCount", "sampleNodeIds", "detail"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["subject", "found", "description", "confirmed", "auditTrail", "affects"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -1,0 +1,76 @@
+# ImpactGraph release pipeline — validation and packaging ONLY.
+#
+# Versioning is driven by Changesets (@changesets/cli) run locally: `pnpm changeset`,
+# `pnpm changeset version`, then a reviewed release PR and a `v*` tag on main.
+# Marketplace publishing is a manual human decision (docs/engineering/release-process.md);
+# nothing in this repository publishes automatically. VSCE_PAT is referenced only in the
+# workflow_dispatch-gated `publish` job below (environment: marketplace) — never in any
+# PR-triggered workflow.
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Quality gates
+        run: pnpm quality:gates
+      - name: Analyzer suite
+        run: pnpm test:analyzers
+      - name: Webview suite
+        run: pnpm test:webview
+      - name: VS Code integration suite
+        if: hashFiles('apps/vscode-extension/package.json') != ''
+        run: xvfb-run -a pnpm test:integration:vscode
+      - name: Build
+        run: pnpm -r --if-present build
+      - name: Package extension
+        if: hashFiles('apps/vscode-extension/package.json') != ''
+        run: cd apps/vscode-extension && pnpm dlx @vscode/vsce package --no-dependencies
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('apps/vscode-extension/package.json') != ''
+        with:
+          name: impactgraph-release-vsix
+          path: apps/vscode-extension/*.vsix
+          if-no-files-found: error
+
+  # Manual-only. Requires (a) a human dispatching the workflow and (b) approval on the
+  # `marketplace` environment, where the VSCE_PAT secret lives. The publish step stays
+  # commented out until the team makes the first-publish decision (release-checklist.md).
+  publish:
+    if: github.event_name == 'workflow_dispatch'
+    needs: release-validation
+    runs-on: ubuntu-latest
+    environment: marketplace
+    steps:
+      - name: Manual publish gate
+        run: |
+          echo "Marketplace publishing is a manual human decision (docs/engineering/release-process.md)."
+          echo "Uncomment the publish steps below only via a reviewed PR after the release checklist is signed off."
+      # - uses: actions/checkout@v4
+      # - uses: pnpm/action-setup@v4
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version-file: .nvmrc
+      #     cache: pnpm
+      # - run: pnpm install --frozen-lockfile
+      # - run: pnpm -r --if-present build
+      # - name: Publish to VS Code Marketplace
+      #   run: cd apps/vscode-extension && pnpm dlx @vscode/vsce publish --no-dependencies
+      #   env:
+      #     VSCE_PAT: ${{ secrets.VSCE_PAT }}

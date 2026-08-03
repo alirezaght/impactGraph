@@ -1,0 +1,22 @@
+{
+  "$ref": "#/definitions/Tool_initialize_workspace_OutputV1",
+  "definitions": {
+    "Tool_initialize_workspace_OutputV1": {
+      "type": "object",
+      "properties": {
+        "created": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alreadyInitialized": {
+          "type": "boolean"
+        }
+      },
+      "required": ["created", "alreadyInitialized"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

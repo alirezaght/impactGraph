@@ -1,0 +1,33 @@
+{
+  "$ref": "#/definitions/Tool_update_impact_decision_InputV1",
+  "definitions": {
+    "Tool_update_impact_decision_InputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["accepted", "rejected", "manually-added"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["analysisId", "requirementId", "nodeId", "decision"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

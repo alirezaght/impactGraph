@@ -1,0 +1,256 @@
+// @impactgraph/domain — pure, dependency-free domain model (PRD §3, §12; ADR-0002).
+// Public entry point; deep imports are lint-forbidden (docs/engineering/dependency-rules.md).
+
+export type { Ok, Err, Result } from './errors/result.js';
+export { ok, err } from './errors/result.js';
+export type { ValidationIssue, ValidationIssueCode, ValidationError } from './errors/validation.js';
+export { validationIssue, validationError } from './errors/validation.js';
+
+export type {
+  NodeId,
+  EdgeId,
+  EvidenceId,
+  RepositorySnapshotId,
+  AnalysisRunId,
+  SpecificationId,
+} from './ids.js';
+
+export type { Provenance, KnowledgeCategory } from './provenance/provenance.js';
+export { PROVENANCE_VALUES, isProvenance, knowledgeCategoryOf } from './provenance/provenance.js';
+
+export type {
+  ConfidenceSignalType,
+  ConfidenceSignal,
+  ConfidenceScore,
+  ConfidenceSignalInput,
+  ConfidenceScoreInput,
+} from './provenance/confidence.js';
+export {
+  CONFIDENCE_SIGNAL_TYPES,
+  PENALTY_SIGNAL_TYPES,
+  createConfidenceScore,
+} from './provenance/confidence.js';
+
+export type {
+  EvidenceKind,
+  SourceRange,
+  FileSource,
+  ConfigSource,
+  GitCommitSource,
+  EvidenceSource,
+  EvidenceRecord,
+  CreateEvidenceRecordInput,
+} from './provenance/evidence.js';
+export { EVIDENCE_KINDS, createEvidenceRecord } from './provenance/evidence.js';
+
+export type {
+  SpecificationRef,
+  SpecificationRefInput,
+  KnowledgeEnvelope,
+  KnowledgeEnvelopeInput,
+} from './provenance/knowledge-envelope.js';
+export { createKnowledgeEnvelope } from './provenance/knowledge-envelope.js';
+
+export type { NodeCategory, NodeType } from './repository/node-types.js';
+export {
+  NODE_TYPES_BY_CATEGORY,
+  NODE_CATEGORIES,
+  isNodeCategory,
+  isNodeTypeInCategory,
+} from './repository/node-types.js';
+export type { EdgeType } from './repository/edge-types.js';
+export { EDGE_TYPES, isEdgeType } from './repository/edge-types.js';
+
+export type { GraphNode, CreateGraphNodeInput } from './repository/graph-node.js';
+export { createGraphNode } from './repository/graph-node.js';
+export type { GraphEdge, CreateGraphEdgeInput } from './repository/graph-edge.js';
+export { createGraphEdge } from './repository/graph-edge.js';
+
+export type {
+  BranchHead,
+  DetachedHead,
+  RepositoryHead,
+  RepositoryHeadInput,
+  RepositorySnapshot,
+  CreateRepositorySnapshotInput,
+} from './repository/repository-snapshot.js';
+export { createRepositorySnapshot } from './repository/repository-snapshot.js';
+
+export type { KnowledgeGraph } from './repository/knowledge-graph.js';
+export { createKnowledgeGraph } from './repository/knowledge-graph.js';
+export type {
+  NodeFilter,
+  TraversalDirection,
+  TraversalOptions,
+  SubgraphOptions,
+  DependencyPath,
+} from './repository/graph-queries.js';
+export {
+  findNodes,
+  neighbors,
+  findShortestPath,
+  extractSubgraph,
+} from './repository/graph-queries.js';
+
+export type {
+  KnowledgeEnvelopeJson,
+  ConfidenceJson,
+  ConfidenceSignalJson,
+  SpecificationRefJson,
+} from './serialization/knowledge-json.js';
+export { serializeKnowledgeEnvelope } from './serialization/knowledge-json.js';
+export type { GraphNodeJson, GraphEdgeJson } from './serialization/graph-json.js';
+export {
+  GRAPH_NODE_SCHEMA_VERSION,
+  GRAPH_EDGE_SCHEMA_VERSION,
+  serializeGraphNode,
+  serializeGraphEdge,
+  parseGraphNode,
+  parseGraphEdge,
+} from './serialization/graph-json.js';
+export type { EvidenceRecordJson } from './serialization/evidence-json.js';
+export {
+  EVIDENCE_RECORD_SCHEMA_VERSION,
+  serializeEvidenceRecord,
+  parseEvidenceRecord,
+} from './serialization/evidence-json.js';
+export type {
+  RequirementType,
+  RequirementPriority,
+  RequirementStatus,
+  TextRange,
+  Requirement,
+} from './specification/requirement.js';
+export {
+  REQUIREMENT_TYPES,
+  REQUIREMENT_PRIORITIES,
+  REQUIREMENT_STATUSES,
+  stableContentId,
+  stableRequirementId,
+} from './specification/requirement.js';
+export type {
+  SpecificationSourceType,
+  OpenQuestionSeverity,
+  OpenQuestionStatus,
+  OpenQuestion,
+  Actor,
+  Constraint,
+  ArchitecturalDecision,
+  Specification,
+  CreateSpecificationInput,
+  NextVersionChanges,
+} from './specification/specification.js';
+export {
+  SPECIFICATION_SOURCE_TYPES,
+  OPEN_QUESTION_SEVERITIES,
+  OPEN_QUESTION_STATUSES,
+  createSpecification,
+  createNextSpecificationVersion,
+} from './specification/specification.js';
+export {
+  confirmRequirement,
+  rejectRequirement,
+  editRequirementStatement,
+  dismissOpenQuestion,
+} from './specification/mutation.js';
+export { isAnalysisStale } from './specification/staleness.js';
+export type { AnalysisVersionRef } from './specification/staleness.js';
+export type { SpecificationDiff, RequirementChange } from './specification/diff.js';
+export { diffSpecifications } from './specification/diff.js';
+export type { SpecificationJson } from './serialization/specification-json.js';
+export {
+  SPECIFICATION_SCHEMA_VERSION,
+  serializeSpecification,
+  parseSpecification,
+} from './serialization/specification-json.js';
+
+export type {
+  ImpactLikelihood,
+  ImpactType,
+  ImpactDirectness,
+  RequirementImpact,
+  AnalysisWarning,
+  UserDecisionKind,
+  UserImpactDecision,
+  ArchitecturalOption,
+  OptionImplications,
+  AnalysisStatus,
+  ImpactAnalysis,
+  ImpactAnalysisContext,
+} from './impact/impact-analysis.js';
+export type {
+  ProposedEndpointKind,
+  ProposedNode,
+  ProposedRelationship,
+  ProposedStructure,
+  ProposedStructureContext,
+} from './impact/proposed-structure.js';
+export {
+  PROPOSED_ENDPOINT_KINDS,
+  collectProposedStructureIssues,
+} from './impact/proposed-structure.js';
+export {
+  IMPACT_LIKELIHOODS,
+  IMPACT_TYPES,
+  IMPACT_DIRECTNESS,
+  USER_DECISION_KINDS,
+  ANALYSIS_STATUSES,
+  createImpactAnalysis,
+  approveImpactAnalysis,
+  markImpactAnalysisReviewed,
+  supersedeImpactAnalysis,
+  addUserDecision,
+} from './impact/impact-analysis.js';
+export type { ImpactSignalInput } from './impact/confidence-weights.js';
+export {
+  IMPACT_SIGNAL_WEIGHTS,
+  PROPOSED_RELATIONSHIP_SIGNAL_WEIGHTS,
+  computeImpactConfidence,
+  computeProposedRelationshipConfidence,
+} from './impact/confidence-weights.js';
+export type { ImpactAnalysisJson } from './serialization/impact-json.js';
+export {
+  IMPACT_ANALYSIS_SCHEMA_VERSION,
+  serializeImpactAnalysis,
+  parseImpactAnalysis,
+} from './serialization/impact-json.js';
+
+export type {
+  ReviewCategory,
+  ReviewFinding,
+  CoverageStatus,
+  CoverageEvidence,
+  RequirementCoverage,
+  ReviewTarget,
+  EdgeChangeSummary,
+  ImplementationReview,
+} from './review/implementation-review.js';
+export {
+  REVIEW_CATEGORIES,
+  COVERAGE_STATUSES,
+  REVIEW_TARGETS,
+  createImplementationReview,
+  hasDiscrepancies,
+} from './review/implementation-review.js';
+
+export type { RepositoryHeadJson, RepositorySnapshotJson } from './serialization/snapshot-json.js';
+export {
+  REPOSITORY_SNAPSHOT_SCHEMA_VERSION,
+  serializeRepositorySnapshot,
+  parseRepositorySnapshot,
+} from './serialization/snapshot-json.js';
+export { computeReadiness } from './specification/readiness.js';
+export type { ReadinessReport } from './specification/readiness.js';
+export {
+  createClarificationRecord,
+  answerOpenQuestion,
+  applyKnownClarifications,
+  clarificationQuestionKey,
+  CLARIFICATION_AUTHORS,
+} from './specification/clarification.js';
+export type { ClarificationRecord, ClarificationAuthor } from './specification/clarification.js';
+export {
+  serializeClarification,
+  parseClarification,
+  CLARIFICATION_SCHEMA_VERSION,
+} from './serialization/clarification-json.js';

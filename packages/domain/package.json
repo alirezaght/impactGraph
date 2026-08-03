@@ -1,0 +1,19 @@
+{
+  "name": "@impactgraph/domain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure, dependency-free domain model: knowledge categories, provenance, evidence, confidence, repository knowledge graph vocabulary (PRD §3, §12).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

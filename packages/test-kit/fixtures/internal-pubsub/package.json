@@ -1,0 +1,5 @@
+{
+  "name": "internal-pubsub",
+  "version": "1.0.0",
+  "description": "§Z8 fixture: an internal messaging wrapper only a custom detection rule can understand."
+}

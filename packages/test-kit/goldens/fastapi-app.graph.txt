@@ -1,0 +1,75 @@
+nodes:
+fastapi:app:app/main.py#app|application|application|app|framework-convention
+fastapi:router:app/routers/deals.py#router|module|application|router|framework-convention
+fastapi:router:app/routers/health.py#router|module|application|router|framework-convention
+file:app/clients.py|file|repository|clients.py|static-analysis
+file:app/main.py|file|repository|main.py|static-analysis
+file:app/models.py|file|repository|models.py|static-analysis
+file:app/routers/deals.py|file|repository|deals.py|static-analysis
+file:app/routers/health.py|file|repository|health.py|static-analysis
+file:pyproject.toml|file|repository|pyproject.toml|static-analysis
+file:tests/test_deals.py|test|application|test_deals.py|framework-convention
+job:symbol:app/main.py#notify_watchers|job|application|background task notify_watchers|framework-convention
+route:GET /deals/{deal_id}|api-endpoint|application|GET /deals/{deal_id}|framework-convention
+route:GET /deals|api-endpoint|application|GET /deals|framework-convention
+route:GET /health|api-endpoint|application|GET /health|framework-convention
+route:POST /deals/{deal_id}/publish|api-endpoint|application|POST /deals/{deal_id}/publish|framework-convention
+route:POST /deals|api-endpoint|application|POST /deals|framework-convention
+schema:symbol:app/models.py#Deal|schema|data|Deal|framework-convention
+symbol:app/clients.py#load_absolute|function|application|load_absolute|static-analysis
+symbol:app/clients.py#load_registry_deals|function|application|load_registry_deals|static-analysis
+symbol:app/clients.py#registry|symbol|repository|registry|static-analysis
+symbol:app/main.py#app|symbol|repository|app|static-analysis
+symbol:app/main.py#notify_watchers|function|application|notify_watchers|static-analysis
+symbol:app/main.py#publish_deal|function|application|publish_deal|static-analysis
+symbol:app/models.py#Deal|class|application|Deal|static-analysis
+symbol:app/routers/deals.py#create_deal|function|application|create_deal|static-analysis
+symbol:app/routers/deals.py#get_deal|function|application|get_deal|static-analysis
+symbol:app/routers/deals.py#list_deals|function|application|list_deals|static-analysis
+symbol:app/routers/deals.py#router|symbol|repository|router|static-analysis
+symbol:app/routers/health.py#health|function|application|health|static-analysis
+symbol:app/routers/health.py#router|symbol|repository|router|static-analysis
+symbol:tests/test_deals.py#client|symbol|repository|client|static-analysis
+symbol:tests/test_deals.py#test_list_deals|function|application|test_list_deals|static-analysis
+
+edges:
+CALLS|symbol:app/main.py#publish_deal->symbol:app/models.py#Deal|static-analysis
+CALLS|symbol:app/routers/deals.py#get_deal->symbol:app/models.py#Deal|static-analysis
+CALLS|symbol:app/routers/deals.py#list_deals->symbol:app/models.py#Deal|static-analysis
+CONTAINS|fastapi:app:app/main.py#app->fastapi:router:app/routers/deals.py#router|framework-convention
+CONTAINS|fastapi:app:app/main.py#app->fastapi:router:app/routers/health.py#router|framework-convention
+CONTAINS|file:app/clients.py->symbol:app/clients.py#load_absolute|static-analysis
+CONTAINS|file:app/clients.py->symbol:app/clients.py#load_registry_deals|static-analysis
+CONTAINS|file:app/clients.py->symbol:app/clients.py#registry|static-analysis
+CONTAINS|file:app/main.py->symbol:app/main.py#app|static-analysis
+CONTAINS|file:app/main.py->symbol:app/main.py#notify_watchers|static-analysis
+CONTAINS|file:app/main.py->symbol:app/main.py#publish_deal|static-analysis
+CONTAINS|file:app/models.py->symbol:app/models.py#Deal|static-analysis
+CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#create_deal|static-analysis
+CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#get_deal|static-analysis
+CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#list_deals|static-analysis
+CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#router|static-analysis
+CONTAINS|file:app/routers/health.py->symbol:app/routers/health.py#health|static-analysis
+CONTAINS|file:app/routers/health.py->symbol:app/routers/health.py#router|static-analysis
+CONTAINS|file:tests/test_deals.py->symbol:tests/test_deals.py#client|static-analysis
+CONTAINS|file:tests/test_deals.py->symbol:tests/test_deals.py#test_list_deals|static-analysis
+CONTAINS|symbol:app/models.py#Deal->schema:symbol:app/models.py#Deal|framework-convention
+EXPOSES|fastapi:app:app/main.py#app->route:POST /deals/{deal_id}/publish|framework-convention
+EXPOSES|fastapi:router:app/routers/deals.py#router->route:GET /deals/{deal_id}|framework-convention
+EXPOSES|fastapi:router:app/routers/deals.py#router->route:GET /deals|framework-convention
+EXPOSES|fastapi:router:app/routers/deals.py#router->route:POST /deals|framework-convention
+EXPOSES|fastapi:router:app/routers/health.py#router->route:GET /health|framework-convention
+EXPOSES|symbol:app/main.py#publish_deal->route:POST /deals/{deal_id}/publish|framework-convention
+EXPOSES|symbol:app/routers/deals.py#create_deal->route:POST /deals|framework-convention
+EXPOSES|symbol:app/routers/deals.py#get_deal->route:GET /deals/{deal_id}|framework-convention
+EXPOSES|symbol:app/routers/deals.py#list_deals->route:GET /deals|framework-convention
+EXPOSES|symbol:app/routers/health.py#health->route:GET /health|framework-convention
+IMPORTS|file:app/main.py->file:app/models.py|static-analysis
+IMPORTS|file:app/main.py->file:app/routers/deals.py|static-analysis
+IMPORTS|file:app/main.py->file:app/routers/health.py|static-analysis
+IMPORTS|file:app/routers/deals.py->file:app/models.py|static-analysis
+IMPORTS|file:tests/test_deals.py->file:app/main.py|static-analysis
+TESTS|file:tests/test_deals.py->file:app/main.py|framework-convention
+TRIGGERS|job:symbol:app/main.py#notify_watchers->symbol:app/main.py#notify_watchers|framework-convention
+TRIGGERS|symbol:app/main.py#publish_deal->job:symbol:app/main.py#notify_watchers|framework-convention
+USES|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention

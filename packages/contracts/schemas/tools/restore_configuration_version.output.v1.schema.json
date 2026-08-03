@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_restore_configuration_version_OutputV1",
+  "definitions": {
+    "Tool_restore_configuration_version_OutputV1": {
+      "type": "object",
+      "properties": {
+        "rollbackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "restoredFile": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["rollbackId", "restoredFile"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

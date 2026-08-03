@@ -1,0 +1,30 @@
+{
+  "$ref": "#/definitions/Tool_select_architectural_option_InputV1",
+  "definitions": {
+    "Tool_select_architectural_option_InputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "optionId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmedByUser": {
+          "type": "boolean",
+          "const": true
+        },
+        "modifiedDescription": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": ["analysisId", "optionId", "confirmedByUser"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
