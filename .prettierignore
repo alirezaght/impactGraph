@@ -6,3 +6,9 @@ coverage
 .vscode-test
 scripts/quality/effective-loc/fixtures
 CHANGELOG.md
+
+# Engine output, not source: analysis artifacts and the SQLite index are written by ImpactGraph
+# itself, so running an analysis in this workspace must not fail the formatting gate. The
+# committed configuration in .impactgraph/*.yml stays formatted.
+.impactgraph/artifacts
+.impactgraph/cache

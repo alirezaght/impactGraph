@@ -1,4 +1,6 @@
 nodes:
+dependency:@nestjs/common|third-party-service|integration|@nestjs/common|configuration
+dependency:@nestjs/core|third-party-service|integration|@nestjs/core|configuration
 directory:src|directory|repository|src|static-analysis
 file:package.json|file|repository|package.json|static-analysis
 file:src/app.module.ts|file|repository|app.module.ts|static-analysis
@@ -41,6 +43,8 @@ CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.
 CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.findAll|static-analysis
 CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.onDealUpdated|static-analysis
 CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|static-analysis
+DEPENDS_ON|package:nestjs-app->dependency:@nestjs/common|configuration
+DEPENDS_ON|package:nestjs-app->dependency:@nestjs/core|configuration
 DEPENDS_ON|symbol:src/app.module.ts#AppModule->symbol:src/deals/deals.module.ts#DealsModule|framework-convention
 EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.create->route:POST /deals|framework-convention
 EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.findAll->route:GET /deals|framework-convention

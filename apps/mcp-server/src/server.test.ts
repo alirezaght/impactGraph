@@ -42,7 +42,7 @@ describe('MCP stdio server (Story 12.1, PRD §21)', () => {
       name: string;
       inputSchema: unknown;
     }[];
-    expect(tools).toHaveLength(39);
+    expect(tools).toHaveLength(40);
     expect(tools.every((tool) => tool.name.startsWith('impactgraph.'))).toBe(true);
     expect(tools.every((tool) => tool.inputSchema !== undefined)).toBe(true);
   });

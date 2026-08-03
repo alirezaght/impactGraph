@@ -32,12 +32,20 @@ export interface ManifestEntryPoint {
   readonly path: string;
 }
 
+/** One dependency declared in a package manifest (§15.1) — the name as a spec would write it. */
+export interface ManifestDependency {
+  readonly name: string;
+  readonly versionRange: string;
+  readonly configKey: string;
+}
+
 export interface PackageInfo {
   readonly name: string;
   readonly relativeDir: string;
   readonly manifestPath: string;
   readonly workspaces: readonly string[];
   readonly entryPoints: readonly ManifestEntryPoint[];
+  readonly dependencies: readonly ManifestDependency[];
 }
 
 export interface ScanResult {
@@ -85,6 +93,36 @@ const readEntryPoints = (manifest: Record<string, unknown>): ManifestEntryPoint[
   return entries;
 };
 
+const DEPENDENCY_KEYS = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+] as const;
+
+/**
+ * Declared dependencies, first declaration winning. A native binding, a bundler, or a packaging
+ * tool is named in a specification the way the manifest names it — so the manifest is where that
+ * name has to become addressable.
+ */
+const readDependencies = (manifest: Record<string, unknown>): ManifestDependency[] => {
+  const dependencies: ManifestDependency[] = [];
+  const seen = new Set<string>();
+  for (const configKey of DEPENDENCY_KEYS) {
+    const block = manifest[configKey];
+    if (block === null || typeof block !== 'object') {
+      continue;
+    }
+    for (const [name, versionRange] of Object.entries(block)) {
+      if (name !== '' && typeof versionRange === 'string' && !seen.has(name)) {
+        seen.add(name);
+        dependencies.push({ name, versionRange, configKey: `${configKey}.${name}` });
+      }
+    }
+  }
+  return dependencies;
+};
+
 const readPackageManifest = (state: ScanState, absolute: string, relative: string): void => {
   try {
     const manifest = JSON.parse(readFileSync(absolute, 'utf8')) as Record<string, unknown> & {
@@ -101,6 +139,7 @@ const readPackageManifest = (state: ScanState, absolute: string, relative: strin
       manifestPath: relative,
       workspaces,
       entryPoints: readEntryPoints(manifest),
+      dependencies: readDependencies(manifest),
     });
   } catch {
     state.warnings.push({ path: relative, reason: 'unreadable' });

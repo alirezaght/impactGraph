@@ -45,6 +45,7 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
         'apply_component_correction',
         'remove_stale_configuration',
         'test_detection_rule',
+        'export_graph_html',
       ].sort(),
     );
   });

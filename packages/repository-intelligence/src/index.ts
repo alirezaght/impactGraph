@@ -16,6 +16,7 @@ export type { AssembledGraph } from './assembly/assemble.js';
 export { assembleGraph } from './assembly/assemble.js';
 export { buildPackageFacts } from './assembly/package-facts.js';
 export { buildDiscoveryFacts } from './assembly/discovery-facts.js';
+export { buildDependencyFacts } from './assembly/dependency-facts.js';
 export { enrichWithFrameworks } from './assembly/framework-enrichment.js';
 export type {
   IndexRepositoryRequest,

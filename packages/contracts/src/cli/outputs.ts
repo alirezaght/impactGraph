@@ -117,6 +117,12 @@ export const readinessSchema = z
     blockingQuestions: z.number().int().min(0),
     importantQuestions: z.number().int().min(0),
     minorQuestions: z.number().int().min(0),
+    /**
+     * Requirements the impact analysis tied to no component. Additive and optional: a producer
+     * with no analysis in hand (e.g. get_specification) omits it rather than reporting zero,
+     * which would assert full coverage it never measured.
+     */
+    unmatchedRequirements: z.number().int().min(0).optional(),
     recommendedAction: z.string().min(1),
   })
   .strict();

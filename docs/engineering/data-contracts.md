@@ -106,9 +106,30 @@ and committed under `schemas/cli/`: `init`, `index`, `status`, `architecture`, `
 enum, coverage the §25 status/marker enums; the additive `reviewId` and per-finding
 `acceptedDeviation` fields carry the §24.1 acceptance mark), `select-option` (§26/§C8 option
 selection, with the optional `answeredQuestionId` naming the question the selection resolved),
-`review-accept` (§24.1 accepted deviation), and `error`. The `analyze` document's optional
+`review-accept` (§24.1 accepted deviation), `graph` (`cli/graph-export.ts` — the §18.6 architecture
+read model behind the self-contained HTML export; see below), and `error`. The `analyze` document's optional
 `architecturalOptions` entries carry an optional `linkedQuestionId` — the §C8 link that lets a
 selection resolve its question instead of only recording a decision.
+
+### The graph-export document (§18.6, `cli/graph-export.ts`)
+
+`cliGraphOutputSchema` is the data form of what `impactgraph graph` draws, shared with the
+`export_graph_html` MCP tool so the picture and the data can never disagree about what was shown.
+Three things about its shape are deliberate:
+
+- **`knowledgeCategory` is `KNOWLEDGE_CATEGORIES` plus an explicit `'unknown'`.** An unrecognized
+  provenance must be rendered as unknown, never quietly defaulted to `deterministic` (§43.6). The
+  extra member lives here rather than in `knowledgeCategorySchema` because it is a _rendering_
+  outcome, not a §12.3 category.
+- **Aggregated edges never cross a knowledge category.** `edges[]` is keyed by
+  `(source, target, knowledgeCategory)` with `kinds[]` holding the per-type counts, so a
+  deterministic import and an AI-inferred one between the same two groups are two entries. Rolling
+  them into one would merge the categories, which §3 forbids anywhere — including in a roll-up.
+- **`budget` and `edgeTotals` make truncation auditable.** They report what was drawn _and_ what
+  exists (`shownNodes`/`architectureNodes`/`graphNodes`, `aggregated`/`interGroup`/`intraGroup`/
+  `containment`), so a consumer can never mistake a capped view for a complete one. The document
+  carries names, types, **repository-relative** paths, provenance and counts — never source text,
+  evidence excerpts or line ranges.
 
 ### Proposed structure on the analyze document (§18.4)
 

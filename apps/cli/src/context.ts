@@ -1,4 +1,4 @@
-import type { ExitCodeName } from '@impactgraph/contracts';
+import type { ExitCodeName, GraphGroupingDto } from '@impactgraph/contracts';
 
 export type OutputFormat = 'text' | 'json' | 'markdown';
 
@@ -7,6 +7,10 @@ export interface CommandContext {
   readonly format: OutputFormat;
   /** Positional arguments after the command (e.g. the spec file for `analyze`). */
   readonly args: readonly string[];
+  /** `--out` — destination for a command that writes a file (`graph`). Resolved against root. */
+  readonly outPath?: string | undefined;
+  /** `--group` — §18.4 grouping key for the graph export. */
+  readonly grouping?: GraphGroupingDto | undefined;
   /** Output sink — stdout in production, captured in tests. Never console.* (lint). */
   readonly write: (line: string) => void;
 }

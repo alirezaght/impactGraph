@@ -95,6 +95,49 @@ const proposedBlock = (
   };
 };
 
+type ImpactLookups = Pick<
+  AnalyzeOutputInput,
+  'graph' | 'evidenceFileById' | 'contextByNodeId' | 'applicationByNodeId'
+>;
+
+const impactBlock = (
+  impact: ImpactAnalysis['requirementImpacts'][number],
+  { graph, evidenceFileById, contextByNodeId, applicationByNodeId }: ImpactLookups,
+): CliAnalyzeOutput['requirements'][number]['impacts'][number] => ({
+  nodeId: impact.nodeId,
+  name: graph.nodes.get(impact.nodeId as NodeId)?.name ?? impact.nodeId,
+  likelihood: impact.likelihood,
+  impactType: impact.impactType,
+  directness: impact.directness,
+  confidence: impact.confidence,
+  dependencyPath: [...impact.dependencyPath],
+  evidenceFiles: [
+    ...new Set(
+      impact.evidenceIds
+        .map((id) => evidenceFileById.get(id))
+        .filter((file): file is string => file !== undefined),
+    ),
+  ],
+  provenance: impact.provenance,
+  ...(contextByNodeId?.get(impact.nodeId) === undefined
+    ? {}
+    : { context: contextByNodeId.get(impact.nodeId) }),
+  ...(applicationByNodeId?.get(impact.nodeId) === undefined
+    ? {}
+    : { application: applicationByNodeId.get(impact.nodeId) }),
+});
+
+/** §C10: a requirement no impact points at is not covered by the analysis. */
+const unmatchedRequirementIds = (
+  specification: Specification,
+  analysis: ImpactAnalysis,
+): string[] => {
+  const covered = new Set(analysis.requirementImpacts.map((impact) => impact.requirementId));
+  return specification.requirements
+    .filter((requirement) => !covered.has(requirement.id))
+    .map((requirement) => requirement.id);
+};
+
 export const buildAnalyzeOutput = ({
   specification,
   analysis,
@@ -111,7 +154,9 @@ export const buildAnalyzeOutput = ({
     version: specification.version,
     title: specification.title,
     extractionMode,
-    readiness: computeReadiness(specification),
+    readiness: computeReadiness(specification, {
+      unmatchedRequirementIds: unmatchedRequirementIds(specification, analysis),
+    }),
   },
   analysis: {
     id: analysis.id,
@@ -124,29 +169,14 @@ export const buildAnalyzeOutput = ({
     statement: requirement.statement,
     impacts: analysis.requirementImpacts
       .filter((impact) => impact.requirementId === requirement.id)
-      .map((impact) => ({
-        nodeId: impact.nodeId,
-        name: graph.nodes.get(impact.nodeId as NodeId)?.name ?? impact.nodeId,
-        likelihood: impact.likelihood,
-        impactType: impact.impactType,
-        directness: impact.directness,
-        confidence: impact.confidence,
-        dependencyPath: [...impact.dependencyPath],
-        evidenceFiles: [
-          ...new Set(
-            impact.evidenceIds
-              .map((id) => evidenceFileById.get(id))
-              .filter((file): file is string => file !== undefined),
-          ),
-        ],
-        provenance: impact.provenance,
-        ...(contextByNodeId?.get(impact.nodeId) === undefined
-          ? {}
-          : { context: contextByNodeId.get(impact.nodeId) }),
-        ...(applicationByNodeId?.get(impact.nodeId) === undefined
-          ? {}
-          : { application: applicationByNodeId.get(impact.nodeId) }),
-      })),
+      .map((impact) =>
+        impactBlock(impact, {
+          graph,
+          evidenceFileById,
+          contextByNodeId,
+          applicationByNodeId,
+        }),
+      ),
     openQuestions: specification.openQuestions
       .filter((question) => question.affectedRequirementIds.includes(requirement.id))
       .map((question) => ({ question: question.question, severity: question.severity })),

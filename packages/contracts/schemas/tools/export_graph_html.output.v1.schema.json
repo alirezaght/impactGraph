@@ -1,0 +1,73 @@
+{
+  "$ref": "#/definitions/Tool_export_graph_html_OutputV1",
+  "definitions": {
+    "Tool_export_graph_html_OutputV1": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "byteSize": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grouping": {
+          "type": "string",
+          "enum": ["context", "application", "package"]
+        },
+        "groups": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "groupsTotal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodesShown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "architectureNodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodesTotal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "relationships": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxVisibleNodes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "byteSize",
+        "snapshotId",
+        "grouping",
+        "groups",
+        "groupsTotal",
+        "nodesShown",
+        "architectureNodes",
+        "nodesTotal",
+        "relationships",
+        "maxVisibleNodes",
+        "truncated"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

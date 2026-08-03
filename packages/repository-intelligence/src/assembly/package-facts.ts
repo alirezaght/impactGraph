@@ -3,7 +3,9 @@ import { deterministicEnvelope, FragmentBuilder } from '@impactgraph/language-ad
 import type { PackageInfo, ScannedFile } from '../scanner/scanner.js';
 import type { GraphFragment, IndexingContext } from '@impactgraph/language-adapters';
 
-export const packageNodeId = (info: PackageInfo): string => `package:${info.name}`;
+export const packageNodeIdOf = (name: string): string => `package:${name}`;
+
+export const packageNodeId = (info: PackageInfo): string => packageNodeIdOf(info.name);
 
 interface PackageFactsState {
   readonly builder: FragmentBuilder;

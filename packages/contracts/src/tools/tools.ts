@@ -15,6 +15,7 @@ import { CONFIG_INSPECTION_TOOL_CONTRACTS } from './config-inspection-tools.js';
 import { CONFIG_MAINTENANCE_TOOL_CONTRACTS } from './config-maintenance-tools.js';
 import { CONFIG_TOOL_CONTRACTS } from './config-tools.js';
 import { DECISION_TOOL_CONTRACTS } from './decision-tools.js';
+import { GRAPH_EXPORT_TOOL_CONTRACTS } from './graph-export-tools.js';
 import { STRUCTURE_TOOL_CONTRACTS } from './structure-tools.js';
 
 // PRD §21 — the MCP tool boundary. One Zod source of truth per tool, validated on BOTH ends
@@ -248,6 +249,7 @@ export const MCP_TOOL_CONTRACTS = {
   ...CONFIG_MAINTENANCE_TOOL_CONTRACTS,
   ...STRUCTURE_TOOL_CONTRACTS,
   ...DECISION_TOOL_CONTRACTS,
+  ...GRAPH_EXPORT_TOOL_CONTRACTS,
   find_components: {
     description: 'Find graph nodes by name or path substring in the current graph.',
     input: z

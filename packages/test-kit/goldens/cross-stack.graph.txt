@@ -1,4 +1,8 @@
 nodes:
+dependency:@google-cloud/pubsub|third-party-service|integration|@google-cloud/pubsub|configuration
+dependency:@nestjs/common|third-party-service|integration|@nestjs/common|configuration
+dependency:@nestjs/event-emitter|third-party-service|integration|@nestjs/event-emitter|configuration
+dependency:astro|third-party-service|integration|astro|configuration
 directory:web/src|directory|repository|src|static-analysis
 directory:worker/src|directory|repository|src|static-analysis
 env:DEAL_EVENTS_TOPIC|environment-variable|infrastructure|DEAL_EVENTS_TOPIC|static-analysis
@@ -119,6 +123,10 @@ CONTAINS|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#Dea
 CONTAINS|symbol:worker/src/deal-events.service.ts#DealEventsService->symbol:worker/src/deal-events.service.ts#DealEventsService.onDealEvent|static-analysis
 CONTAINS|workspace:cross-stack->package:deals-web|configuration
 CONTAINS|workspace:cross-stack->package:deals-worker|configuration
+DEPENDS_ON|package:deals-web->dependency:astro|configuration
+DEPENDS_ON|package:deals-worker->dependency:@google-cloud/pubsub|configuration
+DEPENDS_ON|package:deals-worker->dependency:@nestjs/common|configuration
+DEPENDS_ON|package:deals-worker->dependency:@nestjs/event-emitter|configuration
 DEPENDS_ON|terraform:infra/google_cloud_run_v2_job.worker->terraform:infra/google_pubsub_topic.deal_events|configuration
 DEPLOYED_AS|package:deals-web->terraform:infra/google_cloud_run_v2_service.web|framework-convention
 DEPLOYED_AS|package:deals-worker->terraform:infra/google_cloud_run_v2_job.worker|framework-convention

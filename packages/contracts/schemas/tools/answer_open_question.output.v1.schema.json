@@ -36,6 +36,10 @@
               "type": "integer",
               "minimum": 0
             },
+            "unmatchedRequirements": {
+              "type": "integer",
+              "minimum": 0
+            },
             "recommendedAction": {
               "type": "string",
               "minLength": 1

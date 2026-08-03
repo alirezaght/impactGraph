@@ -122,6 +122,14 @@ export {
   cliAcceptDeviationOutputSchema,
 } from './cli/decision-outputs.js';
 export type { CliSelectOptionOutput, CliAcceptDeviationOutput } from './cli/decision-outputs.js';
+export {
+  GRAPH_GROUPING_KEYS,
+  cliGraphOutputSchema,
+  graphGroupingSchema,
+  graphRenderCategorySchema,
+  graphViewSchema,
+} from './cli/graph-export.js';
+export type { CliGraphOutput, GraphGroupingDto, GraphViewDto } from './cli/graph-export.js';
 
 export { workspaceConfigSchema, DEFAULT_WORKSPACE_CONFIG } from './config/workspace-config.js';
 export type { WorkspaceConfigDto } from './config/workspace-config.js';

@@ -80,7 +80,7 @@ export const renderAnalyze = (context: CommandContext, output: CliAnalyzeOutput)
     ...(readiness === undefined
       ? []
       : [
-          `Readiness: ${String(readiness.score)}% (blocking: ${String(readiness.blockingQuestions)}, important: ${String(readiness.importantQuestions)}, minor: ${String(readiness.minorQuestions)}) — ${readiness.recommendedAction}`,
+          `Readiness: ${String(readiness.score)}% (blocking: ${String(readiness.blockingQuestions)}, important: ${String(readiness.importantQuestions)}, minor: ${String(readiness.minorQuestions)}${readiness.unmatchedRequirements === undefined ? '' : `, unmatched: ${String(readiness.unmatchedRequirements)}`}) — ${readiness.recommendedAction}`,
         ]),
     '',
   ];

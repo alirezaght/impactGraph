@@ -16,6 +16,7 @@ import {
   expectRuleDryRun,
   expectStructureAndConfigReads,
 } from './registry-flows.js';
+import { expectGraphHtmlExport } from './registry-graph-flow.js';
 import { callTool } from './registry.js';
 
 import type { McpToolName } from '@impactgraph/contracts';
@@ -252,6 +253,10 @@ describe('MCP tool workflow (§21.1) on a fixture repository', () => {
 
   it('set-component-owner surfaces ownership with its §Z5 level and refuses an empty glob', async () => {
     await expectOwnershipOverlay(tool, toolError);
+  });
+
+  it('export_graph_html writes one self-contained, source-free local HTML file (§18.6)', async () => {
+    await expectGraphHtmlExport(tool, toolError);
   });
 
   it('unknown nodes and invalid inputs produce typed errors, never crashes', async () => {

@@ -89,6 +89,36 @@ export type { AnalyzeOutputInput } from './reports/analyze-output.js';
 export { buildReviewOutput, applyAcceptedDeviations } from './reports/review-output.js';
 export { buildReviewMarkdown, reviewSummaryLine } from './reports/review-markdown.js';
 export { buildExportOutput } from './reports/export-output.js';
+export {
+  ARCHITECTURE_NODE_TYPES,
+  GRAPH_GROUPINGS,
+  MAX_VISIBLE_EDGES,
+  MAX_VISIBLE_NODES,
+  RENDER_CATEGORIES,
+  UNGROUPED_LABEL,
+  isGraphGrouping,
+} from './reports/graph-view-model.js';
+export type {
+  GraphGrouping,
+  GraphView,
+  GraphViewEdge,
+  GraphViewGroup,
+  GraphViewNode,
+  RenderCategory,
+} from './reports/graph-view-model.js';
+export { buildGraphView } from './reports/graph-view.js';
+export type { GraphViewInput } from './reports/graph-view.js';
+export { loadGraphView } from './reports/graph-view-source.js';
+export { renderGraphHtml } from './reports/graph-html.js';
+export {
+  DEFAULT_GRAPH_FILENAME,
+  exportGraphHtmlFile,
+  resolveGraphOutPath,
+} from './reports/graph-file.js';
+export type { GraphExportRequest, GraphExportResult } from './reports/graph-file.js';
+export { buildGraphOutput } from './reports/graph-output.js';
+export { CATEGORY_STYLES, styleFor } from './reports/graph-style.js';
+export type { CategoryStyle } from './reports/graph-style.js';
 export { answerQuestion, listClarifications } from './clarifications.js';
 export type { AnswerQuestionRequest, AnswerQuestionOutcome } from './clarifications.js';
 export {

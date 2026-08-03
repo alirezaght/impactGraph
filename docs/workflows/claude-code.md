@@ -19,6 +19,7 @@ From the repository root:
 # one-time setup
 impactgraph init                 # scaffolds .impactgraph/ (config, architecture, aliases, rules)
 impactgraph index                # deterministic knowledge graph, fully local
+impactgraph graph                # optional: see the architecture — writes impactgraph-graph.html
 
 # 1. analyze the specification
 impactgraph analyze feature.md --format json
@@ -44,6 +45,27 @@ impacts with file paths and confidence, expected tests/migrations/infrastructure
 architecture constraints from `.impactgraph/rules.yml`, open warnings, and the exact repository
 snapshot the plan was approved against. `--format json` produces the same content as the
 schema-stable §22 document (`schemas/export/implementation-context.v1.schema.json`).
+
+## Look at the architecture without VS Code
+
+```bash
+impactgraph graph                          # → ./impactgraph-graph.html
+impactgraph graph --group package          # or context (default) / application
+impactgraph graph --format json            # the same view as contract-validated data
+```
+
+One self-contained local HTML file: inline SVG, **no JavaScript and no network requests at all**,
+so it opens on an air-gapped machine and stays readable forever. It shows the architecture level a
+human can read — contexts or packages with aggregated `IMPORTS ×12`-style arrows between them, not
+every symbol — capped at the same 200-node budget the extension's graph uses (§33), with the
+truncation stated on the page. Deterministic facts, AI-inferred interpretations and human-confirmed
+knowledge stay distinguishable by **shape, border stroke, arrowhead and text badge**, never by
+colour (§3/§37), and everything in the diagram is repeated in HTML tables so the picture is never
+the only access path.
+
+It carries names, types, repository-relative paths, provenance and counts — **no source code, no
+evidence text, no absolute paths** — so it is safe to attach to a ticket. Agents can produce the
+same file over MCP with `export_graph_html`, which returns the path and the real counts.
 
 ## Review the implementation
 

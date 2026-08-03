@@ -40,6 +40,7 @@ import {
 
 import { CONFIG_MAINTENANCE_HANDLERS } from './registry-config.js';
 import { DECISION_HANDLERS } from './registry-decisions.js';
+import { GRAPH_HANDLERS } from './registry-graph.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';
 
@@ -395,6 +396,7 @@ const HANDLERS: ToolHandlerMap = {
   ...DECISION_HANDLERS,
   ...STRUCTURE_HANDLERS,
   ...CONFIG_MAINTENANCE_HANDLERS,
+  ...GRAPH_HANDLERS,
 };
 
 const reviewDocument = async (

@@ -65,6 +65,12 @@ than missing budgets silently (PRD §33 progressive disclosure, §43.1 graph exp
 - Context-level default view; symbols expanded on demand only.
 - Node limits + filters keep the graph under B5; the impact **tree** is the primary interface and
   must stay usable when the graph is capped (PRD §37: the graph is never the only access path).
+- The static HTML export (`impactgraph graph`) enforces the **same** B5 constant the webview does —
+  `MAX_VISIBLE_NODES = 200`, re-exported from `workspace-engine/reports/graph-view-model.ts` — so a
+  file a user can zoom freely never draws more than the interactive view would. It defaults to the
+  architecture level (contexts/packages with aggregated `TYPE ×N` arrows between them, file- and
+  symbol-level nodes rolled into per-group counts) and states its truncation in words with both
+  numbers; the per-group node counts and the HTML tables mean nothing is silently dropped.
 - Indexing reports progress and remains cancellable within B7; partial indexes are persisted
   safely; a failed index never destroys the previous valid one (PRD §34).
 - Analysis continues with partial language support, reporting unsupported files clearly (PRD §34).

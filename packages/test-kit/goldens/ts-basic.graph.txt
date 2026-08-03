@@ -1,6 +1,7 @@
 nodes:
 datamodel:prisma/schema.prisma#Deal|table|data|Deal|configuration
 datamodel:prisma/schema.prisma#User|table|data|User|configuration
+dependency:prisma|third-party-service|integration|prisma|configuration
 directory:src|directory|repository|src|static-analysis
 docker:Dockerfile|docker-image|infrastructure|Dockerfile|framework-convention
 env:DATABASE_URL|environment-variable|infrastructure|DATABASE_URL|static-analysis
@@ -83,6 +84,7 @@ CONTAINS|package:ts-basic->file:src/services/deal-service.ts|configuration
 CONTAINS|package:ts-basic->file:tsconfig.json|configuration
 CONTAINS|symbol:src/lib/deal-repository.ts#DealRepository->symbol:src/lib/deal-repository.ts#DealRepository.findAll|static-analysis
 CONTAINS|symbol:src/services/deal-service.ts#DealService->symbol:src/services/deal-service.ts#DealService.search|static-analysis
+DEPENDS_ON|package:ts-basic->dependency:prisma|configuration
 EXTENDS|symbol:src/services/deal-service.ts#DealService->symbol:src/lib/base-service.ts#BaseService|static-analysis
 IMPLEMENTS|symbol:src/services/deal-service.ts#DealService->symbol:src/lib/base-service.ts#Searchable|static-analysis
 IMPORTS|file:src/alias-user.ts->file:src/lib/deal-repository.ts|static-analysis

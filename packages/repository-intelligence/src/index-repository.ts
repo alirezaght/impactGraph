@@ -10,6 +10,7 @@ import {
 } from '@impactgraph/language-adapters';
 
 import { assembleGraph } from './assembly/assemble.js';
+import { buildDependencyFacts } from './assembly/dependency-facts.js';
 import { buildDiscoveryFacts } from './assembly/discovery-facts.js';
 import { enrichWithFrameworks } from './assembly/framework-enrichment.js';
 import { createModuleResolver } from './assembly/module-resolvers.js';
@@ -227,6 +228,7 @@ export const indexRepository = async (
     ...parsed.value,
     buildPackageFacts(scan.packages, scan.files, context),
     buildDiscoveryFacts(scan.packages, scan.files, context),
+    buildDependencyFacts(scan.packages, context),
   ];
 
   request.onProgress?.({

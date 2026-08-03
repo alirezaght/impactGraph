@@ -1,10 +1,11 @@
-import { cliErrorOutputSchema, EXIT_CODES } from '@impactgraph/contracts';
+import { cliErrorOutputSchema, EXIT_CODES, GRAPH_GROUPING_KEYS } from '@impactgraph/contracts';
 
 import { runAnalyze } from './commands/analyze.js';
 import { runApprove } from './commands/approve.js';
 import { runArchitecture } from './commands/architecture.js';
 import { runConfig } from './commands/config.js';
 import { runExport } from './commands/export.js';
+import { runGraph } from './commands/graph.js';
 import { runIndex } from './commands/index-command.js';
 import { runInit } from './commands/init.js';
 import { runReview } from './commands/review.js';
@@ -14,7 +15,7 @@ import { failed } from './context.js';
 import { writeJson } from './output.js';
 
 import type { CliFailure, CommandContext, CommandResult, OutputFormat } from './context.js';
-import type { ExitCode } from '@impactgraph/contracts';
+import type { ExitCode, GraphGroupingDto } from '@impactgraph/contracts';
 
 const USAGE = [
   'Usage: impactgraph <command> [--format text|json|markdown] [--root <dir>]',
@@ -24,6 +25,8 @@ const USAGE = [
   '  index           index the repository into the local knowledge graph',
   '  status          show the current index generation',
   '  architecture    summarize detected packages and graph composition',
+  '  graph           write a self-contained architecture diagram to a local HTML file',
+  '                  [--out <file.html>] [--group context|application|package]',
   '  analyze <spec>  analyze a specification against the indexed graph (§46)',
   '  approve <id>    approve an impact analysis as the frozen review baseline',
   '  select-option <analysisId> <optionId> [description]  record a §26/§C8 option selection',
@@ -38,6 +41,8 @@ interface ParsedArgs {
   readonly positionals: readonly string[];
   readonly format: OutputFormat;
   readonly rootDir: string;
+  readonly outPath?: string | undefined;
+  readonly grouping?: GraphGroupingDto | undefined;
   readonly invalid?: string;
 }
 
@@ -46,6 +51,8 @@ interface ParseState {
   positionals: string[];
   format: OutputFormat;
   rootDir: string;
+  outPath?: string | undefined;
+  grouping?: GraphGroupingDto | undefined;
 }
 
 /** Each flag parser consumes the following value and returns an error message or undefined. */
@@ -65,6 +72,20 @@ const FLAG_PARSERS: Record<
       return '--root expects a directory';
     }
     state.rootDir = value;
+    return undefined;
+  },
+  '--out': (value, state) => {
+    if (value === undefined || value.length === 0) {
+      return '--out expects a file path';
+    }
+    state.outPath = value;
+    return undefined;
+  },
+  '--group': (value, state) => {
+    if (value === undefined || !(GRAPH_GROUPING_KEYS as readonly string[]).includes(value)) {
+      return `--group expects ${GRAPH_GROUPING_KEYS.join(', ')}`;
+    }
+    state.grouping = value as GraphGroupingDto;
     return undefined;
   },
 };
@@ -110,6 +131,7 @@ const COMMANDS: Record<
   index: runIndex,
   status: runStatus,
   architecture: runArchitecture,
+  graph: runGraph,
   analyze: runAnalyze,
   approve: runApprove,
   'select-option': runSelectOption,
@@ -145,6 +167,8 @@ export const runCli = async (
     rootDir: parsed.rootDir,
     format: parsed.format,
     args: parsed.positionals,
+    outPath: parsed.outPath,
+    grouping: parsed.grouping,
     write: options.write,
   };
   if (parsed.invalid !== undefined || parsed.command === undefined) {

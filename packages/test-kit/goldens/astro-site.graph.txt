@@ -1,5 +1,6 @@
 nodes:
 collection:deals|collection|data|deals|framework-convention
+dependency:astro|third-party-service|integration|astro|configuration
 directory:src|directory|repository|src|static-analysis
 file:astro.config.mjs|file|repository|astro.config.mjs|static-analysis
 file:package.json|file|repository|package.json|static-analysis
@@ -39,6 +40,7 @@ CONTAINS|package:astro-site->file:src/layouts/Base.astro|configuration
 CONTAINS|package:astro-site->file:src/pages/api/deals.ts|configuration
 CONTAINS|package:astro-site->file:src/pages/index.astro|configuration
 CONTAINS|package:astro-site->file:src/scripts/deal-filter.ts|configuration
+DEPENDS_ON|package:astro-site->dependency:astro|configuration
 EXPOSES|symbol:src/pages/api/deals.ts#GET->route:GET /api/deals|framework-convention
 EXPOSES|symbol:src/pages/api/deals.ts#POST->route:POST /api/deals|framework-convention
 EXPOSES|symbol:src/pages/index.astro#index->page:/|framework-convention

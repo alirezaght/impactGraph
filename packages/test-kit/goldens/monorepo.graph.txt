@@ -41,6 +41,8 @@ CONTAINS|package:monorepo-fixture->file:pnpm-workspace.yaml|configuration
 CONTAINS|workspace:monorepo-fixture->package:@fixture/api|configuration
 CONTAINS|workspace:monorepo-fixture->package:@fixture/core|configuration
 CONTAINS|workspace:monorepo-fixture->package:@fixture/worker|configuration
+DEPENDS_ON|package:@fixture/api->package:@fixture/core|configuration
+DEPENDS_ON|package:@fixture/worker->package:@fixture/api|configuration
 EXPOSES|package:@fixture/api->file:packages/api/src/index.ts|configuration
 EXPOSES|package:@fixture/core->file:packages/core/src/index.ts|configuration
 EXPOSES|package:@fixture/worker->file:apps/worker/src/main.ts|configuration

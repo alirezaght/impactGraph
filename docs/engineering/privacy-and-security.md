@@ -74,6 +74,23 @@ in every mode. There is no hosted backend and no remote database.
   appropriate confirmation (PRD §35); read-only tools are clearly separated in
   `packages/contracts/tools`.
 - **CLI**: same validated contracts (`packages/contracts/cli`); no interactive secrets on argv.
+- **Exported HTML graph** (`impactgraph graph`, MCP `export_graph_html`,
+  `packages/workspace-engine/src/reports/graph-html.ts`): the export is a **document a user will
+  forward** — attached to a ticket, mailed, dropped in a chat — so it is hardened as an artifact
+  rather than as a page we control:
+  - **No network, no JavaScript.** No `<script>` (not even inline), no `<link>`, no `@import`, no
+    `@font-face`, no image or font URL, no `fetch`. The diagram is inline SVG, which browsers zoom
+    and pan natively; every `url(...)` in the file is a same-document `#fragment` pointing at an
+    inline SVG marker. A file that phoned home would break the local-first premise **silently**,
+    which is why this is asserted by test and not by review.
+  - **No source content.** Node names, types, repository-relative paths, provenance and counts
+    only — never a line of code, never an evidence excerpt, never a line range.
+  - **No absolute paths**, so the file does not leak a home directory or a machine layout.
+  - **Confined writes.** A human's `--out` may point anywhere (they typed it); a path supplied
+    through the MCP tool may not escape the workspace, because the caller is an agent and an MCP
+    client's working directory is arbitrary (`resolveGraphOutPath`, `allowOutsideRoot`).
+  - **Determinism** is part of the security story too: the output has no clock and no randomness,
+    so a committed golden makes any change to what the file contains a reviewed diff.
 
 ## 6. Threat-model summary
 

@@ -1,4 +1,5 @@
 nodes:
+dependency:express|third-party-service|integration|express|configuration
 directory:src|directory|repository|src|static-analysis
 file:package.json|file|repository|package.json|static-analysis
 file:src/deals-router.ts|file|repository|deals-router.ts|static-analysis
@@ -30,6 +31,7 @@ CONTAINS|package:express-app->file:package.json|configuration
 CONTAINS|package:express-app->file:src/deals-router.ts|configuration
 CONTAINS|package:express-app->file:src/middleware.ts|configuration
 CONTAINS|package:express-app->file:src/server.ts|configuration
+DEPENDS_ON|package:express-app->dependency:express|configuration
 EXPOSES|file:src/deals-router.ts->route:GET /deals/:id|framework-convention
 EXPOSES|file:src/deals-router.ts->route:GET /deals|framework-convention
 EXPOSES|file:src/deals-router.ts->route:POST /deals|framework-convention
