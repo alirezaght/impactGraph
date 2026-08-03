@@ -23,8 +23,25 @@ export interface GoldenImpact {
    * would otherwise look like no change at all while materially altering future propagation.
    */
   readonly relationship: string;
+  /**
+   * A short digest of the impact's explanation, not the prose. Explanations run to a sentence or two
+   * and would dominate a golden line, but without them a movement report cannot distinguish an
+   * unchanged candidate from one whose stated reasoning moved while its tier held. The digest is
+   * stable for stable text, which is all the comparison needs.
+   */
+  readonly explanationDigest: string;
   readonly signalTypes: readonly string[];
 }
+
+/** FNV-1a, 32-bit, hex. Small and stable — never used for anything but change detection. */
+export const digest = (value: string): string => {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+};
 
 export interface GoldenAnalysisInput {
   readonly impacts: readonly GoldenImpact[];
@@ -65,12 +82,14 @@ const impactLine = (impact: GoldenImpact): string =>
     impact.directness,
     impact.confidence.toFixed(2),
     impact.relationship,
+    impact.explanationDigest,
     [...impact.signalTypes].sort(lexicographic).join('+'),
   ].join('|');
 
 /**
  * Stable text form of an impact analysis: sorted impact lines
- * (`requirementId|name|likelihood|type|directness|confidence|relationship|signals`) then sorted warning
+ * (`requirementId|name|likelihood|type|directness|confidence|relationship|explanationDigest|signals`)
+ * then sorted warning
  * codes. Confidence is pinned to two decimals — a weighting change must be a reviewed diff.
  */
 export const serializeAnalysisGolden = (analysis: GoldenAnalysisInput): string => {

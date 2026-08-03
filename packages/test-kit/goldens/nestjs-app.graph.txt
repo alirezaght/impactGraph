@@ -26,35 +26,35 @@ symbol:src/deals/deals.service.ts#DealsService|class|application|DealsService|st
 topic:deal.updated|topic|integration|deal.updated|framework-convention
 
 edges:
-CONTAINS|file:src/app.module.ts->symbol:src/app.module.ts#AppModule|static-analysis
-CONTAINS|file:src/deals/deals.controller.ts->symbol:src/deals/deals.controller.ts#DealsController|static-analysis
-CONTAINS|file:src/deals/deals.module.ts->symbol:src/deals/deals.module.ts#DealsModule|static-analysis
-CONTAINS|file:src/deals/deals.service.ts->symbol:src/deals/deals.service.ts#DealsService|static-analysis
-CONTAINS|package:nestjs-app->directory:src|static-analysis
-CONTAINS|package:nestjs-app->file:package.json|configuration
-CONTAINS|package:nestjs-app->file:src/app.module.ts|configuration
-CONTAINS|package:nestjs-app->file:src/deals/deals.controller.ts|configuration
-CONTAINS|package:nestjs-app->file:src/deals/deals.module.ts|configuration
-CONTAINS|package:nestjs-app->file:src/deals/deals.service.ts|configuration
-CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.create|static-analysis
-CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.findAll|static-analysis
-CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.findOne|static-analysis
-CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.create|static-analysis
-CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.findAll|static-analysis
-CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.onDealUpdated|static-analysis
-CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|static-analysis
-DEPENDS_ON|package:nestjs-app->dependency:@nestjs/common|configuration
-DEPENDS_ON|package:nestjs-app->dependency:@nestjs/core|configuration
-DEPENDS_ON|symbol:src/app.module.ts#AppModule->symbol:src/deals/deals.module.ts#DealsModule|framework-convention
-EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.create->route:POST /deals|framework-convention
-EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.findAll->route:GET /deals|framework-convention
-EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.findOne->route:GET /deals/:id|framework-convention
-IMPORTS|file:src/app.module.ts->file:src/deals/deals.module.ts|static-analysis
-IMPORTS|file:src/deals/deals.controller.ts->file:src/deals/deals.service.ts|static-analysis
-IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.controller.ts|static-analysis
-IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.service.ts|static-analysis
-INJECTS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.service.ts#DealsService|static-analysis
-OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.controller.ts#DealsController|framework-convention
-OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.service.ts#DealsService|framework-convention
-SUBSCRIBES_TO|symbol:src/deals/deals.service.ts#DealsService.onDealUpdated->topic:deal.updated|framework-convention
-TRIGGERS|job:symbol:src/deals/deals.service.ts#DealsService.refreshExpired->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|framework-convention
+CONTAINS|file:src/app.module.ts->symbol:src/app.module.ts#AppModule|static-analysis|ev1
+CONTAINS|file:src/deals/deals.controller.ts->symbol:src/deals/deals.controller.ts#DealsController|static-analysis|ev1
+CONTAINS|file:src/deals/deals.module.ts->symbol:src/deals/deals.module.ts#DealsModule|static-analysis|ev1
+CONTAINS|file:src/deals/deals.service.ts->symbol:src/deals/deals.service.ts#DealsService|static-analysis|ev1
+CONTAINS|package:nestjs-app->directory:src|static-analysis|ev1
+CONTAINS|package:nestjs-app->file:package.json|configuration|ev1
+CONTAINS|package:nestjs-app->file:src/app.module.ts|configuration|ev1
+CONTAINS|package:nestjs-app->file:src/deals/deals.controller.ts|configuration|ev1
+CONTAINS|package:nestjs-app->file:src/deals/deals.module.ts|configuration|ev1
+CONTAINS|package:nestjs-app->file:src/deals/deals.service.ts|configuration|ev1
+CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.create|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.findAll|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.controller.ts#DealsController.findOne|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.create|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.findAll|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.onDealUpdated|static-analysis|ev1
+CONTAINS|symbol:src/deals/deals.service.ts#DealsService->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|static-analysis|ev1
+DEPENDS_ON|package:nestjs-app->dependency:@nestjs/common|configuration|ev1
+DEPENDS_ON|package:nestjs-app->dependency:@nestjs/core|configuration|ev1
+DEPENDS_ON|symbol:src/app.module.ts#AppModule->symbol:src/deals/deals.module.ts#DealsModule|framework-convention|ev1
+EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.create->route:POST /deals|framework-convention|ev1
+EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.findAll->route:GET /deals|framework-convention|ev1
+EXPOSES|symbol:src/deals/deals.controller.ts#DealsController.findOne->route:GET /deals/:id|framework-convention|ev1
+IMPORTS|file:src/app.module.ts->file:src/deals/deals.module.ts|static-analysis|ev1
+IMPORTS|file:src/deals/deals.controller.ts->file:src/deals/deals.service.ts|static-analysis|ev1
+IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.controller.ts|static-analysis|ev1
+IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.service.ts|static-analysis|ev1
+INJECTS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.service.ts#DealsService|static-analysis|ev1
+OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.controller.ts#DealsController|framework-convention|ev1
+OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.service.ts#DealsService|framework-convention|ev1
+SUBSCRIBES_TO|symbol:src/deals/deals.service.ts#DealsService.onDealUpdated->topic:deal.updated|framework-convention|ev1
+TRIGGERS|job:symbol:src/deals/deals.service.ts#DealsService.refreshExpired->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|framework-convention|ev1

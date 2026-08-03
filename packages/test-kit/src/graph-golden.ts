@@ -20,7 +20,13 @@ export interface GoldenGraphEdge {
   readonly type: string;
   readonly sourceId: string;
   readonly targetId: string;
-  readonly knowledge: { readonly provenance: string };
+  /**
+   * Evidence IDs stay excluded as volatile, but their COUNT does not vary between runs, and without
+   * it a movement report cannot tell an edge whose evidence changed from one that did not. Pinning
+   * the count is the smallest thing that makes `evidence-changed` a real category rather than a
+   * label the report can never apply.
+   */
+  readonly knowledge: { readonly provenance: string; readonly evidenceIds: readonly string[] };
 }
 
 export interface GoldenGraphInput {
@@ -32,7 +38,12 @@ const nodeLine = (node: GoldenGraphNode): string =>
   `${node.id}|${node.type}|${node.category}|${node.name}|${node.knowledge.provenance}`;
 
 const edgeLine = (edge: GoldenGraphEdge): string =>
-  `${edge.type}|${edge.sourceId}->${edge.targetId}|${edge.knowledge.provenance}`;
+  [
+    edge.type,
+    `${edge.sourceId}->${edge.targetId}`,
+    edge.knowledge.provenance,
+    `ev${String(edge.knowledge.evidenceIds.length)}`,
+  ].join('|');
 
 const lexicographic = (a: string, b: string): number => {
   if (a < b) {

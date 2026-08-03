@@ -87,7 +87,9 @@ export default defineConfig({
         test: {
           name: 'quality',
           environment: 'node',
-          include: ['scripts/quality/**/*.test.ts'],
+          // test-kit joins the tooling lane: it is test infrastructure, not product code, and it
+          // was previously covered by NO project — its own modules could not be tested at all.
+          include: ['scripts/quality/**/*.test.ts', 'packages/test-kit/**/*.test.ts'],
           exclude: sharedExclude,
         },
       },

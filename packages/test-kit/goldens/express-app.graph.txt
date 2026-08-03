@@ -19,29 +19,29 @@ symbol:src/middleware.ts#logRequests|function|application|logRequests|static-ana
 symbol:src/server.ts#healthCheck|function|application|healthCheck|static-analysis
 
 edges:
-CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#createDeal|static-analysis
-CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#dealsRouter|static-analysis
-CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#getDeal|static-analysis
-CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#listDeals|static-analysis
-CONTAINS|file:src/middleware.ts->symbol:src/middleware.ts#authenticate|static-analysis
-CONTAINS|file:src/middleware.ts->symbol:src/middleware.ts#logRequests|static-analysis
-CONTAINS|file:src/server.ts->symbol:src/server.ts#healthCheck|static-analysis
-CONTAINS|package:express-app->directory:src|static-analysis
-CONTAINS|package:express-app->file:package.json|configuration
-CONTAINS|package:express-app->file:src/deals-router.ts|configuration
-CONTAINS|package:express-app->file:src/middleware.ts|configuration
-CONTAINS|package:express-app->file:src/server.ts|configuration
-DEPENDS_ON|package:express-app->dependency:express|configuration
-EXPOSES|file:src/deals-router.ts->route:GET /deals/:id|framework-convention
-EXPOSES|file:src/deals-router.ts->route:GET /deals|framework-convention
-EXPOSES|file:src/deals-router.ts->route:POST /deals|framework-convention
-EXPOSES|file:src/server.ts->route:GET /health|framework-convention
-EXPOSES|symbol:src/deals-router.ts#createDeal->route:POST /deals|framework-convention
-EXPOSES|symbol:src/deals-router.ts#getDeal->route:GET /deals/:id|framework-convention
-EXPOSES|symbol:src/deals-router.ts#listDeals->route:GET /deals|framework-convention
-EXPOSES|symbol:src/server.ts#healthCheck->route:GET /health|framework-convention
-IMPORTS|file:src/server.ts->file:src/deals-router.ts|static-analysis
-IMPORTS|file:src/server.ts->file:src/middleware.ts|static-analysis
-TRIGGERS|symbol:src/middleware.ts#logRequests->symbol:src/middleware.ts#authenticate|framework-convention
-USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#authenticate|framework-convention
-USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#logRequests|framework-convention
+CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#createDeal|static-analysis|ev1
+CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#dealsRouter|static-analysis|ev1
+CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#getDeal|static-analysis|ev1
+CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#listDeals|static-analysis|ev1
+CONTAINS|file:src/middleware.ts->symbol:src/middleware.ts#authenticate|static-analysis|ev1
+CONTAINS|file:src/middleware.ts->symbol:src/middleware.ts#logRequests|static-analysis|ev1
+CONTAINS|file:src/server.ts->symbol:src/server.ts#healthCheck|static-analysis|ev1
+CONTAINS|package:express-app->directory:src|static-analysis|ev1
+CONTAINS|package:express-app->file:package.json|configuration|ev1
+CONTAINS|package:express-app->file:src/deals-router.ts|configuration|ev1
+CONTAINS|package:express-app->file:src/middleware.ts|configuration|ev1
+CONTAINS|package:express-app->file:src/server.ts|configuration|ev1
+DEPENDS_ON|package:express-app->dependency:express|configuration|ev1
+EXPOSES|file:src/deals-router.ts->route:GET /deals/:id|framework-convention|ev1
+EXPOSES|file:src/deals-router.ts->route:GET /deals|framework-convention|ev1
+EXPOSES|file:src/deals-router.ts->route:POST /deals|framework-convention|ev1
+EXPOSES|file:src/server.ts->route:GET /health|framework-convention|ev1
+EXPOSES|symbol:src/deals-router.ts#createDeal->route:POST /deals|framework-convention|ev1
+EXPOSES|symbol:src/deals-router.ts#getDeal->route:GET /deals/:id|framework-convention|ev1
+EXPOSES|symbol:src/deals-router.ts#listDeals->route:GET /deals|framework-convention|ev1
+EXPOSES|symbol:src/server.ts#healthCheck->route:GET /health|framework-convention|ev1
+IMPORTS|file:src/server.ts->file:src/deals-router.ts|static-analysis|ev1
+IMPORTS|file:src/server.ts->file:src/middleware.ts|static-analysis|ev1
+TRIGGERS|symbol:src/middleware.ts#logRequests->symbol:src/middleware.ts#authenticate|framework-convention|ev2
+USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#authenticate|framework-convention|ev1
+USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#logRequests|framework-convention|ev1

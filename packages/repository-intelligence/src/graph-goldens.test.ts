@@ -26,13 +26,22 @@ import {
   createTypeScriptAdapter,
 } from '@impactgraph/language-adapters';
 import { openSqliteIndexStore } from '@impactgraph/persistence';
-import { fixtureRepoPath, graphGoldenPath, serializeGraphGolden } from '@impactgraph/test-kit';
+import {
+  fixtureRepoPath,
+  formatMovement,
+  graphGoldenPath,
+  graphMovement,
+  mergeMovement,
+  parseGraphGolden,
+  serializeGraphGolden,
+} from '@impactgraph/test-kit';
 import { describe, expect, it } from 'vitest';
 
 import { indexRepository } from './index.js';
 
 import type { RepositorySnapshot } from '@impactgraph/domain';
 import type { FrameworkAdapter } from '@impactgraph/framework-adapters';
+import type { MovementReport } from '@impactgraph/test-kit';
 
 // Story 17.3 / PRD §42.3 — one committed golden per TS/JS fixture pins the exact set of
 // deterministic nodes and edges the indexer produces. The analyzers suite runs in CI, so a
@@ -190,7 +199,18 @@ const shouldUpdate = (name: string): boolean => {
   return flag.split(',').some((entry) => entry.trim() === name);
 };
 
+/**
+ * Expected graph movement against the committed goldens, summed over all fixtures. Steady state is
+ * everything unchanged; a commit that legitimately moves edges names the categories here, which is
+ * the reviewable statement of what it did.
+ */
+const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
+  unchanged: 459,
+};
+
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
+  const movements = new Map<string, MovementReport>();
+
   for (const fixture of FIXTURES) {
     it(`${fixture.name}: indexed graph matches the committed golden`, async () => {
       const actual = await indexFixture(fixture.name, fixture.frameworkAdapters());
@@ -203,7 +223,35 @@ describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
         writeFileSync(goldenFile, actual);
       }
       const expected = readFileSync(goldenFile, 'utf8');
+      movements.set(
+        fixture.name,
+        graphMovement(parseGraphGolden(expected), parseGraphGolden(actual)),
+      );
       expect(actual, mismatchHint(fixture.name, goldenFile)).toBe(expected);
     }, 30_000);
   }
+
+  /**
+   * The graph half of the acceptance record, aggregated across every fixture. A vocabulary migration
+   * should show relationship changes and nothing else; an extraction change should show additions or
+   * removals. Asserted, not merely printed, so an unexplained transition fails CI.
+   *
+   * `EXPECTED_GRAPH_MOVEMENT` is the specification: edit it deliberately in the same commit that
+   * causes the movement, and CI rejects anything it does not name.
+   */
+  it('reports graph movement across every fixture, and nothing unexplained', () => {
+    const merged = mergeMovement([...movements.values()]);
+    // eslint-disable-next-line no-console
+    console.log(formatMovement('GRAPH MOVEMENT (all fixtures)', merged));
+    const combined = merged.totals;
+
+    // Ambiguity is a hard failure: a plausible-looking pairing the classifier cannot justify would
+    // be read as an acceptance record.
+    expect(combined['unmatched-ambiguous'] ?? 0, 'ambiguous edge matches').toBe(0);
+    for (const [category, total] of Object.entries(combined)) {
+      expect(total, `unexpected graph movement: ${category}`).toBe(
+        EXPECTED_GRAPH_MOVEMENT[category] ?? 0,
+      );
+    }
+  });
 });

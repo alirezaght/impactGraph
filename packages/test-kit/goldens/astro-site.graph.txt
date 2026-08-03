@@ -23,28 +23,28 @@ symbol:src/pages/index.astro#index|ui-component|application|index|framework-conv
 symbol:src/scripts/deal-filter.ts#filterDeals|symbol|repository|filterDeals|static-analysis
 
 edges:
-CALLS|symbol:src/pages/index.astro#index->symbol:src/layouts/Base.astro#Base|static-analysis
-CONTAINS|file:src/content/config.ts->symbol:src/content/config.ts#collections|static-analysis
-CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Base|framework-convention
-CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Props|static-analysis
-CONTAINS|file:src/pages/api/deals.ts->symbol:src/pages/api/deals.ts#GET|static-analysis
-CONTAINS|file:src/pages/api/deals.ts->symbol:src/pages/api/deals.ts#POST|static-analysis
-CONTAINS|file:src/pages/index.astro->symbol:src/pages/index.astro#index|framework-convention
-CONTAINS|file:src/scripts/deal-filter.ts->symbol:src/scripts/deal-filter.ts#filterDeals|static-analysis
-CONTAINS|package:astro-site->directory:src|static-analysis
-CONTAINS|package:astro-site->file:astro.config.mjs|configuration
-CONTAINS|package:astro-site->file:package.json|configuration
-CONTAINS|package:astro-site->file:src/content/config.ts|configuration
-CONTAINS|package:astro-site->file:src/content/deals/project-alpha.md|configuration
-CONTAINS|package:astro-site->file:src/layouts/Base.astro|configuration
-CONTAINS|package:astro-site->file:src/pages/api/deals.ts|configuration
-CONTAINS|package:astro-site->file:src/pages/index.astro|configuration
-CONTAINS|package:astro-site->file:src/scripts/deal-filter.ts|configuration
-DEPENDS_ON|package:astro-site->dependency:astro|configuration
-EXPOSES|symbol:src/pages/api/deals.ts#GET->route:GET /api/deals|framework-convention
-EXPOSES|symbol:src/pages/api/deals.ts#POST->route:POST /api/deals|framework-convention
-EXPOSES|symbol:src/pages/index.astro#index->page:/|framework-convention
-IMPORTS|file:src/pages/index.astro->file:src/layouts/Base.astro|static-analysis
-IMPORTS|file:src/pages/index.astro->file:src/scripts/deal-filter.ts|static-analysis
-READS_FROM|symbol:src/pages/index.astro#index->collection:deals|framework-convention
-ROUTES_TO|symbol:src/layouts/Base.astro#Base->page:/|framework-convention
+CALLS|symbol:src/pages/index.astro#index->symbol:src/layouts/Base.astro#Base|static-analysis|ev1
+CONTAINS|file:src/content/config.ts->symbol:src/content/config.ts#collections|static-analysis|ev1
+CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Base|framework-convention|ev1
+CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Props|static-analysis|ev1
+CONTAINS|file:src/pages/api/deals.ts->symbol:src/pages/api/deals.ts#GET|static-analysis|ev1
+CONTAINS|file:src/pages/api/deals.ts->symbol:src/pages/api/deals.ts#POST|static-analysis|ev1
+CONTAINS|file:src/pages/index.astro->symbol:src/pages/index.astro#index|framework-convention|ev1
+CONTAINS|file:src/scripts/deal-filter.ts->symbol:src/scripts/deal-filter.ts#filterDeals|static-analysis|ev1
+CONTAINS|package:astro-site->directory:src|static-analysis|ev1
+CONTAINS|package:astro-site->file:astro.config.mjs|configuration|ev1
+CONTAINS|package:astro-site->file:package.json|configuration|ev1
+CONTAINS|package:astro-site->file:src/content/config.ts|configuration|ev1
+CONTAINS|package:astro-site->file:src/content/deals/project-alpha.md|configuration|ev1
+CONTAINS|package:astro-site->file:src/layouts/Base.astro|configuration|ev1
+CONTAINS|package:astro-site->file:src/pages/api/deals.ts|configuration|ev1
+CONTAINS|package:astro-site->file:src/pages/index.astro|configuration|ev1
+CONTAINS|package:astro-site->file:src/scripts/deal-filter.ts|configuration|ev1
+DEPENDS_ON|package:astro-site->dependency:astro|configuration|ev1
+EXPOSES|symbol:src/pages/api/deals.ts#GET->route:GET /api/deals|framework-convention|ev1
+EXPOSES|symbol:src/pages/api/deals.ts#POST->route:POST /api/deals|framework-convention|ev1
+EXPOSES|symbol:src/pages/index.astro#index->page:/|framework-convention|ev1
+IMPORTS|file:src/pages/index.astro->file:src/layouts/Base.astro|static-analysis|ev1
+IMPORTS|file:src/pages/index.astro->file:src/scripts/deal-filter.ts|static-analysis|ev1
+READS_FROM|symbol:src/pages/index.astro#index->collection:deals|framework-convention|ev1
+ROUTES_TO|symbol:src/layouts/Base.astro#Base->page:/|framework-convention|ev2

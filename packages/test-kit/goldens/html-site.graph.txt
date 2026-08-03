@@ -7,8 +7,8 @@ file:scripts/deals.js|file|repository|deals.js|static-analysis
 symbol:scripts/deals.js#submitDeal|symbol|repository|submitDeal|static-analysis
 
 edges:
-CONTAINS|file:scripts/deals.js->symbol:scripts/deals.js#submitDeal|static-analysis
-IMPORTS|file:about.html->file:assets/site.css|static-analysis
-IMPORTS|file:index.html->file:assets/logo.svg|static-analysis
-IMPORTS|file:index.html->file:assets/site.css|static-analysis
-IMPORTS|file:index.html->file:scripts/deals.js|static-analysis
+CONTAINS|file:scripts/deals.js->symbol:scripts/deals.js#submitDeal|static-analysis|ev1
+IMPORTS|file:about.html->file:assets/site.css|static-analysis|ev1
+IMPORTS|file:index.html->file:assets/logo.svg|static-analysis|ev1
+IMPORTS|file:index.html->file:assets/site.css|static-analysis|ev1
+IMPORTS|file:index.html->file:scripts/deals.js|static-analysis|ev1

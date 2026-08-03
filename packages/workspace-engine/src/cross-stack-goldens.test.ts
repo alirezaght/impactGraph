@@ -13,6 +13,7 @@ import { join } from 'node:path';
 
 import {
   analysisGoldenPath,
+  digest,
   CROSS_STACK_EVALUATIONS,
   firstRelationship,
   fixtureRepoPath,
@@ -93,6 +94,7 @@ const goldenFor = (analysis: ImpactAnalysis, graph: KnowledgeGraph): string => {
     directness: impact.directness,
     confidence: impact.confidence,
     relationship: firstRelationship(graph, impact.dependencyPath),
+    explanationDigest: digest(impact.explanation),
     signalTypes: impact.confidenceSignals.map((signal) => signal.type),
   }));
   return serializeAnalysisGolden({

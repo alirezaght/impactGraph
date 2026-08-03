@@ -10,6 +10,7 @@ export type { GoldenGraphEdge, GoldenGraphInput, GoldenGraphNode } from './graph
 export {
   analysisGoldenPath,
   reviewGoldenPath,
+  digest,
   firstRelationship,
   serializeAnalysisGolden,
   serializeReviewGolden,
@@ -43,5 +44,14 @@ export type {
   LanguageAdapterContractOptions,
 } from './adapter-contract-types.js';
 export { CROSS_STACK_EVALUATIONS } from './evaluation.js';
+export {
+  candidateMovement,
+  formatMovement,
+  graphMovement,
+  mergeMovement,
+  parseCandidateGolden,
+  parseGraphGolden,
+} from './movement.js';
+export type { CandidateMovement, GraphMovement, MovementReport } from './movement.js';
 export { SAMPLE_EVALUATIONS } from './evaluation-samples.js';
 export type { CrossStackEvaluation, ImpactGroundTruth, SampleEvaluation } from './evaluation.js';
