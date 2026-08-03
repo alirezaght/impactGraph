@@ -39,15 +39,15 @@ was not what the original entry assumed.
 `USES` was emitted for at least six unrelated facts, and appeared to double as the fallback when a
 more specific classification failed (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/sub adapters):
 
-| Producer                                | Actual relationship               |
-| --------------------------------------- | --------------------------------- |
-| `assemble.ts` (`injects`)               | constructor injection (DI)        |
-| `spring-injection.ts`                   | Spring dependency injection       |
-| `express-adapter.ts`                    | middleware and route usage        |
-| `cross-stack/page-links.ts`             | page → HTTP route reference       |
-| `cross-stack/template-calls.ts`         | template → symbol call            |
-| `terraform-graph.ts`                    | Terraform resource reference      |
-| pub/sub adapters (`?? 'USES'` fallback) | an unclassified messaging binding |
+| Producer                                | Actual relationship                     | Now emits              |
+| --------------------------------------- | --------------------------------------- | ---------------------- |
+| `assemble.ts` (`injects`)               | constructor injection (DI)              | `INJECTS`              |
+| `spring-injection.ts`                   | Spring dependency injection             | `INJECTS`              |
+| `express-adapter.ts`                    | application middleware attachment       | `USES_MIDDLEWARE`      |
+| `cross-stack/page-links.ts`             | page-to-page navigation reference       | `ROUTES_TO`            |
+| `cross-stack/template-calls.ts`         | template path string matched to a route | `ROUTES_TO`            |
+| `terraform-graph.ts`                    | Terraform secret reference              | `REFERENCES_RESOURCE`  |
+| pub/sub adapters (`?? 'USES'` fallback) | nothing — the path is unreachable       | `USES_UNKNOWN`, unused |
 
 Each producer now emits a named relationship, so a type annotation and a runtime registry binding no
 longer propagate identically. No `USES` edge remains in any fixture golden.

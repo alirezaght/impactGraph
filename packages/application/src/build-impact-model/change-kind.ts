@@ -11,7 +11,16 @@
 // is auditable without a schema version.
 
 export type ChangeKind =
-  'add-api' | 'change-api' | 'remove-api' | 'change-behavior' | 'change-data-shape' | 'unknown';
+  | 'add-api'
+  | 'change-api'
+  | 'remove-api'
+  | 'change-behavior'
+  | 'change-data-shape'
+  /** The contract for CREATING something changed: constructor, factory input, registration. */
+  | 'change-construction'
+  /** What must be supplied to instantiate or operate something changed. */
+  | 'change-configuration'
+  | 'unknown';
 
 export type Compatibility = 'additive' | 'potentially-breaking' | 'breaking' | 'unknown';
 
@@ -38,6 +47,27 @@ const PATTERNS: readonly Pattern[] = [
     pattern: /\b(remove|delete|drop|rename|replace)[sd]?\b/i,
     kind: 'remove-api',
     compatibility: 'breaking',
+  },
+  /**
+   * Construction and configuration are tested before the generic signature pattern, because both are
+   * more specific readings of the same sentence. Deliberately NARROW: the wording must name a
+   * changed CREATION contract — a constructor, a factory's inputs, a registration, or instantiation
+   * itself. "Constructor-adjacent" is not enough; a requirement about a method on a class that
+   * happens to be injected somewhere is not a construction change.
+   */
+  {
+    pattern:
+      /\b(constructor|instantiat\w+|construction|composition root|factory (input|argument|parameter)s?|provider registration|register(ed|s)? (the )?(provider|dependency|service))\b/i,
+    kind: 'change-construction',
+    compatibility: 'potentially-breaking',
+  },
+  {
+    // Plurals are spelled out because `\bcredential\b` does not match "credentials" — a wording
+    // sensitivity that silently returned `unknown` and left a sample constraining nothing.
+    pattern:
+      /\b(environment (variable|key)s?|config(uration)? (key|value|setting)s?|provider tokens?|credentials?|connection settings)\b/i,
+    kind: 'change-configuration',
+    compatibility: 'potentially-breaking',
   },
   {
     pattern:
@@ -86,6 +116,35 @@ const CALL_OBLIGATION: Readonly<Record<ChangeKind, Obligation>> = {
   'change-behavior': 'possible',
   // Consumers read the shape, so a changed shape reaches them.
   'change-data-shape': 'likely',
+  'change-construction': 'likely',
+  'change-configuration': 'possible',
+  unknown: 'possible',
+};
+
+/**
+ * INJECTS proves CONSTRUCTION-TIME coupling, not arbitrary behavioural coupling. The consumer holds a
+ * reference it was handed; it does not read the dependency's internals.
+ *
+ * So a change to how the dependency is created or configured reaches the consumer that constructs
+ * it, and a change to what the dependency DOES does not. That is a narrower and more defensible rule
+ * than routing or generic binding could support, which is why it is the first relationship to get
+ * one.
+ */
+const INJECTS_OBLIGATION: Readonly<Record<ChangeKind, Obligation>> = {
+  // The composition root supplies the arguments, so a changed creation contract lands on it.
+  'change-construction': 'likely',
+  // Whatever must be supplied to instantiate the dependency is supplied by whoever instantiates it.
+  'change-configuration': 'likely',
+  'remove-api': 'likely',
+  'change-api': 'likely',
+  // Not in the agreed table. Kept at the reference default rather than demoted, since a consumer
+  // handed a differently-shaped dependency plausibly changes and silently weakening an existing
+  // reading would be a tier move with no stated justification.
+  'change-data-shape': 'likely',
+  // A new method on an injected dependency obliges nothing of whoever constructed it.
+  'add-api': 'possible',
+  // Construction-time coupling says nothing about what the dependency does at run time.
+  'change-behavior': 'possible',
   unknown: 'possible',
 };
 
@@ -101,7 +160,16 @@ const REFERENCE_OBLIGATION: Readonly<Record<ChangeKind, Obligation>> = {
   'remove-api': 'likely',
   'change-behavior': 'possible',
   'change-data-shape': 'likely',
+  'change-construction': 'possible',
+  'change-configuration': 'possible',
   unknown: 'possible',
+};
+
+const OBLIGATION_BY_RELATIONSHIP: Readonly<
+  Record<string, Readonly<Record<ChangeKind, Obligation>>>
+> = {
+  CALLS: CALL_OBLIGATION,
+  INJECTS: INJECTS_OBLIGATION,
 };
 
 export const obligationFor = (change: PredictedChange, edgeType: string): Obligation => {
@@ -110,5 +178,8 @@ export const obligationFor = (change: PredictedChange, edgeType: string): Obliga
   if (edgeType === 'USES_UNKNOWN') {
     return 'possible';
   }
-  return edgeType === 'CALLS' ? CALL_OBLIGATION[change.kind] : REFERENCE_OBLIGATION[change.kind];
+  // Relationships without their own table read as references — the weaker default. ROUTES_TO,
+  // USES_MIDDLEWARE and REFERENCES_RESOURCE stay there deliberately until each has been reasoned
+  // about on its own terms.
+  return (OBLIGATION_BY_RELATIONSHIP[edgeType] ?? REFERENCE_OBLIGATION)[change.kind];
 };

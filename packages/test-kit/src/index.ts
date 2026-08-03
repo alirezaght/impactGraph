@@ -42,5 +42,6 @@ export type {
   ContractLanguageAdapter,
   LanguageAdapterContractOptions,
 } from './adapter-contract-types.js';
-export { CROSS_STACK_EVALUATIONS, SAMPLE_EVALUATIONS } from './evaluation.js';
+export { CROSS_STACK_EVALUATIONS } from './evaluation.js';
+export { SAMPLE_EVALUATIONS } from './evaluation-samples.js';
 export type { CrossStackEvaluation, ImpactGroundTruth, SampleEvaluation } from './evaluation.js';

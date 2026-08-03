@@ -1,0 +1,17 @@
+impacts:
+req-3eb319df|BaseService|possible|domain-model|indirect|0.40|INJECTS|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|DealRepository|required|domain-model|direct|0.90|anchor|exact-concept-to-symbol-match
+req-3eb319df|DealService|likely|domain-model|indirect|0.65|INJECTS|exact-concept-to-symbol-match+graph-distance
+req-3eb319df|Searchable|possible|domain-model|indirect|0.40|INJECTS|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|alias-user.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|buildDealService|likely|domain-model|indirect|0.75|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance
+req-3eb319df|createRepository|likely|domain-model|indirect|0.75|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance
+req-3eb319df|deal-repository.ts|likely|domain-model|indirect|0.65|CONTAINS|exact-concept-to-symbol-match+graph-distance
+req-3eb319df|deal-service.ts|possible|domain-model|indirect|0.50|INJECTS|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|deals.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|getDeals|possible|api-contract|indirect|0.50|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|index.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|testBuildDealService|possible|domain-model|indirect|0.50|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-3eb319df|ts-basic|possible|domain-model|indirect|0.40|CONTAINS|exact-concept-to-symbol-match+graph-distance+graph-distance
+
+warnings:
