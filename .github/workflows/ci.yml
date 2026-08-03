@@ -314,6 +314,8 @@ jobs:
       - run: pnpm -r --if-present build
       - name: Package extension (validation only — publishing is release.yml + human)
         run: cd apps/vscode-extension && pnpm dlx @vscode/vsce package --no-dependencies
+      - name: Verify packaging contract (native binding in, sources/maps/tests out)
+        run: pnpm tsx scripts/quality/verify-vsix.ts apps/vscode-extension/*.vsix
       - uses: actions/upload-artifact@v4
         with:
           name: impactgraph-vsix

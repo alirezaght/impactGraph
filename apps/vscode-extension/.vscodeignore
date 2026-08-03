@@ -1,0 +1,31 @@
+# What never ships in the .vsix. Only `dist/` (the esbuild output plus the vendored
+# better-sqlite3 runtime), `package.json` and the marketplace files are the product; everything
+# below is build-time or test-time material. Enforced by scripts/quality/verify-vsix.ts, which
+# reads the built archive rather than trusting this file.
+
+# TypeScript sources — dist/ is what runs. No `!**/*.d.ts` escape hatch: a negation here is
+# applied globally and re-admits every declaration file excluded below, which once pulled an
+# entire downloaded `.vscode-test/Visual Studio Code.app` into the archive. Nothing shipped needs
+# type declarations.
+src/**
+webview/**
+**/*.ts
+**/*.tsx
+tsconfig.json
+tsconfig.tsbuildinfo
+
+# Sourcemaps — dead weight in a shipped artifact, and they expose the whole pre-bundle tree.
+**/*.map
+
+# Test bundles and integration-test scaffolding.
+.vscode-test/**
+.vscode-test.mjs
+**/*.test.*
+dist/test/**
+
+# Build tooling.
+esbuild.mjs
+scripts/**
+.eslintrc*
+eslint.config.*
+vitest.config.*
