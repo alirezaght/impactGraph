@@ -78,6 +78,43 @@ describe('computeReadiness (Story 15.6, PRD §C10)', () => {
     expect(readiness.score).toBeLessThan(100);
   });
 
+  it('is not ready while requirements matched nothing in the repository', () => {
+    const readiness = computeReadiness(spec([], 2), { unmatchedRequirementIds: ['req-2'] });
+
+    expect(readiness.unmatchedRequirements).toBe(1);
+    expect(readiness.score).toBeLessThan(100);
+    expect(readiness.recommendedAction).not.toBe('Ready for implementation.');
+    expect(readiness.recommendedAction).toContain('1');
+  });
+
+  it('treats every requirement unmatched as the worst coverage case', () => {
+    const none = computeReadiness(spec([], 2), {
+      unmatchedRequirementIds: ['req-1', 'req-2'],
+    });
+    const half = computeReadiness(spec([], 2), { unmatchedRequirementIds: ['req-1'] });
+
+    expect(none.score).toBeLessThan(half.score);
+  });
+
+  it('ignores unmatched ids that are not requirements of this specification', () => {
+    const readiness = computeReadiness(spec([], 1), { unmatchedRequirementIds: ['req-9'] });
+
+    expect(readiness.unmatchedRequirements).toBe(0);
+    expect(readiness.score).toBe(100);
+  });
+
+  it('omits the coverage count when no coverage information is supplied', () => {
+    expect(computeReadiness(spec([], 2)).unmatchedRequirements).toBeUndefined();
+  });
+
+  it('a blocking question still outranks poor coverage in the recommended action', () => {
+    const readiness = computeReadiness(spec([question('q1', 'blocking')], 2), {
+      unmatchedRequirementIds: ['req-2'],
+    });
+
+    expect(readiness.recommendedAction).toContain('blocking');
+  });
+
   it('is deterministic and reproducible — same state, same score (§C10)', () => {
     const state = spec([question('q1', 'important')]);
     expect(computeReadiness(state)).toEqual(computeReadiness(state));

@@ -50,7 +50,15 @@ interface Step {
   readonly neighborId: NodeId;
 }
 
-/** CONTAINS is only walked upward (contained → container) to avoid sibling explosion. */
+/**
+ * CONTAINS is only walked upward (contained → container) to avoid sibling explosion.
+ *
+ * DEPENDS_ON is likewise walked in one direction only, from the depended-upon node to the node
+ * that depends on it. Impact propagates to dependents: if better-sqlite3 changes, the packages
+ * declaring it are affected — but naming a package must not make an impact out of every library
+ * it declares, nor out of its dependencies' dependencies. Walking both ways turned one matched
+ * dependency into an impact on most of the monorepo.
+ */
 const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
   const steps: Step[] = [];
   const edgeIds = [
@@ -62,12 +70,12 @@ const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
     if (edge === undefined || !IMPACT_EDGE_TYPES.has(edge.type)) {
       continue;
     }
-    if (edge.type === 'CONTAINS' && edge.sourceId !== nodeId) {
-      steps.push({ edge, neighborId: edge.sourceId }); // upward to the container
+    if (edge.type === 'CONTAINS' || edge.type === 'DEPENDS_ON') {
+      if (edge.sourceId !== nodeId) {
+        // upward: to the container, or to the node that declares this dependency
+        steps.push({ edge, neighborId: edge.sourceId });
+      }
       continue;
-    }
-    if (edge.type === 'CONTAINS') {
-      continue; // never downward into children
     }
     steps.push({ edge, neighborId: edge.sourceId === nodeId ? edge.targetId : edge.sourceId });
   }

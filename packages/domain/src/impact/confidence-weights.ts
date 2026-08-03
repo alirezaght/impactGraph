@@ -27,6 +27,7 @@ export const IMPACT_SIGNAL_WEIGHTS: Readonly<Partial<Record<ConfidenceSignalType
   ambiguity: -0.15,
   'conflicting-evidence': -0.2,
   'unsupported-inference': -0.3,
+  'test-only-match': -0.25,
 };
 
 /**

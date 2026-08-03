@@ -59,6 +59,10 @@ export interface RequirementImpact {
 export interface AnalysisWarning {
   readonly code:
     | 'unknown-concept'
+    /** A concept spread over too many unrelated components to anchor an impact (§C2). */
+    | 'ambiguous-concept'
+    /** A requirement produced no impacts at all — the analysis says nothing about it. */
+    | 'unmatched-requirement'
     | 'traversal-cutoff'
     | 'unsupported-claim'
     | 'invalid-reference'

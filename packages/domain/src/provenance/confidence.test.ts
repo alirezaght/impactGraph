@@ -5,17 +5,18 @@ import { CONFIDENCE_SIGNAL_TYPES, createConfidenceScore, PENALTY_SIGNAL_TYPES } 
 const directImport = { type: 'direct-import', contribution: 0.4 };
 
 describe('ConfidenceScore (PRD §14)', () => {
-  it('lists the PRD §14 signal vocabulary, with the four penalties marked', () => {
+  it('lists the PRD §14 signal vocabulary, with the penalties marked', () => {
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('exact-concept-to-symbol-match');
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('historical-co-change');
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('human-confirmed-mapping');
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('direct-observation');
-    expect(CONFIDENCE_SIGNAL_TYPES).toHaveLength(18);
+    expect(CONFIDENCE_SIGNAL_TYPES).toHaveLength(19);
     expect([...PENALTY_SIGNAL_TYPES]).toEqual([
       'graph-distance',
       'ambiguity',
       'conflicting-evidence',
       'unsupported-inference',
+      'test-only-match',
     ]);
   });
 

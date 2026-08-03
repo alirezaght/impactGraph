@@ -66,16 +66,34 @@ export interface ClassifyContext {
   readonly coChangeCount?: number | undefined;
 }
 
+/** Everything the concept match itself says about strength — mechanism plus its two penalties. */
+const matchSignals = (match: ImpactCandidate['match']): ImpactSignalInput[] => {
+  const signals: ImpactSignalInput[] = [
+    {
+      type: MECHANISM_SIGNAL[match.mechanism] ?? 'semantic-concept-match',
+      description: `concept '${match.concept}' matched via ${match.mechanism}`,
+    },
+  ];
+  if (match.ambiguous) {
+    signals.push({
+      type: 'ambiguity',
+      description: `concept '${match.concept}' matched multiple nodes`,
+    });
+  }
+  if (match.testOnly) {
+    signals.push({
+      type: 'test-only-match',
+      description: `concept '${match.concept}' matched only test artifacts`,
+    });
+  }
+  return signals;
+};
+
 export const signalsFor = (
   candidate: ImpactCandidate,
   context: ClassifyContext = {},
 ): ImpactSignalInput[] => {
-  const signals: ImpactSignalInput[] = [
-    {
-      type: MECHANISM_SIGNAL[candidate.match.mechanism] ?? 'semantic-concept-match',
-      description: `concept '${candidate.match.concept}' matched via ${candidate.match.mechanism}`,
-    },
-  ];
+  const signals: ImpactSignalInput[] = matchSignals(candidate.match);
   for (const edgeType of new Set(candidate.edgeTypes)) {
     const signal = EDGE_SIGNAL[edgeType];
     if (signal !== undefined) {
@@ -90,12 +108,6 @@ export const signalsFor = (
     signals.push({
       type: 'historical-co-change',
       description: `changed together with the matched component in ${String(coChanges)} recent commits`,
-    });
-  }
-  if (candidate.match.ambiguous) {
-    signals.push({
-      type: 'ambiguity',
-      description: `concept '${candidate.match.concept}' matched multiple nodes`,
     });
   }
   return signals;

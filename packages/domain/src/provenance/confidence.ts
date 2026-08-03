@@ -28,16 +28,21 @@ export const CONFIDENCE_SIGNAL_TYPES = [
   'ambiguity',
   'conflicting-evidence',
   'unsupported-inference',
+  // test-only-match: the concept resolved only to test artifacts. Test doubles mirror the
+  // production interfaces they stand in for, so they collide by name with the concepts a
+  // specification names — while never being the thing that has to change.
+  'test-only-match',
 ] as const;
 
 export type ConfidenceSignalType = (typeof CONFIDENCE_SIGNAL_TYPES)[number];
 
-/** The four PRD §14 penalty signals — their contributions may never be positive. */
+/** Penalty signals — their contributions may never be positive. */
 export const PENALTY_SIGNAL_TYPES = [
   'graph-distance',
   'ambiguity',
   'conflicting-evidence',
   'unsupported-inference',
+  'test-only-match',
 ] as const satisfies readonly ConfidenceSignalType[];
 
 export interface ConfidenceSignal {

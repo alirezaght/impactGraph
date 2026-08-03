@@ -46,15 +46,52 @@ const conceptsOf = (statement: string): string[] => {
   return [...new Set([...backticked, ...camelCase].filter((term) => term.length > 1))];
 };
 
-const candidateStatements = (rawText: string): string[] => {
-  const statements: string[] = [];
+const BULLET = /^([-*+]|\d+[.)])\s+/;
+
+/**
+ * Markdown hard-wraps prose, so a line break is not a statement boundary. Consecutive prose
+ * lines are joined into one block; blank lines, headings, and bullet markers end the current
+ * block. Splitting per line instead produced fragments like "which packaging excludes." that
+ * carry no requirement and match nothing in the graph.
+ */
+const proseBlocks = (rawText: string): string[] => {
+  const blocks: string[] = [];
+  let current: string[] = [];
+  const flush = (): void => {
+    if (current.length > 0) {
+      blocks.push(current.join(' '));
+      current = [];
+    }
+  };
   for (const rawLine of rawText.split('\n')) {
     const line = rawLine.trim();
     if (line.length === 0 || line.startsWith('#')) {
-      continue; // headings give structure, not requirements
+      flush(); // headings give structure, not requirements
+      continue;
     }
-    const withoutBullet = line.replace(/^([-*+]|\d+[.)])\s+/, '');
-    for (const sentence of withoutBullet.split(/(?<=[.!?])\s+/)) {
+    const bullet = BULLET.exec(line);
+    if (bullet === null) {
+      current.push(line);
+      continue;
+    }
+    flush(); // each list item is its own statement, not a continuation of the previous one
+    current.push(line.slice(bullet[0].length));
+  }
+  flush();
+  return blocks;
+};
+
+/**
+ * A sentence ends at terminal punctuation followed by whitespace AND an opening token — an
+ * uppercase letter, backtick, or quote. Requiring the opener keeps "node.js", "e.g." and
+ * version numbers inside their sentence.
+ */
+const SENTENCE_BOUNDARY = /(?<=[.!?])\s+(?=[A-Z`"'([])/;
+
+const candidateStatements = (rawText: string): string[] => {
+  const statements: string[] = [];
+  for (const block of proseBlocks(rawText)) {
+    for (const sentence of block.split(SENTENCE_BOUNDARY)) {
       const statement = sentence.trim();
       if (statement.length >= 12) {
         statements.push(statement);

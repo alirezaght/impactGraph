@@ -129,6 +129,13 @@ const classifyRequirementCandidates = (
       requirementId: requirement.id,
     });
   }
+  for (const ambiguous of matched.ambiguousConcepts) {
+    warnings.push({
+      code: 'ambiguous-concept',
+      message: `concept '${ambiguous}' matches too many unrelated components to anchor an impact — name the intended component`,
+      requirementId: requirement.id,
+    });
+  }
   const traversal = traverseCandidates(request.graph, matched.matches, request.traversal);
   if (traversal.cutoff) {
     warnings.push({
@@ -137,6 +144,7 @@ const classifyRequirementCandidates = (
       requirementId: requirement.id,
     });
   }
+  const before = impacts.length;
   for (const candidate of traversal.candidates) {
     const node = request.graph.nodes.get(candidate.nodeId as NodeId);
     if (node === undefined) {
@@ -156,6 +164,15 @@ const classifyRequirementCandidates = (
     if (classified.ok) {
       impacts.push(classified.value);
     }
+  }
+  if (impacts.length === before) {
+    // Silence here reads as "nothing changes for this requirement", which is a much stronger
+    // claim than "the engine found nothing" (§C10 readiness depends on the difference).
+    warnings.push({
+      code: 'unmatched-requirement',
+      message: 'no component could be tied to this requirement',
+      requirementId: requirement.id,
+    });
   }
 };
 

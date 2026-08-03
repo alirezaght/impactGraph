@@ -4,6 +4,7 @@ import {
   addUserDecision,
   approveImpactAnalysis,
   computeImpactConfidence,
+  createConfidenceScore,
   createImpactAnalysis,
   parseImpactAnalysis,
   serializeImpactAnalysis,
@@ -161,6 +162,23 @@ describe('confidence engine weights (PRD §14, Story 6.4)', () => {
       { type: 'unsupported-inference' },
     ]);
     expect(floor.ok && floor.value.value).toBe(0.05);
+  });
+
+  it('penalises a concept that resolved only to a test double', () => {
+    const production = computeImpactConfidence([{ type: 'semantic-concept-match' }]);
+    const doubleOnly = computeImpactConfidence([
+      { type: 'semantic-concept-match' },
+      { type: 'test-only-match', description: 'only test artifacts matched' },
+    ]);
+
+    expect(production.ok && production.value.value).toBe(0.5);
+    expect(doubleOnly.ok && doubleOnly.value.value).toBe(0.25);
+  });
+
+  it('rejects a test-only-match signal with a positive contribution', () => {
+    expect(createConfidenceScore(0.5, [{ type: 'test-only-match', contribution: 0.2 }]).ok).toBe(
+      false,
+    );
   });
 
   it('identical signals always produce identical scores (determinism)', () => {
