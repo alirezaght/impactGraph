@@ -21,7 +21,7 @@ const envelope = {
 };
 
 const nodeFixture = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   id: 'node-1',
   category: 'application',
   type: 'service',
@@ -74,13 +74,13 @@ describe('artifact schemas v1 — valid fixtures round-trip', () => {
 
 describe('artifact schemas v1 — invalid fixtures rejected', () => {
   it('rejects unknown schema versions', () => {
-    // 1 is now the OLD version: readable only through the upgrader, never by the current schema.
-    expect(graphNodeArtifactSchema.safeParse({ ...nodeFixture, schemaVersion: 1 }).success).toBe(
-      false,
-    );
-    expect(graphNodeArtifactSchema.safeParse({ ...nodeFixture, schemaVersion: 3 }).success).toBe(
-      false,
-    );
+    // 1 and 2 are now OLD versions: readable only through the upgrader, never by the current schema.
+    for (const version of [1, 2, 4]) {
+      expect(
+        graphNodeArtifactSchema.safeParse({ ...nodeFixture, schemaVersion: version }).success,
+        `schemaVersion ${String(version)}`,
+      ).toBe(false);
+    }
     expect(
       repositorySnapshotArtifactSchema.safeParse({ ...snapshotFixture, schemaVersion: 0 }).success,
     ).toBe(false);

@@ -6,7 +6,7 @@
       "properties": {
         "schemaVersion": {
           "type": "number",
-          "const": 2
+          "const": 3
         },
         "id": {
           "type": "string",
@@ -27,44 +27,6 @@
         "path": {
           "type": "string",
           "minLength": 1
-        },
-        "route": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string",
-              "minLength": 1
-            },
-            "method": {
-              "type": "string",
-              "minLength": 1
-            },
-            "pathParameters": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "required": {
-                    "type": "boolean"
-                  }
-                },
-                "required": ["name", "required"],
-                "additionalProperties": false
-              }
-            },
-            "queryParameters": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/GraphNodeArtifactV1/properties/route/properties/pathParameters/items"
-              }
-            }
-          },
-          "required": ["path", "pathParameters", "queryParameters"],
-          "additionalProperties": false
         },
         "knowledge": {
           "type": "object",
@@ -158,6 +120,45 @@
             "repositorySnapshotId",
             "analysisRunId"
           ],
+          "additionalProperties": false
+        },
+        "route": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "method": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pathParameters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "requiredness": {
+                    "type": "string",
+                    "enum": ["required", "optional", "unknown"]
+                  }
+                },
+                "required": ["name", "requiredness"],
+                "additionalProperties": false
+              }
+            },
+            "queryParameters": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/GraphNodeArtifactV1/properties/route/properties/pathParameters/items"
+              }
+            }
+          },
+          "required": ["path", "pathParameters", "queryParameters"],
           "additionalProperties": false
         }
       },

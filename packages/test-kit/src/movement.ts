@@ -31,6 +31,16 @@ export type GraphMovement =
   /** Two candidates matched the same fallback key, so no honest classification is possible. */
   | 'unmatched-ambiguous';
 
+export type NodeMovement =
+  | 'unchanged'
+  | 'added'
+  | 'removed'
+  | 'provenance-changed'
+  /** The verb or path a node states changed — an endpoint was renamed or re-verbed. */
+  | 'route-changed'
+  /** The parameter contract changed: a parameter appeared, vanished, or changed requiredness. */
+  | 'route-parameters-changed';
+
 export interface MovementReport {
   readonly totals: Readonly<Record<string, number>>;
   /** Per-category breakdown, e.g. promoted → { 'possible → likely': 3 }. */
@@ -300,8 +310,23 @@ export const graphMovement = (
 
 interface NodeRow {
   readonly provenance: string;
+  /** The verb and path a node states — `GET /deals/:id`, or `-` for a node that states no route. */
   readonly route: string;
+  /** The parameter contract — `p:id! q:limit?` — reported separately from the endpoint. */
+  readonly routeParameters: string;
 }
+
+/**
+ * Split a route cell (`GET /deals/:id p:id! q:limit?`) into the endpoint it names and the parameter
+ * contract it states, so a path rename and a parameter change land in different categories. `-`
+ * (no route) yields two empty halves, which compare equal to each other and to nothing else.
+ */
+const splitRouteCell = (cell: string): { endpoint: string; parameters: string } => {
+  const marker = cell.search(/ [pq]:/);
+  return marker === -1
+    ? { endpoint: cell, parameters: '' }
+    : { endpoint: cell.slice(0, marker), parameters: cell.slice(marker + 1) };
+};
 
 /**
  * `id|type|category|name|provenance|route`, keyed by id. Node identity is the id alone: every other
@@ -321,16 +346,25 @@ export const parseGraphNodes = (text: string): Map<string, NodeRow> => {
     }
     const parts = line.split('|');
     if (inNodes && parts.length >= 6) {
-      rows.set(parts[0] ?? '', { provenance: parts[4] ?? '', route: parts[5] ?? '' });
+      const route = splitRouteCell(parts[5] ?? '');
+      rows.set(parts[0] ?? '', {
+        provenance: parts[4] ?? '',
+        route: route.endpoint,
+        routeParameters: route.parameters,
+      });
     }
   }
   return rows;
 };
 
 /**
- * Node movement, reported separately from edges. `route-changed` is why this exists: a route
- * contract gaining a method or parameters is a semantic change to persisted state that no
- * edge-oriented category could express.
+ * Node movement, reported separately from edges. Route contracts are why this exists: they are
+ * semantic persisted state that no edge-oriented category could express.
+ *
+ * `route-changed` and `route-parameters-changed` are separate categories for the same reason
+ * `direction-changed` is separate from `unmatched-ambiguous`: renaming an endpoint and changing what
+ * it accepts are different architectural events, and a single label would let a parameter regression
+ * hide inside a batch of path edits.
  */
 export const nodeMovement = (
   before: ReadonlyMap<string, NodeRow>,
@@ -349,6 +383,12 @@ export const nodeMovement = (
     }
     if (baseline.route !== row.route) {
       count(counters, 'route-changed', `${baseline.route} → ${row.route}`);
+      continue;
+    }
+    if (baseline.routeParameters !== row.routeParameters) {
+      const from = baseline.routeParameters === '' ? '(none stated)' : baseline.routeParameters;
+      const to = row.routeParameters === '' ? '(none stated)' : row.routeParameters;
+      count(counters, 'route-parameters-changed', `${row.route}: ${from} → ${to}`);
       continue;
     }
     count(counters, 'unchanged');

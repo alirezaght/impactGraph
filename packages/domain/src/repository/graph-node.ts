@@ -15,10 +15,23 @@ import type {
   KnowledgeEnvelopeInput,
 } from '../provenance/knowledge-envelope.js';
 
+/**
+ * Whether a route parameter must be supplied — as OBSERVED, never as assumed.
+ *
+ * `unknown` is a first-class state and the common one. A brace placeholder (`{id}`, Spring and
+ * FastAPI) states that a segment is dynamic and says nothing about whether it may be omitted;
+ * optionality there lives in a handler signature the route producer does not read. Recording
+ * `required` for those would be an assumption dressed as a fact, and a propagation rule would then
+ * treat a guess as evidence.
+ */
+export type Requiredness = 'required' | 'optional' | 'unknown';
+
+const REQUIREDNESS: ReadonlySet<string> = new Set(['required', 'optional', 'unknown']);
+
 /** One path or query parameter of a route contract. */
 export interface RouteParameter {
   readonly name: string;
-  readonly required: boolean;
+  readonly requiredness: Requiredness;
 }
 
 /**
@@ -80,6 +93,15 @@ const routeIssues = (route: RouteContract | undefined): ValidationIssue[] => {
     );
   }
   for (const parameter of [...route.pathParameters, ...route.queryParameters]) {
+    if (!REQUIREDNESS.has(parameter.requiredness)) {
+      issues.push(
+        validationIssue(
+          'invalid-route',
+          'route',
+          `unknown requiredness '${parameter.requiredness}'`,
+        ),
+      );
+    }
     if (parameter.name.trim().length === 0) {
       issues.push(validationIssue('invalid-route', 'route', 'a route parameter must have a name'));
     }

@@ -9,8 +9,20 @@ import { fileURLToPath } from 'node:url';
 /** The node fields a graph golden pins. `GraphNode` satisfies this structurally. */
 export interface GoldenRouteParameter {
   readonly name: string;
-  readonly required: boolean;
+  readonly requiredness: string;
 }
+
+/**
+ * `!` required, `?` optional, `~` requiredness unknown. `~` needs to be visible rather than elided,
+ * because "we observed a dynamic segment and cannot tell whether it is required" is the state most
+ * route contracts are actually in, and a golden that rendered it like `optional` would hide the
+ * difference the three-state type exists to keep.
+ */
+const REQUIREDNESS_MARKER: Readonly<Record<string, string>> = {
+  required: '!',
+  optional: '?',
+  unknown: '~',
+};
 
 export interface GoldenGraphNode {
   readonly id: string;
@@ -50,7 +62,7 @@ export interface GoldenGraphInput {
   readonly edges: readonly GoldenGraphEdge[];
 }
 
-/** `GET /api/deals p:id!,slug? q:limit?` — compact, pipe-free, and `-` when a node states no route. */
+/** `GET /api/deals p:id!,slug~ q:limit?` — compact, pipe-free, and `-` when a node states no route. */
 const routeCell = (node: GoldenGraphNode): string => {
   const route = node.route;
   if (route === undefined) {
@@ -59,7 +71,9 @@ const routeCell = (node: GoldenGraphNode): string => {
   const parameters = (entries: readonly GoldenRouteParameter[], label: string): string =>
     entries.length === 0
       ? ''
-      : ` ${label}:${entries.map((entry) => `${entry.name}${entry.required ? '!' : '?'}`).join(',')}`;
+      : ` ${label}:${entries
+          .map((entry) => `${entry.name}${REQUIREDNESS_MARKER[entry.requiredness] ?? '#'}`)
+          .join(',')}`;
   return (
     `${route.method ?? 'ANY'} ${route.path}` +
     parameters(route.pathParameters, 'p') +

@@ -10,7 +10,7 @@ file:src/main/java/com/example/deals/DealService.java|file|repository|DealServic
 file:src/main/java/com/example/deals/DealsApplication.java|file|repository|DealsApplication.java|static-analysis|-
 file:src/main/java/com/example/deals/DealsConfiguration.java|file|repository|DealsConfiguration.java|static-analysis|-
 file:src/main/resources/application.yml|file|repository|application.yml|static-analysis|-
-route:GET /deals/{id}|api-endpoint|application|GET /deals/{id}|framework-convention|GET /deals/{id}
+route:GET /deals/{id}|api-endpoint|application|GET /deals/{id}|framework-convention|GET /deals/{id} p:id~
 route:GET /deals|api-endpoint|application|GET /deals|framework-convention|GET /deals
 route:POST /deals|api-endpoint|application|POST /deals|framework-convention|POST /deals
 spring:application:symbol:src/main/java/com/example/deals/DealsApplication.java#DealsApplication|application|application|DealsApplication|framework-convention|-

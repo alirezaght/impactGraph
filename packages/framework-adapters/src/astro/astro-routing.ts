@@ -1,6 +1,7 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
 import { routeIdentity } from '../route-contract.js';
+import { NO_QUERY_PARAMETERS, pathParametersOf } from '../route-parameters.js';
 
 import type { CodeGraph } from '../types.js';
 import type { RouteContract, GraphNode } from '@impactgraph/domain';
@@ -40,7 +41,11 @@ interface RouteNodeSpec {
   readonly nodeId: string;
   readonly nodeType: 'page' | 'api-endpoint';
   readonly name: string;
-  /** §12.1.1 — present for api-endpoint routes; a page node carries its path, not a verb. */
+  /**
+   * §12.1.1 contract. Present for pages too, with no `method`: a page states a path and Astro serves
+   * whatever verbs the file exports, so claiming a verb would be an assumption. Its parameters ARE
+   * observable — `[id].astro` and `[...slug].astro` state requiredness in the filename.
+   */
   readonly route?: RouteContract;
 }
 
@@ -94,7 +99,16 @@ export const addPages = (
         filePath: node.path ?? '',
         evidenceId: node.knowledge.evidenceIds[0] ?? '',
       },
-      { nodeId: `page:${route}`, nodeType: 'page', name: route },
+      {
+        nodeId: `page:${route}`,
+        nodeType: 'page',
+        name: route,
+        route: {
+          path: route,
+          pathParameters: pathParametersOf(route, 'bracket'),
+          queryParameters: NO_QUERY_PARAMETERS,
+        },
+      },
     );
   }
 };
@@ -127,7 +141,7 @@ export const addApiRoutes = (
     if (!HTTP_EXPORTS.has(verb) || route === undefined) {
       continue;
     }
-    const identity = routeIdentity(verb, route);
+    const identity = routeIdentity(verb, route, 'bracket');
     addRouteNode(
       {
         builder,

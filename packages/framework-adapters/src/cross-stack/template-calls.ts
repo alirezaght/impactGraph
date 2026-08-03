@@ -1,6 +1,7 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
 import { indexRoutesByPath, normalizeRoutePath } from './route-index.js';
+import { addRouteReferenceEvidence, statedMethod } from './route-reference-evidence.js';
 
 import type { RouteEntry } from './route-index.js';
 import type { CodeGraph } from '../types.js';
@@ -81,21 +82,36 @@ interface LinkInput {
   readonly context: IndexingContext;
   readonly sourceId: string;
   readonly fact: CallFact;
+  /** The literal attribute value, kept so the correspondence record can state what was read. */
+  readonly literalPath: string;
 }
 
 const linkRoute = (input: LinkInput, route: RouteEntry): void => {
   const { builder, context, sourceId, fact } = input;
+  const relationship = relationshipFor(fact);
+  const edgeId = `cross-stack:uses:${sourceId}->${route.nodeId}`;
+  const reference = addRouteReferenceEvidence({
+    builder,
+    context,
+    fact,
+    edgeId,
+    literalPath: input.literalPath,
+    normalizedPath: route.path,
+    producer: 'cross-stack-endpoint-match',
+    relationship,
+  });
   builder.addEdge(
     {
-      id: `cross-stack:uses:${sourceId}->${route.nodeId}`,
-      type: relationshipFor(fact),
+      id: edgeId,
+      type: relationship,
       sourceId,
       targetId: route.nodeId,
-      // Both sides: the template attribute that names the path, and the declaration of the route
-      // that serves it. A correspondence claim with evidence from only one side is unreviewable.
+      // Three observations: the template attribute that names the path, the declaration of the route
+      // that serves it, and how the matcher paired them. A correspondence claim with evidence from
+      // only one side is unreviewable, and one that does not say how it matched is unauditable.
       knowledge: deterministicEnvelope(
         context,
-        [fact.evidenceId, ...route.evidenceIds],
+        [fact.evidenceId, ...route.evidenceIds, ...(reference === undefined ? [] : [reference])],
         'framework-convention',
       ),
     },
@@ -112,21 +128,27 @@ export const linkTemplateReferences = (
   const byPath = indexRoutesByPath(graph);
   let matched = 0;
   for (const fact of templateReferences(graph)) {
+    // A reference with no literal, or one naming something off-origin, is skipped outright rather
+    // than carried forward with a placeholder — the correspondence record must state the path that
+    // was actually read, so there must be one.
     const value = fact.stringArguments[0];
     const path = value === undefined ? undefined : normalizeRoutePath(value);
-    const candidates = path === undefined ? [] : (byPath.get(path) ?? []);
+    if (value === undefined || path === undefined) {
+      continue;
+    }
+    const candidates = byPath.get(path) ?? [];
     // A `<form method>` (or a fetch `{ method }`) states the verb, so link only that route.
     // With no stated method the reference names a path and not a verb — every verb at that path
     // is a legitimate correspondence, and picking one would be a guess (HTML's GET default is a
     // browser behavior, not something the repository declared).
-    const declaredVerb = fact.keywordStringArguments?.['method']?.toUpperCase();
+    const declaredVerb = statedMethod(fact);
     const routes =
       declaredVerb === undefined
         ? candidates
         : candidates.filter((route) => route.verb === declaredVerb);
     const sourceId = referenceSourceId(graph, fact);
     for (const route of routes) {
-      linkRoute({ builder, context, sourceId, fact }, route);
+      linkRoute({ builder, context, sourceId, fact, literalPath: value }, route);
       matched += 1;
     }
   }

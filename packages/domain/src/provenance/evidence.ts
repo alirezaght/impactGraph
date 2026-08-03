@@ -63,6 +63,65 @@ export type EvidenceSource = FileSource | ConfigSource | GitCommitSource;
  * Its first purpose is measuring the §12.2.1 split: `originalClassification` records what an edge
  * used to be, so the unknown bucket can be watched shrinking as adapters improve.
  */
+/**
+ * What a routing producer actually observed at a REFERENCE site, kept as typed fields.
+ *
+ * This exists because the correspondence between `<form action="/api/deals" method="post">` and a
+ * declared `POST /api/deals` used to be reviewable only by re-reading the source: the edge cited
+ * evidence from both sides but recorded nothing about how the two were matched. The literal, the
+ * normalized form, and the stated verb were observed and then discarded, so no rule could condition
+ * on them and no reviewer could see whether a match was exact or the product of normalization.
+ *
+ * Every field is what the producer read. `method` is absent when the reference states no verb —
+ * HTML's GET default is browser behaviour, not something the repository declared.
+ */
+export interface RouteReference {
+  /** The path exactly as written at the reference site, before any normalization. */
+  readonly literalPath: string;
+  /** The form actually used for matching. Present only when normalization changed the literal. */
+  readonly normalizedPath?: string;
+  /** The verb stated at the reference site, uppercased. Absent when none was stated. */
+  readonly method?: string;
+  /** The construct read, e.g. 'a.href', 'form.action', 'fetch-argument'. */
+  readonly attribute: string;
+  /**
+   * Whether the literal was fully known at parse time. `dynamic` marks a reference whose path was
+   * assembled at runtime — recorded rather than dropped, so an unmatched reference is visible as
+   * "could not be resolved" instead of vanishing.
+   */
+  readonly resolution: 'static' | 'dynamic';
+}
+
+/**
+ * What a routing producer actually observed at a REFERENCE site, kept as typed fields.
+ *
+ * This exists because the correspondence between `<form action="/api/deals" method="post">` and a
+ * declared `POST /api/deals` used to be reviewable only by re-reading the source: the edge cited
+ * evidence from both sides but recorded nothing about how the two were matched. The literal, the
+ * normalized form, and the stated verb were all observed and then discarded, so no rule could
+ * condition on them and no reviewer could see whether a match was exact or produced by
+ * normalization.
+ *
+ * Every field is something the producer read. `method` is absent when the reference states no verb —
+ * HTML's GET default is browser behaviour, not something the repository declared.
+ */
+export interface RouteReference {
+  /** The path exactly as written at the reference site, before any normalization. */
+  readonly literalPath: string;
+  /** The form actually used for matching. Present only when normalization changed the literal. */
+  readonly normalizedPath?: string;
+  /** The verb stated at the reference site, uppercased. Absent when none was stated. */
+  readonly method?: string;
+  /** The construct read, e.g. 'a.href', 'form.action', 'fetch-argument'. */
+  readonly attribute: string;
+  /**
+   * Whether the literal was fully known at parse time. `dynamic` marks a reference whose path was
+   * assembled at runtime — recorded rather than dropped, so an unresolved reference stays visible
+   * instead of silently vanishing.
+   */
+  readonly resolution: 'static' | 'dynamic';
+}
+
 export interface EvidenceDerivation {
   /** How the relationship was established, e.g. 'framework-binding', 'constructor-injection'. */
   readonly mechanism: string;
@@ -74,6 +133,8 @@ export interface EvidenceDerivation {
   readonly originalClassification?: string;
   /** Why a classification could not be made. Required in spirit for USES_UNKNOWN. */
   readonly reason?: string;
+  /** §12.1.1 — what a routing producer observed at the reference site. */
+  readonly routeReference?: RouteReference;
 }
 
 export interface EvidenceRecord {

@@ -104,7 +104,7 @@ const emitRoute = (
   context: IndexingContext,
 ): void => {
   const fullPath = joinPath(world.prefixes.get(spec.holder.key) ?? '', spec.path);
-  const identity = routeIdentity(spec.method, fullPath);
+  const identity = routeIdentity(spec.method, fullPath, 'brace');
   const routeNodeId = identity.nodeId;
   const knowledge = deterministicEnvelope(context, [spec.evidenceId], 'framework-convention');
   builder.addNode(

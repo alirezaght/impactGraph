@@ -20,12 +20,12 @@ import type { RouteContract, RouteParameter } from '../repository/graph-node.js'
 import type { GraphNode } from '../repository/graph-node.js';
 
 /** 2 since §12.1.1: a node may carry a structured route contract. */
-export const GRAPH_NODE_SCHEMA_VERSION = 2;
+export const GRAPH_NODE_SCHEMA_VERSION = 3;
 export const GRAPH_EDGE_SCHEMA_VERSION = 1;
 
 export interface RouteParameterJson {
   readonly name: string;
-  readonly required: boolean;
+  readonly requiredness: string;
 }
 
 export interface RouteContractJson {
@@ -64,11 +64,8 @@ export const serializeGraphNode = (node: GraphNode): GraphNodeJson => {
     name: node.name,
     knowledge: serializeKnowledgeEnvelope(node.knowledge),
   };
-  return {
-    ...base,
-    ...(node.path === undefined ? {} : { path: node.path }),
-    ...(node.route === undefined ? {} : { route: node.route }),
-  };
+  const withPath = node.path === undefined ? base : { ...base, path: node.path };
+  return node.route === undefined ? withPath : { ...withPath, route: node.route };
 };
 
 export const serializeGraphEdge = (edge: GraphEdge): GraphEdgeJson => ({
@@ -95,9 +92,16 @@ const readParameters = (
   return raw.map((entry) => {
     if (!isRawObject(entry) || typeof entry['name'] !== 'string') {
       issues.push(validationIssue('invalid-route', `route.${field}`, 'a parameter needs a name'));
-      return { name: '', required: false };
+      return { name: '', requiredness: 'unknown' as const };
     }
-    return { name: entry['name'], required: entry['required'] === true };
+    const requiredness = entry['requiredness'];
+    if (requiredness !== 'required' && requiredness !== 'optional' && requiredness !== 'unknown') {
+      issues.push(
+        validationIssue('invalid-route', `route.${field}`, 'a parameter needs a requiredness'),
+      );
+      return { name: entry['name'], requiredness: 'unknown' as const };
+    }
+    return { name: entry['name'], requiredness };
   });
 };
 

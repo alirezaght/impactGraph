@@ -1,5 +1,8 @@
 import { routeDisplayName } from '@impactgraph/domain';
 
+import { NO_QUERY_PARAMETERS, pathParametersOf } from './route-parameters.js';
+
+import type { PathSyntax } from './route-parameters.js';
 import type { RouteContract } from '@impactgraph/domain';
 
 // One place where a route node's identity is built, shared by every route-producing adapter
@@ -7,10 +10,12 @@ import type { RouteContract } from '@impactgraph/domain';
 // every consumer recovered the two halves by splitting the string back apart. The contract is now
 // the fact; the id and the display name are both derived from it.
 //
-// Parameters are NOT populated here. Placeholder syntax differs per framework and query parameters
-// are not stated in a route path at all, so extraction is the routing-parameter step's job. Until
-// then the arrays are empty and no propagation rule reads them — see
-// docs/engineering/capability-limitations.md.
+// Path parameters ARE populated here, from the path notation the caller names. The syntax argument
+// has no default on purpose: a default would let a producer emit an empty parameter list without
+// ever stating what notation it read, and "no parameters found" and "nobody looked" would become
+// indistinguishable in the persisted contract.
+//
+// Query parameters stay empty — a route path does not declare them. See `NO_QUERY_PARAMETERS`.
 
 export interface RouteNodeIdentity {
   readonly nodeId: string;
@@ -23,12 +28,16 @@ export interface RouteNodeIdentity {
  * verb however the framework spelled it, and the node id keeps its historical
  * `route:<VERB> <path>` shape so cross-stack matching and every committed golden stay stable.
  */
-export const routeIdentity = (method: string, path: string): RouteNodeIdentity => {
+export const routeIdentity = (
+  method: string,
+  path: string,
+  syntax: PathSyntax,
+): RouteNodeIdentity => {
   const route: RouteContract = {
     path,
     method: method.toUpperCase(),
-    pathParameters: [],
-    queryParameters: [],
+    pathParameters: pathParametersOf(path, syntax),
+    queryParameters: NO_QUERY_PARAMETERS,
   };
   const name = routeDisplayName(route);
   return { nodeId: `route:${name}`, name, route };

@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   candidateMovement,
   graphMovement,
+  nodeMovement,
   parseCandidateGolden,
   parseGraphGolden,
+  parseGraphNodes,
 } from './movement.js';
 
 // The classifier is tested directly because a movement report that misclassifies is worse than no
@@ -209,5 +211,66 @@ describe('graph movement', () => {
     ].join('\n');
 
     expect(parseGraphGolden(text)).toHaveLength(1);
+  });
+});
+
+describe('node movement over route contracts', () => {
+  const nodes = (routeCell: string): string =>
+    [
+      'nodes:',
+      `route:x|api-endpoint|application|GET /deals/:id|framework-convention|${routeCell}`,
+      '',
+      'edges:',
+      '',
+    ].join('\n');
+
+  it('reports a parameter appearing separately from the endpoint itself', () => {
+    const report = nodeMovement(
+      parseGraphNodes(nodes('GET /deals/:id')),
+      parseGraphNodes(nodes('GET /deals/:id p:id!')),
+    );
+
+    expect(report.totals['route-parameters-changed']).toBe(1);
+    expect(report.totals['route-changed']).toBeUndefined();
+    expect(report.detail['route-parameters-changed']).toEqual({
+      'GET /deals/:id: (none stated) → p:id!': 1,
+    });
+  });
+
+  it('reports a requiredness change, because unknown and required are different claims', () => {
+    const report = nodeMovement(
+      parseGraphNodes(nodes('GET /deals/:id p:id~')),
+      parseGraphNodes(nodes('GET /deals/:id p:id!')),
+    );
+
+    expect(report.detail['route-parameters-changed']).toEqual({
+      'GET /deals/:id: p:id~ → p:id!': 1,
+    });
+  });
+
+  it('reports a path rename as route-changed, not as a parameter change', () => {
+    const report = nodeMovement(
+      parseGraphNodes(nodes('GET /deals/:id p:id!')),
+      parseGraphNodes(nodes('GET /offers/:id p:id!')),
+    );
+
+    expect(report.totals['route-changed']).toBe(1);
+    expect(report.totals['route-parameters-changed']).toBeUndefined();
+  });
+
+  it('calls an unchanged contract unchanged, parameters and all', () => {
+    const text = nodes('GET /deals/:id p:id! q:limit?');
+
+    expect(nodeMovement(parseGraphNodes(text), parseGraphNodes(text)).totals).toEqual({
+      unchanged: 1,
+    });
+  });
+
+  it('treats a node stating no route as having no parameter contract, not an empty one', () => {
+    const text = nodes('-');
+
+    expect(nodeMovement(parseGraphNodes(text), parseGraphNodes(text)).totals).toEqual({
+      unchanged: 1,
+    });
   });
 });

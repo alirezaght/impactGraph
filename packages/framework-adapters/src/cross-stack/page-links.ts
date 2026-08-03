@@ -1,6 +1,7 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
 import { normalizeRoutePath } from './route-index.js';
+import { addRouteReferenceEvidence } from './route-reference-evidence.js';
 
 import type { CodeGraph } from '../types.js';
 import type { GraphNode } from '@impactgraph/domain';
@@ -48,8 +49,15 @@ interface PageEntry {
   readonly evidenceIds: readonly string[];
 }
 
+/**
+ * A page's path comes from its §12.1.1 contract, not its display name. The two agree today, but a
+ * name is presentation: reading it here would leave one more place that recovers routing structure
+ * from a string, and a page without a contract states no path rather than one that failed to parse.
+ */
 const pagePath = (node: GraphNode): string | undefined =>
-  node.type === 'page' ? normalizeRoutePath(node.name) : undefined;
+  node.type === 'page' && node.route !== undefined
+    ? normalizeRoutePath(node.route.path)
+    : undefined;
 
 /**
  * Every routed page in the graph, by path. A LIST like the route index, because two files
@@ -77,10 +85,32 @@ export interface PageLinkInput {
   readonly sourceIdOf: (fact: CallFact) => string;
 }
 
-const link = (input: PageLinkInput, fact: CallFact, page: PageEntry, sourceId: string): void => {
+interface NavigationLink {
+  readonly fact: CallFact;
+  readonly page: PageEntry;
+  readonly sourceId: string;
+  /** The `href` as written, so the correspondence record states what was read. */
+  readonly literalPath: string;
+  /** The normalized form used for matching. */
+  readonly normalizedPath: string;
+}
+
+const link = (input: PageLinkInput, navigation: NavigationLink): void => {
+  const { fact, page, sourceId } = navigation;
+  const edgeId = `cross-stack:navigates:${sourceId}->${page.nodeId}`;
+  const reference = addRouteReferenceEvidence({
+    builder: input.builder,
+    context: input.context,
+    fact,
+    edgeId,
+    literalPath: navigation.literalPath,
+    normalizedPath: navigation.normalizedPath,
+    producer: 'cross-stack-page-match',
+    relationship: 'NAVIGATES_TO',
+  });
   input.builder.addEdge(
     {
-      id: `cross-stack:navigates:${sourceId}->${page.nodeId}`,
+      id: edgeId,
       // §12.2.1: `<a href>`/`<area href>` name somewhere to go. `<form action>` is excluded
       // upstream, so this producer only ever states navigation.
       type: 'NAVIGATES_TO',
@@ -88,7 +118,7 @@ const link = (input: PageLinkInput, fact: CallFact, page: PageEntry, sourceId: s
       targetId: page.nodeId,
       knowledge: deterministicEnvelope(
         input.context,
-        [fact.evidenceId, ...page.evidenceIds],
+        [fact.evidenceId, ...page.evidenceIds, ...(reference === undefined ? [] : [reference])],
         'framework-convention',
       ),
     },
@@ -108,10 +138,13 @@ export const linkPageNavigation = (input: PageLinkInput): number => {
   for (const fact of input.graph.callFacts.filter(isNavigation)) {
     const value = fact.stringArguments[0];
     const path = value === undefined ? undefined : normalizeRoutePath(value);
+    if (value === undefined || path === undefined) {
+      continue;
+    }
     const sourceId = input.sourceIdOf(fact);
-    for (const page of path === undefined ? [] : (byPath.get(path) ?? [])) {
+    for (const page of byPath.get(path) ?? []) {
       if (page.nodeId !== sourceId) {
-        link(input, fact, page, sourceId);
+        link(input, { fact, page, sourceId, literalPath: value, normalizedPath: path });
         matched += 1;
       }
     }

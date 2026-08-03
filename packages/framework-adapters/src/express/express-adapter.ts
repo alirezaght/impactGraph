@@ -86,7 +86,7 @@ const addRoute = ({ builder, graph, fact, world, context }: RouteInput): void =>
   const receiverKey = `${fact.filePath}#${fact.receiverName ?? ''}`;
   const prefix = world.mountPrefixes.get(receiverKey);
   const fullPath = joinPath(prefix, fact.stringArguments[0]);
-  const identity = routeIdentity(method, fullPath);
+  const identity = routeIdentity(method, fullPath, 'colon');
   const routeNodeId = identity.nodeId;
   builder.addNode(
     {

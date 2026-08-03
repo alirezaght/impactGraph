@@ -22,7 +22,7 @@ file:worker/src/deal-publisher.ts|file|repository|deal-publisher.ts|static-analy
 package:cross-stack|package|repository|cross-stack|configuration|-
 package:deals-web|package|repository|deals-web|configuration|-
 package:deals-worker|package|repository|deals-worker|configuration|-
-page:/|page|application|/|framework-convention|-
+page:/|page|application|/|framework-convention|ANY /
 route:GET /api/deals|api-endpoint|application|GET /api/deals|framework-convention|GET /api/deals
 route:POST /api/deals|api-endpoint|application|POST /api/deals|framework-convention|POST /api/deals
 spring:bean:symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter|service|application|dealEventsAdapter|framework-convention|-
@@ -68,9 +68,9 @@ topic:deal-event|topic|integration|deal-event|framework-convention|-
 workspace:cross-stack|workspace|repository|cross-stack|configuration|-
 
 edges:
-CALLS_ENDPOINT|symbol:web/src/lib/api.ts#createDeal->route:POST /api/deals|framework-convention|ev2
-CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:GET /api/deals|framework-convention|ev2
-CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:POST /api/deals|framework-convention|ev2
+CALLS_ENDPOINT|symbol:web/src/lib/api.ts#createDeal->route:POST /api/deals|framework-convention|ev3
+CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:GET /api/deals|framework-convention|ev3
+CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:POST /api/deals|framework-convention|ev3
 CALLS|symbol:worker/src/deal-events.service.ts#DealEventsService.onDealEvent->symbol:worker/src/deal-publisher.ts#publishDealCreated|static-analysis|ev1
 CONFIGURES|env:DEAL_EVENTS_TOPIC->file:worker/src/deal-publisher.ts|static-analysis|ev1
 CONFIGURES|env:LEGACY_TOPIC->file:worker/src/deal-publisher.ts|static-analysis|ev1
@@ -141,13 +141,13 @@ EXPOSES|symbol:api/app/main.py#create_deal->route:POST /api/deals|framework-conv
 EXPOSES|symbol:api/app/main.py#list_deals->route:GET /api/deals|framework-convention|ev1
 EXPOSES|symbol:web/src/pages/index.astro#index->page:/|framework-convention|ev1
 IMPORTS|file:worker/src/deal-events.service.ts->file:worker/src/deal-publisher.ts|static-analysis|ev1
-NAVIGATES_TO|symbol:web/src/pages/index.astro#index->route:GET /api/deals|framework-convention|ev2
+NAVIGATES_TO|symbol:web/src/pages/index.astro#index->route:GET /api/deals|framework-convention|ev3
 PUBLISHES|symbol:api/app/events.py#publish_deal->topic:deal-events|framework-convention|ev1
 PUBLISHES|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.republishDeal->topic:deal-events|framework-convention|ev1
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishConfiguredEvent->topic:deal-events|framework-convention|ev2
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishDealCreated->topic:deal-events|framework-convention|ev1
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishLegacyEvent->topic:deal-event|framework-convention|ev1
-SUBMITS_TO|symbol:web/src/pages/index.astro#index->route:POST /api/deals|framework-convention|ev2
+SUBMITS_TO|symbol:web/src/pages/index.astro#index->route:POST /api/deals|framework-convention|ev3
 SUBSCRIBES_TO|symbol:api/app/events.py#consume_deals->subscription:deal-events-worker|framework-convention|ev1
 SUBSCRIBES_TO|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter->subscription:deal-events-worker|framework-convention|ev1
 SUBSCRIBES_TO|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.onDealEvent->subscription:deal-events-worker|framework-convention|ev1

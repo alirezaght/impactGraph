@@ -11,7 +11,7 @@ file:src/pages/api/deals.ts|file|repository|deals.ts|static-analysis|-
 file:src/pages/index.astro|file|repository|index.astro|static-analysis|-
 file:src/scripts/deal-filter.ts|file|repository|deal-filter.ts|static-analysis|-
 package:astro-site|package|repository|astro-site|configuration|-
-page:/|page|application|/|framework-convention|-
+page:/|page|application|/|framework-convention|ANY /
 route:GET /api/deals|api-endpoint|application|GET /api/deals|framework-convention|GET /api/deals
 route:POST /api/deals|api-endpoint|application|POST /api/deals|framework-convention|POST /api/deals
 symbol:src/content/config.ts#collections|symbol|repository|collections|static-analysis|-
@@ -46,5 +46,5 @@ EXPOSES|symbol:src/pages/api/deals.ts#POST->route:POST /api/deals|framework-conv
 EXPOSES|symbol:src/pages/index.astro#index->page:/|framework-convention|ev1
 IMPORTS|file:src/pages/index.astro->file:src/layouts/Base.astro|static-analysis|ev1
 IMPORTS|file:src/pages/index.astro->file:src/scripts/deal-filter.ts|static-analysis|ev1
-NAVIGATES_TO|symbol:src/layouts/Base.astro#Base->page:/|framework-convention|ev2
+NAVIGATES_TO|symbol:src/layouts/Base.astro#Base->page:/|framework-convention|ev3
 READS_FROM|symbol:src/pages/index.astro#index->collection:deals|framework-convention|ev1

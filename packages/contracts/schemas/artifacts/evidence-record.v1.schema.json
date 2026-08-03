@@ -118,6 +118,33 @@
             "reason": {
               "type": "string",
               "minLength": 1
+            },
+            "routeReference": {
+              "type": "object",
+              "properties": {
+                "literalPath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "normalizedPath": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "method": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "attribute": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "resolution": {
+                  "type": "string",
+                  "enum": ["static", "dynamic"]
+                }
+              },
+              "required": ["literalPath", "attribute", "resolution"],
+              "additionalProperties": false
             }
           },
           "required": ["mechanism", "relationship", "producer"],

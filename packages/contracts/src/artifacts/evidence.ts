@@ -47,6 +47,21 @@ export const evidenceSourceSchema = z.discriminatedUnion('kind', [
  * so every already-written artifact stays valid. Typed fields rather than a free-text blob —
  * `originalClassification` is what makes the relationship split measurable.
  */
+/**
+ * §12.1.1 route reference: what a routing producer read at the reference site. Typed fields, not an
+ * opaque string, so `method` and `resolution` can be validated and read by a rule rather than
+ * pattern-matched out of prose.
+ */
+const routeReferenceSchema = z
+  .object({
+    literalPath: z.string().min(1),
+    normalizedPath: z.string().min(1).optional(),
+    method: z.string().min(1).optional(),
+    attribute: z.string().min(1),
+    resolution: z.enum(['static', 'dynamic']),
+  })
+  .strict();
+
 export const evidenceDerivationSchema = z
   .object({
     mechanism: z.string().min(1),
@@ -54,6 +69,7 @@ export const evidenceDerivationSchema = z
     producer: z.string().min(1),
     originalClassification: z.string().min(1).optional(),
     reason: z.string().min(1).optional(),
+    routeReference: routeReferenceSchema.optional(),
   })
   .strict();
 

@@ -13,7 +13,7 @@ import { routeIdentity } from './route-contract.js';
 
 describe('routeIdentity', () => {
   it('derives id and display name from the contract, not the other way round', () => {
-    const identity = routeIdentity('get', '/api/deals');
+    const identity = routeIdentity('get', '/api/deals', 'colon');
 
     expect(identity.route).toEqual({
       path: '/api/deals',
@@ -27,7 +27,7 @@ describe('routeIdentity', () => {
   });
 
   it('uppercases the verb, because a contract states one verb however it was spelled', () => {
-    expect(routeIdentity('post', '/x').route.method).toBe('POST');
+    expect(routeIdentity('post', '/x', 'colon').route.method).toBe('POST');
   });
 });
 

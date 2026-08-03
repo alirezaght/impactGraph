@@ -98,7 +98,7 @@ const addRouteFacts = (
     }
     const method = HTTP_DECORATORS[route.decoratorName] ?? 'GET';
     const fullPath = joinPath(prefixByController.get(classNodeId), route.stringArguments[0]);
-    const identity = routeIdentity(method, fullPath);
+    const identity = routeIdentity(method, fullPath, 'colon');
     const routeNodeId = identity.nodeId;
     builder.addNode(
       {

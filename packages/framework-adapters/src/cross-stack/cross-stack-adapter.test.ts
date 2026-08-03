@@ -162,8 +162,12 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
       'CALLS_ENDPOINT|symbol:src/lib/api.ts#loadDeals->route:GET /api/deals',
     ]);
   });
+});
 
-  it('attaches evidence from both sides of a route correspondence', async () => {
+// §12.1.1. A correspondence claim is only reviewable if it records how it was made, so these
+// assert the observation itself — not that an edge exists, which the block above already covers.
+describe('cross-stack adapter — what it records about a route reference', () => {
+  it('attaches evidence from both sides of a route correspondence, plus how it matched', async () => {
     const fragment = await enrich(
       graphOf(
         [node('route:GET /api/deals', 'api-endpoint', 'GET /api/deals')],
@@ -172,9 +176,68 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
     );
     const edge = fragment.edges[0];
     expect(edge?.knowledge.provenance).toBe('framework-convention');
-    expect(edge?.knowledge.evidenceIds).toEqual(['ev:template:a.href:/api/deals', 'ev:test']);
+    expect(edge?.knowledge.evidenceIds).toEqual([
+      'ev:template:a.href:/api/deals',
+      'ev:test',
+      'route-ref:cross-stack:uses:file:src/pages/index.astro->route:GET /api/deals',
+    ]);
   });
 
+  it('records what the reference site stated, as typed fields rather than prose', async () => {
+    const fragment = await enrich(
+      graphOf(
+        [node('route:GET /api/deals', 'api-endpoint', 'GET /api/deals')],
+        [templateFact('a.href', '/api/deals/')],
+      ),
+    );
+    const reference = fragment.evidence.find((record) => record.id.startsWith('route-ref:'));
+
+    expect(reference?.derivation?.routeReference).toEqual({
+      // The literal keeps its trailing slash and the normalized form is recorded BECAUSE it
+      // differs — a reviewer can see the match needed normalizing rather than having to re-derive it.
+      literalPath: '/api/deals/',
+      normalizedPath: '/api/deals',
+      attribute: 'a.href',
+      resolution: 'static',
+    });
+    // `<a href>` states no verb, so none is recorded. HTML's GET default is browser behaviour.
+    expect(reference?.derivation?.routeReference?.method).toBeUndefined();
+  });
+
+  it('records a verb the reference site actually stated', async () => {
+    const fragment = await enrich(
+      graphOf(
+        [node('route:POST /api/deals', 'api-endpoint', 'POST /api/deals')],
+        [
+          {
+            ...templateFact('form.action', '/api/deals'),
+            keywordStringArguments: { method: 'post' },
+          },
+        ],
+      ),
+    );
+    const reference = fragment.evidence.find((record) => record.id.startsWith('route-ref:'));
+
+    // Uppercased, because a contract states one verb however the template spelled it — and this is
+    // the observation a verb-conditional propagation rule would need, now that it is persisted.
+    expect(reference?.derivation?.routeReference?.method).toBe('POST');
+    expect(reference?.derivation?.routeReference?.attribute).toBe('form.action');
+  });
+
+  it('omits normalizedPath when the literal needed no normalizing', async () => {
+    const fragment = await enrich(
+      graphOf(
+        [node('route:GET /api/deals', 'api-endpoint', 'GET /api/deals')],
+        [templateFact('a.href', '/api/deals')],
+      ),
+    );
+    const reference = fragment.evidence.find((record) => record.id.startsWith('route-ref:'));
+
+    expect(reference?.derivation?.routeReference?.normalizedPath).toBeUndefined();
+  });
+});
+
+describe('route path normalization', () => {
   it('normalizes only query, fragment and trailing slash — never the path itself', () => {
     expect(normalizeRoutePath('/api/deals/')).toBe('/api/deals');
     expect(normalizeRoutePath('/api/deals?page=2')).toBe('/api/deals');

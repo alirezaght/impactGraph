@@ -64,7 +64,7 @@ const emitRoute = (input: RouteInput): void => {
   // silently defaulting to GET, which would be a guess about the application's surface.
   const verb = MAPPING_METHODS[fact.decoratorName] ?? declaredVerb(fact) ?? 'ANY';
   const fullPath = joinPath(prefix, declaredPath(fact));
-  const identity = routeIdentity(verb, fullPath);
+  const identity = routeIdentity(verb, fullPath, 'brace');
   const routeNodeId = identity.nodeId;
   const knowledge = deterministicEnvelope(context, [fact.evidenceId], 'framework-convention');
   builder.addNode(

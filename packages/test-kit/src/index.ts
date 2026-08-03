@@ -54,6 +54,6 @@ export {
   parseCandidateGolden,
   parseGraphGolden,
 } from './movement.js';
-export type { CandidateMovement, GraphMovement, MovementReport } from './movement.js';
+export type { CandidateMovement, GraphMovement, MovementReport, NodeMovement } from './movement.js';
 export { SAMPLE_EVALUATIONS } from './evaluation-samples.js';
 export type { CrossStackEvaluation, ImpactGroundTruth, SampleEvaluation } from './evaluation.js';

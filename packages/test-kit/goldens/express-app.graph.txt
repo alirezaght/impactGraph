@@ -6,7 +6,7 @@ file:src/deals-router.ts|file|repository|deals-router.ts|static-analysis|-
 file:src/middleware.ts|file|repository|middleware.ts|static-analysis|-
 file:src/server.ts|file|repository|server.ts|static-analysis|-
 package:express-app|package|repository|express-app|configuration|-
-route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention|GET /deals/:id
+route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention|GET /deals/:id p:id!
 route:GET /deals|api-endpoint|application|GET /deals|framework-convention|GET /deals
 route:GET /health|api-endpoint|application|GET /health|framework-convention|GET /health
 route:POST /deals|api-endpoint|application|POST /deals|framework-convention|POST /deals

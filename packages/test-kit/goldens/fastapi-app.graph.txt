@@ -10,10 +10,10 @@ file:app/routers/health.py|file|repository|health.py|static-analysis|-
 file:pyproject.toml|file|repository|pyproject.toml|static-analysis|-
 file:tests/test_deals.py|test|application|test_deals.py|framework-convention|-
 job:symbol:app/main.py#notify_watchers|job|application|background task notify_watchers|framework-convention|-
-route:GET /deals/{deal_id}|api-endpoint|application|GET /deals/{deal_id}|framework-convention|GET /deals/{deal_id}
+route:GET /deals/{deal_id}|api-endpoint|application|GET /deals/{deal_id}|framework-convention|GET /deals/{deal_id} p:deal_id~
 route:GET /deals|api-endpoint|application|GET /deals|framework-convention|GET /deals
 route:GET /health|api-endpoint|application|GET /health|framework-convention|GET /health
-route:POST /deals/{deal_id}/publish|api-endpoint|application|POST /deals/{deal_id}/publish|framework-convention|POST /deals/{deal_id}/publish
+route:POST /deals/{deal_id}/publish|api-endpoint|application|POST /deals/{deal_id}/publish|framework-convention|POST /deals/{deal_id}/publish p:deal_id~
 route:POST /deals|api-endpoint|application|POST /deals|framework-convention|POST /deals
 schema:symbol:app/models.py#Deal|schema|data|Deal|framework-convention|-
 symbol:app/clients.py#load_absolute|function|application|load_absolute|static-analysis|-
@@ -33,7 +33,7 @@ symbol:tests/test_deals.py#client|symbol|repository|client|static-analysis|-
 symbol:tests/test_deals.py#test_list_deals|function|application|test_list_deals|static-analysis|-
 
 edges:
-CALLS_ENDPOINT|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention|ev2
+CALLS_ENDPOINT|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention|ev3
 CALLS|symbol:app/main.py#publish_deal->symbol:app/models.py#Deal|static-analysis|ev1
 CALLS|symbol:app/routers/deals.py#get_deal->symbol:app/models.py#Deal|static-analysis|ev1
 CALLS|symbol:app/routers/deals.py#list_deals->symbol:app/models.py#Deal|static-analysis|ev1

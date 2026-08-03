@@ -109,8 +109,9 @@ describe('JSON serialization round-trips (Story 1.1 AC)', () => {
   });
 
   it('stamps an explicit schemaVersion on every serialized form', () => {
-    // 2 since §12.1.1 added the structured route contract to a node.
-    expect(serializeGraphNode(node()).schemaVersion).toBe(2);
+    // 3 since §12.1.1: 2 added the structured route contract, 3 made parameter requiredness
+    // three-state so an observed-dynamic-but-unknown parameter is representable.
+    expect(serializeGraphNode(node()).schemaVersion).toBe(3);
     expect(serializeGraphEdge(edge()).schemaVersion).toBe(1);
     const evidence = mustCreate<EvidenceRecord>(createEvidenceRecord(evidenceInput));
     expect(serializeEvidenceRecord(evidence).schemaVersion).toBe(1);

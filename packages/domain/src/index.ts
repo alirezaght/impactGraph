@@ -40,6 +40,8 @@ export type {
   EvidenceSource,
   EvidenceRecord,
   CreateEvidenceRecordInput,
+  EvidenceDerivation,
+  RouteReference,
 } from './provenance/evidence.js';
 export { EVIDENCE_KINDS, createEvidenceRecord } from './provenance/evidence.js';
 
@@ -66,6 +68,7 @@ export type {
   CreateGraphNodeInput,
   RouteContract,
   RouteParameter,
+  Requiredness,
 } from './repository/graph-node.js';
 export { createGraphNode, routeDisplayName } from './repository/graph-node.js';
 export type { GraphEdge, CreateGraphEdgeInput } from './repository/graph-edge.js';

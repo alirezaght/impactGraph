@@ -9,7 +9,7 @@ file:src/deals/deals.module.ts|file|repository|deals.module.ts|static-analysis|-
 file:src/deals/deals.service.ts|file|repository|deals.service.ts|static-analysis|-
 job:symbol:src/deals/deals.service.ts#DealsService.refreshExpired|job|application|scheduled 0 * * * *|framework-convention|-
 package:nestjs-app|package|repository|nestjs-app|configuration|-
-route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention|GET /deals/:id
+route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention|GET /deals/:id p:id!
 route:GET /deals|api-endpoint|application|GET /deals|framework-convention|GET /deals
 route:POST /deals|api-endpoint|application|POST /deals|framework-convention|POST /deals
 symbol:src/app.module.ts#AppModule|class|application|AppModule|static-analysis|-
