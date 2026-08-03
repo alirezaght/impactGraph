@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 
 import { requireTrustedWorkspace } from '../workspace.js';
 
+import { keyPagePrompt, shouldOpenKeyPage, shouldPromptForKey } from './provider-key-entry.js';
+
 // Story 13.2 — `Configure Model Provider`. The strategy/model/baseUrl land in config.yml
 // (committed, §17); the API key goes to SecretStorage ONLY (§35) — there is no code path
 // that writes a key to a file.
@@ -55,12 +57,39 @@ const askDetails = async (
   };
 };
 
+/**
+ * Offers to open the provider's console page before asking for a key, so the user is not left to
+ * find the URL themselves. Returns false when the user dismissed the offer, which cancels the
+ * flow rather than falling through to a secret prompt they did not ask for.
+ *
+ * Opening a page is the whole of it: nothing is transmitted, and the key still reaches only
+ * SecretStorage.
+ */
+const offerKeyPage = async (strategy: Strategy): Promise<boolean> => {
+  const prompt = keyPagePrompt(strategy);
+  if (prompt === undefined) {
+    return true;
+  }
+  const choice = await vscode.window.showInformationMessage(
+    prompt.title,
+    { modal: true, detail: prompt.detail },
+    ...prompt.choices,
+  );
+  if (shouldOpenKeyPage(choice)) {
+    await vscode.env.openExternal(vscode.Uri.parse(prompt.url));
+  }
+  return shouldPromptForKey(choice);
+};
+
 const storeKeyIfExternal = async (
   context: vscode.ExtensionContext,
   strategy: Strategy,
 ): Promise<boolean> => {
   if (strategy !== 'anthropic' && strategy !== 'openai-compatible') {
     return true;
+  }
+  if (!(await offerKeyPage(strategy))) {
+    return false;
   }
   const key = await vscode.window.showInputBox({
     title: 'API key — stored in VS Code SecretStorage, never in files or logs (§35)',
