@@ -53,6 +53,22 @@
 - [x] Implement deterministic fallback extractor.
 - [x] Golden tests: three sample specifications (§44 Phase 0) → expected requirement sets. _(SAMPLE_EVALUATIONS pins three specs (deal filtering §46, repository counting, deal expiry) with required direct sets + surprise cases, gated by the §41 metrics suite)_
 
+## Dogfooding finding (2026-08-03) — deterministic extractor splits prose at line breaks
+
+Running `analyze` on `specs/packaging-and-key-flow.md` (a normal two-section markdown spec) with
+no AI provider configured produced **10 requirements from ~6 sentences**, several of them
+fragments: "extension can open its SQLite index." and "`openSqliteIndexStore` currently fails in
+an installed" were each extracted as separate requirements, because the deterministic fallback
+segments on NEWLINES rather than sentence or paragraph boundaries. Hard-wrapped prose — the normal
+way specs are written — therefore fragments.
+
+- [ ] Segment the deterministic extractor on sentence/paragraph boundaries, not raw lines, so a
+      hard-wrapped paragraph is one requirement. _(The impacts were still correct — `openSqliteIndexStore`
+      came back `required` at 0.90 and `runConfigureModelProvider` / `SecretStorageLike` at 0.50, so
+      the graph half is unaffected — but the requirement LIST is what a user reads first, and
+      fragments make it look broken. Found by using the tool on its own repository, which is exactly
+      what §44 Phase 0 asks for.)_
+
 ## Story 5.4 — Requirement editing & open-question workflow
 
 **Acceptance criteria**
