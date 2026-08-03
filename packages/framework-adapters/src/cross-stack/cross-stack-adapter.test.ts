@@ -27,8 +27,32 @@ const knowledge = {
   analysisRunId: CONTEXT.analysisRunId,
 };
 
-const node = (id: string, type: string, name: string, path?: string): GraphNode =>
-  ({ id, category: 'application', type, name, path, knowledge }) as unknown as GraphNode;
+/**
+ * An `api-endpoint` node carries its §12.1.1 route contract, because that is now what states its
+ * verb and path. A route node without one states no route at all — matching reads the contract and
+ * never the display name.
+ */
+const node = (id: string, type: string, name: string, path?: string): GraphNode => {
+  const space = name.indexOf(' ');
+  const route =
+    type === 'api-endpoint' && space > 0
+      ? {
+          method: name.slice(0, space),
+          path: name.slice(space + 1),
+          pathParameters: [],
+          queryParameters: [],
+        }
+      : undefined;
+  return {
+    id,
+    category: 'application',
+    type,
+    name,
+    path,
+    route,
+    knowledge,
+  } as unknown as GraphNode;
+};
 
 const templateFact = (
   calleeName: string,

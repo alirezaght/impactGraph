@@ -1,5 +1,7 @@
 import { deterministicEnvelope, FragmentBuilder } from '@impactgraph/language-adapters';
 
+import { routeIdentity } from '../route-contract.js';
+
 import type {
   CodeGraph,
   FrameworkAdapter,
@@ -96,13 +98,15 @@ const addRouteFacts = (
     }
     const method = HTTP_DECORATORS[route.decoratorName] ?? 'GET';
     const fullPath = joinPath(prefixByController.get(classNodeId), route.stringArguments[0]);
-    const routeNodeId = `route:${method} ${fullPath}`;
+    const identity = routeIdentity(method, fullPath);
+    const routeNodeId = identity.nodeId;
     builder.addNode(
       {
         id: routeNodeId,
         category: 'application',
         type: 'api-endpoint',
-        name: `${method} ${fullPath}`,
+        name: identity.name,
+        route: identity.route,
         path: route.filePath,
         knowledge: deterministicEnvelope(context, [route.evidenceId], 'framework-convention'),
       },

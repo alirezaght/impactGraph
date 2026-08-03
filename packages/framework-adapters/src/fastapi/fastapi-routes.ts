@@ -1,5 +1,7 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
+import { routeIdentity } from '../route-contract.js';
+
 import { appNodeId, holderKey, routerNodeId } from './fastapi-world.js';
 
 import type { FastApiWorld, Holder } from './fastapi-world.js';
@@ -102,14 +104,16 @@ const emitRoute = (
   context: IndexingContext,
 ): void => {
   const fullPath = joinPath(world.prefixes.get(spec.holder.key) ?? '', spec.path);
-  const routeNodeId = `route:${spec.method} ${fullPath}`;
+  const identity = routeIdentity(spec.method, fullPath);
+  const routeNodeId = identity.nodeId;
   const knowledge = deterministicEnvelope(context, [spec.evidenceId], 'framework-convention');
   builder.addNode(
     {
       id: routeNodeId,
       category: 'application',
       type: 'api-endpoint',
-      name: `${spec.method} ${fullPath}`,
+      name: identity.name,
+      route: identity.route,
       path: spec.filePath,
       knowledge,
     },

@@ -49,6 +49,8 @@ export {
   formatMovement,
   graphMovement,
   mergeMovement,
+  nodeMovement,
+  parseGraphNodes,
   parseCandidateGolden,
   parseGraphGolden,
 } from './movement.js';

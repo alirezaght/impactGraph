@@ -1,22 +1,22 @@
 nodes:
-dependency:express|third-party-service|integration|express|configuration
-directory:src|directory|repository|src|static-analysis
-file:package.json|file|repository|package.json|static-analysis
-file:src/deals-router.ts|file|repository|deals-router.ts|static-analysis
-file:src/middleware.ts|file|repository|middleware.ts|static-analysis
-file:src/server.ts|file|repository|server.ts|static-analysis
-package:express-app|package|repository|express-app|configuration
-route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention
-route:GET /deals|api-endpoint|application|GET /deals|framework-convention
-route:GET /health|api-endpoint|application|GET /health|framework-convention
-route:POST /deals|api-endpoint|application|POST /deals|framework-convention
-symbol:src/deals-router.ts#createDeal|function|application|createDeal|static-analysis
-symbol:src/deals-router.ts#dealsRouter|symbol|repository|dealsRouter|static-analysis
-symbol:src/deals-router.ts#getDeal|function|application|getDeal|static-analysis
-symbol:src/deals-router.ts#listDeals|function|application|listDeals|static-analysis
-symbol:src/middleware.ts#authenticate|function|application|authenticate|static-analysis
-symbol:src/middleware.ts#logRequests|function|application|logRequests|static-analysis
-symbol:src/server.ts#healthCheck|function|application|healthCheck|static-analysis
+dependency:express|third-party-service|integration|express|configuration|-
+directory:src|directory|repository|src|static-analysis|-
+file:package.json|file|repository|package.json|static-analysis|-
+file:src/deals-router.ts|file|repository|deals-router.ts|static-analysis|-
+file:src/middleware.ts|file|repository|middleware.ts|static-analysis|-
+file:src/server.ts|file|repository|server.ts|static-analysis|-
+package:express-app|package|repository|express-app|configuration|-
+route:GET /deals/:id|api-endpoint|application|GET /deals/:id|framework-convention|GET /deals/:id
+route:GET /deals|api-endpoint|application|GET /deals|framework-convention|GET /deals
+route:GET /health|api-endpoint|application|GET /health|framework-convention|GET /health
+route:POST /deals|api-endpoint|application|POST /deals|framework-convention|POST /deals
+symbol:src/deals-router.ts#createDeal|function|application|createDeal|static-analysis|-
+symbol:src/deals-router.ts#dealsRouter|symbol|repository|dealsRouter|static-analysis|-
+symbol:src/deals-router.ts#getDeal|function|application|getDeal|static-analysis|-
+symbol:src/deals-router.ts#listDeals|function|application|listDeals|static-analysis|-
+symbol:src/middleware.ts#authenticate|function|application|authenticate|static-analysis|-
+symbol:src/middleware.ts#logRequests|function|application|logRequests|static-analysis|-
+symbol:src/server.ts#healthCheck|function|application|healthCheck|static-analysis|-
 
 edges:
 CONTAINS|file:src/deals-router.ts->symbol:src/deals-router.ts#createDeal|static-analysis|ev1

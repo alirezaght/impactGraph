@@ -7,11 +7,27 @@ import { fileURLToPath } from 'node:url';
 // deterministic graph changes — and every diff line is human-readable.
 
 /** The node fields a graph golden pins. `GraphNode` satisfies this structurally. */
+export interface GoldenRouteParameter {
+  readonly name: string;
+  readonly required: boolean;
+}
+
 export interface GoldenGraphNode {
   readonly id: string;
   readonly type: string;
   readonly category: string;
   readonly name: string;
+  /**
+   * §12.1.1 route contract. Pinned because it is first-class persisted state now: a golden that
+   * showed only the display name could not detect a contract regression, and parameter extraction
+   * would land invisibly.
+   */
+  readonly route?: {
+    readonly path: string;
+    readonly method?: string;
+    readonly pathParameters: readonly GoldenRouteParameter[];
+    readonly queryParameters: readonly GoldenRouteParameter[];
+  };
   readonly knowledge: { readonly provenance: string };
 }
 
@@ -34,8 +50,27 @@ export interface GoldenGraphInput {
   readonly edges: readonly GoldenGraphEdge[];
 }
 
+/** `GET /api/deals p:id!,slug? q:limit?` — compact, pipe-free, and `-` when a node states no route. */
+const routeCell = (node: GoldenGraphNode): string => {
+  const route = node.route;
+  if (route === undefined) {
+    return '-';
+  }
+  const parameters = (entries: readonly GoldenRouteParameter[], label: string): string =>
+    entries.length === 0
+      ? ''
+      : ` ${label}:${entries.map((entry) => `${entry.name}${entry.required ? '!' : '?'}`).join(',')}`;
+  return (
+    `${route.method ?? 'ANY'} ${route.path}` +
+    parameters(route.pathParameters, 'p') +
+    parameters(route.queryParameters, 'q')
+  );
+};
+
 const nodeLine = (node: GoldenGraphNode): string =>
-  `${node.id}|${node.type}|${node.category}|${node.name}|${node.knowledge.provenance}`;
+  [node.id, node.type, node.category, node.name, node.knowledge.provenance, routeCell(node)].join(
+    '|',
+  );
 
 const edgeLine = (edge: GoldenGraphEdge): string =>
   [
@@ -54,7 +89,7 @@ const lexicographic = (a: string, b: string): number => {
 
 /**
  * Stable, human-diffable text form of an indexed graph: sorted node lines
- * (`id|type|category|name|provenance`), then sorted edge lines
+ * (`id|type|category|name|provenance|route`), then sorted edge lines
  * (`type|sourceId->targetId|provenance`). Same graph in, same string out — always.
  */
 export const serializeGraphGolden = (graph: GoldenGraphInput): string => {

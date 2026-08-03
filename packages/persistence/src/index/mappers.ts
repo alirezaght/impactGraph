@@ -4,6 +4,7 @@ import {
   graphEdgeArtifactSchema,
   graphNodeArtifactSchema,
   repositorySnapshotArtifactSchema,
+  upgradeGraphNodeArtifact,
 } from '@impactgraph/contracts';
 import {
   err,
@@ -95,7 +96,32 @@ const fromPayload =
     return ok(parsed.value);
   };
 
-export const nodeFromPayload = fromPayload(graphNodeArtifactSchema, parseGraphNode, 'node');
+/**
+ * Nodes go through the §12.1.1 upgrader on read, so an index written before route contracts existed
+ * still loads. The upgrader accepts a current node unchanged and lifts a v1 node to v2, recovering
+ * verb and path from the legacy display name and leaving parameters empty — the only place in the
+ * codebase permitted to read routing information out of a name, because that is what migration IS.
+ *
+ * Its diagnostics are deliberately not surfaced here: an index is a rebuildable cache (ADR-0006), so
+ * a migrated read is not something a user must act on. A stale index is corrected by re-indexing.
+ */
+export const nodeFromPayload = (payload: string): Result<GraphNode, StorageError> => {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(payload);
+  } catch {
+    return err(storageError('corruption', 'node payload is not valid JSON'));
+  }
+  const upgraded = upgradeGraphNodeArtifact(raw);
+  if (upgraded === undefined) {
+    return err(storageError('corruption', 'node payload failed schema validation'));
+  }
+  const parsed = parseGraphNode(upgraded.node);
+  if (!parsed.ok) {
+    return err(storageError('corruption', 'node payload failed domain validation'));
+  }
+  return ok(parsed.value);
+};
 export const edgeFromPayload = fromPayload(graphEdgeArtifactSchema, parseGraphEdge, 'edge');
 export const evidenceFromPayload = fromPayload(
   evidenceRecordArtifactSchema,

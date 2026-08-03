@@ -1,26 +1,26 @@
 nodes:
-collection:deals|collection|data|deals|framework-convention
-dependency:astro|third-party-service|integration|astro|configuration
-directory:src|directory|repository|src|static-analysis
-file:astro.config.mjs|file|repository|astro.config.mjs|static-analysis
-file:package.json|file|repository|package.json|static-analysis
-file:src/content/config.ts|file|repository|config.ts|static-analysis
-file:src/content/deals/project-alpha.md|file|repository|project-alpha.md|static-analysis
-file:src/layouts/Base.astro|file|repository|Base.astro|static-analysis
-file:src/pages/api/deals.ts|file|repository|deals.ts|static-analysis
-file:src/pages/index.astro|file|repository|index.astro|static-analysis
-file:src/scripts/deal-filter.ts|file|repository|deal-filter.ts|static-analysis
-package:astro-site|package|repository|astro-site|configuration
-page:/|page|application|/|framework-convention
-route:GET /api/deals|api-endpoint|application|GET /api/deals|framework-convention
-route:POST /api/deals|api-endpoint|application|POST /api/deals|framework-convention
-symbol:src/content/config.ts#collections|symbol|repository|collections|static-analysis
-symbol:src/layouts/Base.astro#Base|ui-component|application|Base|framework-convention
-symbol:src/layouts/Base.astro#Props|interface|application|Props|static-analysis
-symbol:src/pages/api/deals.ts#GET|symbol|repository|GET|static-analysis
-symbol:src/pages/api/deals.ts#POST|symbol|repository|POST|static-analysis
-symbol:src/pages/index.astro#index|ui-component|application|index|framework-convention
-symbol:src/scripts/deal-filter.ts#filterDeals|symbol|repository|filterDeals|static-analysis
+collection:deals|collection|data|deals|framework-convention|-
+dependency:astro|third-party-service|integration|astro|configuration|-
+directory:src|directory|repository|src|static-analysis|-
+file:astro.config.mjs|file|repository|astro.config.mjs|static-analysis|-
+file:package.json|file|repository|package.json|static-analysis|-
+file:src/content/config.ts|file|repository|config.ts|static-analysis|-
+file:src/content/deals/project-alpha.md|file|repository|project-alpha.md|static-analysis|-
+file:src/layouts/Base.astro|file|repository|Base.astro|static-analysis|-
+file:src/pages/api/deals.ts|file|repository|deals.ts|static-analysis|-
+file:src/pages/index.astro|file|repository|index.astro|static-analysis|-
+file:src/scripts/deal-filter.ts|file|repository|deal-filter.ts|static-analysis|-
+package:astro-site|package|repository|astro-site|configuration|-
+page:/|page|application|/|framework-convention|-
+route:GET /api/deals|api-endpoint|application|GET /api/deals|framework-convention|GET /api/deals
+route:POST /api/deals|api-endpoint|application|POST /api/deals|framework-convention|POST /api/deals
+symbol:src/content/config.ts#collections|symbol|repository|collections|static-analysis|-
+symbol:src/layouts/Base.astro#Base|ui-component|application|Base|framework-convention|-
+symbol:src/layouts/Base.astro#Props|interface|application|Props|static-analysis|-
+symbol:src/pages/api/deals.ts#GET|symbol|repository|GET|static-analysis|-
+symbol:src/pages/api/deals.ts#POST|symbol|repository|POST|static-analysis|-
+symbol:src/pages/index.astro#index|ui-component|application|index|framework-convention|-
+symbol:src/scripts/deal-filter.ts#filterDeals|symbol|repository|filterDeals|static-analysis|-
 
 edges:
 CALLS|symbol:src/pages/index.astro#index->symbol:src/layouts/Base.astro#Base|static-analysis|ev1

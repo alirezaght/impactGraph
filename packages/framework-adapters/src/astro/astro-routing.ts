@@ -1,7 +1,9 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
+import { routeIdentity } from '../route-contract.js';
+
 import type { CodeGraph } from '../types.js';
-import type { GraphNode } from '@impactgraph/domain';
+import type { RouteContract, GraphNode } from '@impactgraph/domain';
 import type { FragmentBuilder, IndexingContext } from '@impactgraph/language-adapters';
 
 // Astro's file-based routing (PRD §15.2): everything under `src/pages` is a route, named by its
@@ -33,12 +35,17 @@ export interface RouteEmitInput {
   readonly evidenceId: string;
 }
 
-const addRouteNode = (
-  input: RouteEmitInput,
-  nodeId: string,
-  nodeType: 'page' | 'api-endpoint',
-  name: string,
-): void => {
+/** What to emit, bundled so the emitter keeps a readable signature. */
+interface RouteNodeSpec {
+  readonly nodeId: string;
+  readonly nodeType: 'page' | 'api-endpoint';
+  readonly name: string;
+  /** §12.1.1 — present for api-endpoint routes; a page node carries its path, not a verb. */
+  readonly route?: RouteContract;
+}
+
+const addRouteNode = (input: RouteEmitInput, spec: RouteNodeSpec): void => {
+  const { nodeId, nodeType, name, route } = spec;
   const knowledge = deterministicEnvelope(
     input.context,
     [input.evidenceId],
@@ -50,6 +57,7 @@ const addRouteNode = (
       category: 'application',
       type: nodeType,
       name,
+      ...(route === undefined ? {} : { route }),
       path: input.filePath,
       knowledge,
     },
@@ -86,9 +94,7 @@ export const addPages = (
         filePath: node.path ?? '',
         evidenceId: node.knowledge.evidenceIds[0] ?? '',
       },
-      `page:${route}`,
-      'page',
-      route,
+      { nodeId: `page:${route}`, nodeType: 'page', name: route },
     );
   }
 };
@@ -121,6 +127,7 @@ export const addApiRoutes = (
     if (!HTTP_EXPORTS.has(verb) || route === undefined) {
       continue;
     }
+    const identity = routeIdentity(verb, route);
     addRouteNode(
       {
         builder,
@@ -129,9 +136,12 @@ export const addApiRoutes = (
         filePath: path,
         evidenceId: node.knowledge.evidenceIds[0] ?? '',
       },
-      `route:${verb} ${route}`,
-      'api-endpoint',
-      `${verb} ${route}`,
+      {
+        nodeId: identity.nodeId,
+        nodeType: 'api-endpoint',
+        name: identity.name,
+        route: identity.route,
+      },
     );
   }
 };

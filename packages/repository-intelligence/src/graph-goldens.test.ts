@@ -32,6 +32,8 @@ import {
   graphGoldenPath,
   graphMovement,
   mergeMovement,
+  nodeMovement,
+  parseGraphNodes,
   parseGraphGolden,
   serializeGraphGolden,
 } from '@impactgraph/test-kit';
@@ -208,8 +210,14 @@ const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
   unchanged: 459,
 };
 
+/** Expected NODE movement, summed over all fixtures. Steady state is everything unchanged. */
+const EXPECTED_NODE_MOVEMENT: Readonly<Record<string, number>> = {
+  unchanged: 352,
+};
+
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
   const movements = new Map<string, MovementReport>();
+  const nodeMovements = new Map<string, MovementReport>();
 
   for (const fixture of FIXTURES) {
     it(`${fixture.name}: indexed graph matches the committed golden`, async () => {
@@ -227,6 +235,10 @@ describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
         fixture.name,
         graphMovement(parseGraphGolden(expected), parseGraphGolden(actual)),
       );
+      nodeMovements.set(
+        fixture.name,
+        nodeMovement(parseGraphNodes(expected), parseGraphNodes(actual)),
+      );
       expect(actual, mismatchHint(fixture.name, goldenFile)).toBe(expected);
     }, 30_000);
   }
@@ -239,6 +251,17 @@ describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
    * `EXPECTED_GRAPH_MOVEMENT` is the specification: edit it deliberately in the same commit that
    * causes the movement, and CI rejects anything it does not name.
    */
+  it('reports node movement across every fixture, and nothing unexplained', () => {
+    const merged = mergeMovement([...nodeMovements.values()]);
+    // eslint-disable-next-line no-console
+    console.log(formatMovement('NODE MOVEMENT (all fixtures)', merged));
+    for (const [category, total] of Object.entries(merged.totals)) {
+      expect(total, `unexpected node movement: ${category}`).toBe(
+        EXPECTED_NODE_MOVEMENT[category] ?? 0,
+      );
+    }
+  });
+
   it('reports graph movement across every fixture, and nothing unexplained', () => {
     const merged = mergeMovement([...movements.values()]);
     // eslint-disable-next-line no-console

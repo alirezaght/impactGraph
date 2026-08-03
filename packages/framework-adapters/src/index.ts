@@ -11,3 +11,5 @@ export { createGenericDetectorsAdapter } from './generic/generic-detectors-adapt
 export { createTerraformFrameworkAdapter } from './terraform/terraform-adapter.js';
 export { createCrossStackAdapter } from './cross-stack/cross-stack-adapter.js';
 export { createCustomDetectionAdapter } from './custom/custom-detection-adapter.js';
+export { routeIdentity } from './route-contract.js';
+export type { RouteNodeIdentity } from './route-contract.js';

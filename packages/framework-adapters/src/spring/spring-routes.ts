@@ -1,5 +1,7 @@
 import { deterministicEnvelope } from '@impactgraph/language-adapters';
 
+import { routeIdentity } from '../route-contract.js';
+
 import {
   declaredPath,
   declaredVerb,
@@ -62,14 +64,16 @@ const emitRoute = (input: RouteInput): void => {
   // silently defaulting to GET, which would be a guess about the application's surface.
   const verb = MAPPING_METHODS[fact.decoratorName] ?? declaredVerb(fact) ?? 'ANY';
   const fullPath = joinPath(prefix, declaredPath(fact));
-  const routeNodeId = `route:${verb} ${fullPath}`;
+  const identity = routeIdentity(verb, fullPath);
+  const routeNodeId = identity.nodeId;
   const knowledge = deterministicEnvelope(context, [fact.evidenceId], 'framework-convention');
   builder.addNode(
     {
       id: routeNodeId,
       category: 'application',
       type: 'api-endpoint',
-      name: `${verb} ${fullPath}`,
+      name: identity.name,
+      route: identity.route,
       path: fact.filePath,
       knowledge,
     },

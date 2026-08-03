@@ -34,14 +34,22 @@ export const normalizeRoutePath = (value: string): string | undefined => {
   return trimmed === '' ? '/' : trimmed;
 };
 
-/** `GET /api/deals` → verb + path; anything not shaped `<VERB> <path>` is not a route name. */
-const routeNameParts = (node: GraphNode): { verb: string; path: string } | undefined => {
-  const space = node.name.indexOf(' ');
-  if (node.type !== 'api-endpoint' || space <= 0) {
+/**
+ * A route's verb and path come from its §12.1.1 contract, never from its display name. This used to
+ * split `node.name` at its first space; the contract makes the two halves first-class, and a node
+ * without one states no route — it is not a route whose name happens to be unparseable.
+ *
+ * The path is still normalized here, because normalization is about comparing two spellings of the
+ * same endpoint, not about recovering structure.
+ */
+const routeContractParts = (node: GraphNode): { verb: string; path: string } | undefined => {
+  if (node.type !== 'api-endpoint' || node.route === undefined) {
     return undefined;
   }
-  const path = normalizeRoutePath(node.name.slice(space + 1));
-  return path === undefined ? undefined : { verb: node.name.slice(0, space).toUpperCase(), path };
+  const path = normalizeRoutePath(node.route.path);
+  return path === undefined || node.route.method === undefined
+    ? undefined
+    : { verb: node.route.method, path };
 };
 
 /**
@@ -54,7 +62,7 @@ const routeNameParts = (node: GraphNode): { verb: string; path: string } | undef
 export const indexRoutesByPath = (graph: CodeGraph): ReadonlyMap<string, RouteEntry[]> => {
   const byPath = new Map<string, RouteEntry[]>();
   for (const node of graph.nodes) {
-    const parts = routeNameParts(node);
+    const parts = routeContractParts(node);
     if (parts === undefined) {
       continue;
     }

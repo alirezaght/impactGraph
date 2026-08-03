@@ -61,8 +61,13 @@ export {
 export type { EdgeType } from './repository/edge-types.js';
 export { EDGE_TYPES, isEdgeType } from './repository/edge-types.js';
 
-export type { GraphNode, CreateGraphNodeInput } from './repository/graph-node.js';
-export { createGraphNode } from './repository/graph-node.js';
+export type {
+  GraphNode,
+  CreateGraphNodeInput,
+  RouteContract,
+  RouteParameter,
+} from './repository/graph-node.js';
+export { createGraphNode, routeDisplayName } from './repository/graph-node.js';
 export type { GraphEdge, CreateGraphEdgeInput } from './repository/graph-edge.js';
 export { createGraphEdge } from './repository/graph-edge.js';
 

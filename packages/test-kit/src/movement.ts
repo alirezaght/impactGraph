@@ -296,6 +296,71 @@ export const graphMovement = (
   return freeze(counters);
 };
 
+// ---------------------------------------------------------------------------- graph nodes
+
+interface NodeRow {
+  readonly provenance: string;
+  readonly route: string;
+}
+
+/**
+ * `id|type|category|name|provenance|route`, keyed by id. Node identity is the id alone: every other
+ * field is something a change might legitimately move, and putting any of them in the key would turn
+ * an edit into a removal plus an addition.
+ */
+export const parseGraphNodes = (text: string): Map<string, NodeRow> => {
+  const rows = new Map<string, NodeRow>();
+  let inNodes = false;
+  for (const line of text.split('\n')) {
+    if (line === 'nodes:') {
+      inNodes = true;
+      continue;
+    }
+    if (line === 'edges:') {
+      break;
+    }
+    const parts = line.split('|');
+    if (inNodes && parts.length >= 6) {
+      rows.set(parts[0] ?? '', { provenance: parts[4] ?? '', route: parts[5] ?? '' });
+    }
+  }
+  return rows;
+};
+
+/**
+ * Node movement, reported separately from edges. `route-changed` is why this exists: a route
+ * contract gaining a method or parameters is a semantic change to persisted state that no
+ * edge-oriented category could express.
+ */
+export const nodeMovement = (
+  before: ReadonlyMap<string, NodeRow>,
+  after: ReadonlyMap<string, NodeRow>,
+): MovementReport => {
+  const counters = newCounters();
+  for (const [id, row] of after) {
+    const baseline = before.get(id);
+    if (baseline === undefined) {
+      count(counters, 'added', id);
+      continue;
+    }
+    if (baseline.provenance !== row.provenance) {
+      count(counters, 'provenance-changed', `${baseline.provenance} → ${row.provenance}`);
+      continue;
+    }
+    if (baseline.route !== row.route) {
+      count(counters, 'route-changed', `${baseline.route} → ${row.route}`);
+      continue;
+    }
+    count(counters, 'unchanged');
+  }
+  for (const id of before.keys()) {
+    if (!after.has(id)) {
+      count(counters, 'removed', id);
+    }
+  }
+  return freeze(counters);
+};
+
 /** Sums several per-fixture reports into one, so an acceptance record covers the whole suite. */
 export const mergeMovement = (reports: readonly MovementReport[]): MovementReport => {
   const counters = newCounters();
