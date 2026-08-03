@@ -108,7 +108,9 @@ describe('Spring enrichment (PRD §15.2, §31)', () => {
       java('Helper', '@Service\npublic class Helper {}'),
     ]);
     expect(edgeIds(fragment)).toContain(
-      'USES|symbol:src/main/java/com/example/Worker.java#Worker->' +
+      // §12.2.1 INJECTS, and the direction is normative: consumer (Worker) → injected dependency
+      // (Helper), never the reverse.
+      'INJECTS|symbol:src/main/java/com/example/Worker.java#Worker->' +
         'symbol:src/main/java/com/example/Helper.java#Helper',
     );
   });

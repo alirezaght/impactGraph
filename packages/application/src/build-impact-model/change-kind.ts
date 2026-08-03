@@ -104,5 +104,11 @@ const REFERENCE_OBLIGATION: Readonly<Record<ChangeKind, Obligation>> = {
   unknown: 'possible',
 };
 
-export const obligationFor = (change: PredictedChange, edgeType: string): Obligation =>
-  edgeType === 'CALLS' ? CALL_OBLIGATION[change.kind] : REFERENCE_OBLIGATION[change.kind];
+export const obligationFor = (change: PredictedChange, edgeType: string): Obligation => {
+  // §12.2.1: an unclassified relationship never promotes, whatever the change kind. Not knowing
+  // what a relationship means cannot become evidence that the neighbour must change.
+  if (edgeType === 'USES_UNKNOWN') {
+    return 'possible';
+  }
+  return edgeType === 'CALLS' ? CALL_OBLIGATION[change.kind] : REFERENCE_OBLIGATION[change.kind];
+};

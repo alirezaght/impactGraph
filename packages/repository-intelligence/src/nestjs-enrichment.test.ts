@@ -99,11 +99,11 @@ describe('NestJS enrichment on the nestjs-app fixture (Stories 3.1 + 3.2)', () =
     );
   });
 
-  it('DI becomes a USES edge from the language-level injection fact', () => {
+  it('DI becomes an INJECTS edge from the language-level injection fact (§12.2.1)', () => {
     expect(
       graph.edges.some(
         (edge) =>
-          edge.type === 'USES' &&
+          edge.type === 'INJECTS' &&
           edge.sourceId === 'symbol:src/deals/deals.controller.ts#DealsController' &&
           edge.targetId === 'symbol:src/deals/deals.service.ts#DealsService',
       ),

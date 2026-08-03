@@ -96,6 +96,33 @@
             }
           ]
         },
+        "derivation": {
+          "type": "object",
+          "properties": {
+            "mechanism": {
+              "type": "string",
+              "minLength": 1
+            },
+            "relationship": {
+              "type": "string",
+              "minLength": 1
+            },
+            "producer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "originalClassification": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["mechanism", "relationship", "producer"],
+          "additionalProperties": false
+        },
         "repositorySnapshotId": {
           "type": "string",
           "minLength": 1

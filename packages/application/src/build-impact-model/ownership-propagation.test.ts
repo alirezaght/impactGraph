@@ -178,3 +178,36 @@ describe('a second route past the container restores admission', () => {
     expect(reachedFrom(graph)).not.toContain('file:far');
   });
 });
+
+// §12.2.1 direction invariants. An INJECTS edge must mean the same thing whatever produced it, or a
+// propagation rule attached to it cannot stay local. Source is the consumer receiving the
+// dependency; target is the thing supplied. One case per producer of the type.
+describe('INJECTS points from consumer to injected dependency', () => {
+  const injectionGraph = (edgeId: string): KnowledgeGraph =>
+    graphOf(
+      [node('symbol:consumer', 'symbol', 'Worker'), node('symbol:dependency', 'symbol', 'Helper')],
+      [edge(edgeId, 'INJECTS', 'symbol:consumer', 'symbol:dependency')],
+    );
+
+  for (const [producer, edgeId] of [
+    ['constructor injection (assembly)', 'injects:symbol:consumer->symbol:dependency'],
+    ['Spring @Autowired', 'spring:autowired:symbol:consumer->symbol:dependency'],
+  ] as const) {
+    it(`reaches the consumer when the dependency is anchored — ${producer}`, () => {
+      const anchored: ConceptMatch = { ...anchorMatch, nodeId: 'symbol:dependency' };
+      const reached = traverseCandidates(injectionGraph(edgeId), [anchored]).candidates;
+
+      // Impact flows to the dependent: changing Helper reaches Worker, which injects it.
+      expect(reached.map((c) => c.nodeId)).toContain('symbol:consumer');
+    });
+  }
+
+  it('treats a reverse injection as weak, never as likely on its own', () => {
+    const anchored: ConceptMatch = { ...anchorMatch, nodeId: 'symbol:dependency' };
+    const consumer = traverseCandidates(injectionGraph('injects:a->b'), [anchored]).candidates.find(
+      (candidate) => candidate.nodeId === 'symbol:consumer',
+    );
+
+    expect(consumer?.weakLinkOnly).toBe(true);
+  });
+});

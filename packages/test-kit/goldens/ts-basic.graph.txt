@@ -94,7 +94,7 @@ IMPORTS|file:src/lib/index.ts->file:src/lib/deal-repository.ts|static-analysis
 IMPORTS|file:src/services/deal-service.test.ts->file:src/services/deal-service.ts|static-analysis
 IMPORTS|file:src/services/deal-service.ts->file:src/lib/base-service.ts|static-analysis
 IMPORTS|file:src/services/deal-service.ts->file:src/lib/index.ts|static-analysis
+INJECTS|symbol:src/services/deal-service.ts#DealService->symbol:src/lib/deal-repository.ts#DealRepository|static-analysis
 MIGRATES|migration:prisma/migrations/20260801000000_init/migration.sql->datamodel:prisma/schema.prisma#Deal|framework-convention
 MIGRATES|migration:prisma/migrations/20260801000000_init/migration.sql->datamodel:prisma/schema.prisma#User|framework-convention
 TESTS|file:src/services/deal-service.test.ts->file:src/services/deal-service.ts|framework-convention
-USES|symbol:src/services/deal-service.ts#DealService->symbol:src/lib/deal-repository.ts#DealRepository|static-analysis

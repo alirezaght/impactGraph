@@ -621,6 +621,40 @@ Repository nodes
 - DOCUMENTS
 - GENERATED_FROM
 
+12.2.1 Edge-type addendum (relationship split)
+
+USES was found to carry at least seven unrelated facts — constructor injection, Spring DI, Express
+middleware and route wiring, page-to-route references, template calls, Terraform resource
+references — and to serve as the fallback when an adapter cannot classify a binding. Any traversal,
+confidence, or propagation rule attached to it is therefore wrong for some producers, and a type
+annotation propagated exactly like a runtime registry binding.
+
+The roster gains the following. Direction is normative: an edge of this type always points the
+stated way, whatever the producer, so a propagation rule can stay local and meaningful.
+
+- INJECTS — consumer → injected dependency. The SOURCE receives the dependency; the TARGET is the
+  thing supplied. Covers constructor injection and framework DI containers.
+- ROUTES_TO — caller → route or handler it dispatches to. Currently also carries Express middleware
+  wiring, which is a different relationship (see MIDDLEWARE_FOR) and is why this type must not yet
+  receive aggressive propagation rules.
+- MIDDLEWARE_FOR — middleware → the route or application it is attached to. Reserved for producers
+  that can distinguish attachment from dispatch without speculative parsing.
+- REFERENCES_RESOURCE — referring declaration → referenced infrastructure resource. Covers Terraform
+  resource and module references.
+- BINDS — component → messaging endpoint where the direction is known but no publish or subscribe
+  behaviour is established. Where behaviour IS established, PUBLISHES and SUBSCRIBES_TO are used
+  instead; BINDS is never a substitute for either.
+- USES_UNKNOWN — the honest name for an unclassified relationship. An adapter that cannot determine
+  what a binding means emits this rather than a generic USES, so uncertainty is visible instead of
+  disguised as a relationship. Its semantics are fixed and deliberately weak: traversable, may
+  contribute at most a `possible` tier, never corroborates another signal, contributes no positive
+  confidence, and is described as uncertain in explanations. Two USES_UNKNOWN edges are two
+  unknowns, not strong evidence; USES_UNKNOWN combined with CONTAINS is not corroboration either.
+
+USES is retained in the roster for edges no producer has yet migrated. It is not a target for new
+producers: a new relationship that does not fit an existing type is either a named addition to this
+roster or USES_UNKNOWN.
+
 12.3 Evidence classification
 
 Every node and edge must have a provenance type:

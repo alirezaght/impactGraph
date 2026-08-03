@@ -52,10 +52,36 @@ export interface GitCommitSource {
 /** Concrete source binding: file range/symbol, config key, or git commit (PRD §18.5). */
 export type EvidenceSource = FileSource | ConfigSource | GitCommitSource;
 
+/**
+ * How an adapter arrived at a relationship, as typed fields rather than prose.
+ *
+ * This is diagnostic provenance about the DERIVATION, not domain state needed to interpret the
+ * graph: the relationship type on the edge already carries the meaning. It lives on evidence
+ * because it changes as scanners improve — putting it in KnowledgeEnvelope would force a graph
+ * schema migration every time an adapter learns to classify something it previously could not.
+ *
+ * Its first purpose is measuring the §12.2.1 split: `originalClassification` records what an edge
+ * used to be, so the unknown bucket can be watched shrinking as adapters improve.
+ */
+export interface EvidenceDerivation {
+  /** How the relationship was established, e.g. 'framework-binding', 'constructor-injection'. */
+  readonly mechanism: string;
+  /** The relationship type produced — an EdgeType name, kept as a string to avoid a cycle. */
+  readonly relationship: string;
+  /** The adapter or assembly step responsible, so an unknown can be traced to its producer. */
+  readonly producer: string;
+  /** The type this edge carried before the §12.2.1 split, when it was migrated. */
+  readonly originalClassification?: string;
+  /** Why a classification could not be made. Required in spirit for USES_UNKNOWN. */
+  readonly reason?: string;
+}
+
 export interface EvidenceRecord {
   readonly id: EvidenceId;
   readonly kind: EvidenceKind;
   readonly source: EvidenceSource;
+  /** Optional derivation diagnostics (§12.2.1). Absent on evidence that needs no explanation. */
+  readonly derivation?: EvidenceDerivation;
   /** Evidence describes one snapshot, never "the repository now" (provenance-model.md). */
   readonly repositorySnapshotId: RepositorySnapshotId;
   readonly createdAt: string;
@@ -65,6 +91,7 @@ export interface CreateEvidenceRecordInput {
   readonly id: string;
   readonly kind: string;
   readonly source: EvidenceSource;
+  readonly derivation?: EvidenceDerivation;
   readonly repositorySnapshotId: string;
   readonly createdAt: string;
 }
@@ -162,6 +189,7 @@ export const createEvidenceRecord = (
       id: input.id as EvidenceId,
       kind: input.kind as EvidenceKind,
       source: copySource(input.source),
+      ...(input.derivation === undefined ? {} : { derivation: { ...input.derivation } }),
       repositorySnapshotId: input.repositorySnapshotId as RepositorySnapshotId,
       createdAt: input.createdAt,
     }),

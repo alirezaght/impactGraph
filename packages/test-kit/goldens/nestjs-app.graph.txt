@@ -53,8 +53,8 @@ IMPORTS|file:src/app.module.ts->file:src/deals/deals.module.ts|static-analysis
 IMPORTS|file:src/deals/deals.controller.ts->file:src/deals/deals.service.ts|static-analysis
 IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.controller.ts|static-analysis
 IMPORTS|file:src/deals/deals.module.ts->file:src/deals/deals.service.ts|static-analysis
+INJECTS|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.service.ts#DealsService|static-analysis
 OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.controller.ts#DealsController|framework-convention
 OWNS|symbol:src/deals/deals.module.ts#DealsModule->symbol:src/deals/deals.service.ts#DealsService|framework-convention
 SUBSCRIBES_TO|symbol:src/deals/deals.service.ts#DealsService.onDealUpdated->topic:deal.updated|framework-convention
 TRIGGERS|job:symbol:src/deals/deals.service.ts#DealsService.refreshExpired->symbol:src/deals/deals.service.ts#DealsService.refreshExpired|framework-convention
-USES|symbol:src/deals/deals.controller.ts#DealsController->symbol:src/deals/deals.service.ts#DealsService|static-analysis

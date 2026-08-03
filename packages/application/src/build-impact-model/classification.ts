@@ -143,7 +143,7 @@ const likelihoodFor = (
   if (candidate.distance > 1) {
     return 'possible';
   }
-  if (!candidate.weakReverseOnly || corroborated) {
+  if (!candidate.weakLinkOnly || corroborated) {
     return 'likely';
   }
   // The only link is a reverse call, import or use. Whether that obliges a change depends on the
@@ -162,7 +162,7 @@ const explanationFor = (
   }
   const route = `Reached from concept '${candidate.match.concept}' via ${candidate.edgeTypes.join(' → ')} (${String(candidate.distance)} hop${candidate.distance > 1 ? 's' : ''}).`;
   // A promotion driven by the predicted change must say so, or nobody can audit it.
-  if (!candidate.weakReverseOnly || context.change === undefined) {
+  if (!candidate.weakLinkOnly || context.change === undefined) {
     return route;
   }
   return `${route} Predicted change: ${context.change.kind} ("${context.change.cue}"), ${context.change.compatibility}.`;

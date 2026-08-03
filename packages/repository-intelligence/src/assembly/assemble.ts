@@ -218,7 +218,9 @@ const EDGE_TYPE_BY_REFERENCE_KIND: Readonly<Record<string, string>> = {
   extends: 'EXTENDS',
   implements: 'IMPLEMENTS',
   calls: 'CALLS',
-  injects: 'USES', // constructor-injection dependency (DI)
+  // §12.2.1: consumer → injected dependency. Was USES, which also carried routing, template
+  // calls, Terraform references and unclassified bindings.
+  injects: 'INJECTS',
 };
 
 const resolveSymbolEdges = (state: AssemblyState, fragment: GraphFragment): void => {

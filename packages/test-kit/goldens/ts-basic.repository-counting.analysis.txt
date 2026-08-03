@@ -1,13 +1,13 @@
 impacts:
-req-f26827b4|BaseService|possible|domain-model|indirect|0.40|USES|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-f26827b4|BaseService|possible|domain-model|indirect|0.40|INJECTS|exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|DealRepository|required|domain-model|direct|0.90|anchor|exact-concept-to-symbol-match
-req-f26827b4|DealService|possible|domain-model|indirect|0.65|USES|exact-concept-to-symbol-match+graph-distance
-req-f26827b4|Searchable|possible|domain-model|indirect|0.40|USES|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-f26827b4|DealService|possible|domain-model|indirect|0.65|INJECTS|exact-concept-to-symbol-match+graph-distance
+req-f26827b4|Searchable|possible|domain-model|indirect|0.40|INJECTS|exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|alias-user.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|buildDealService|possible|domain-model|indirect|0.75|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance
 req-f26827b4|createRepository|possible|domain-model|indirect|0.75|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance
 req-f26827b4|deal-repository.ts|likely|domain-model|indirect|0.65|CONTAINS|exact-concept-to-symbol-match+graph-distance
-req-f26827b4|deal-service.ts|possible|domain-model|indirect|0.50|USES|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-f26827b4|deal-service.ts|possible|domain-model|indirect|0.50|INJECTS|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|deals.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|getDeals|possible|api-contract|indirect|0.50|CALLS|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-f26827b4|index.ts|possible|domain-model|indirect|0.50|CONTAINS|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance

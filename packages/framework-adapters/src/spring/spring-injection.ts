@@ -66,7 +66,7 @@ const linkInjectedField = (input: InjectionInput, fact: DecoratorFact): void => 
   builder.addEdge(
     {
       id: `spring:autowired:${classNodeId}->${targetId}`,
-      type: 'USES',
+      type: 'INJECTS',
       sourceId: classNodeId,
       targetId,
       knowledge: deterministicEnvelope(context, [fact.evidenceId], 'framework-convention'),
@@ -75,7 +75,7 @@ const linkInjectedField = (input: InjectionInput, fact: DecoratorFact): void => 
   );
 };
 
-/** Every `@Autowired`/`@Inject`/`@Resource` field becomes a USES edge to the type it declares. */
+/** Every `@Autowired`/`@Inject`/`@Resource` field becomes an INJECTS edge to the type it declares. */
 export const addFieldInjections = (
   builder: FragmentBuilder,
   graph: CodeGraph,

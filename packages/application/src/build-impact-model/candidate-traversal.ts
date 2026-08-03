@@ -28,6 +28,14 @@ const IMPACT_EDGE_TYPES = new Set([
   'EXPOSES',
   'DEPENDS_ON',
   'USES',
+  // §12.2.1 relationship split. Traversable exactly as USES was, so the vocabulary migration is
+  // behaviour-neutral; propagation rules per type come afterwards, deliberately.
+  'INJECTS',
+  'ROUTES_TO',
+  'MIDDLEWARE_FOR',
+  'REFERENCES_RESOURCE',
+  'BINDS',
+  'USES_UNKNOWN',
   'CONTAINS',
 ]);
 
@@ -58,6 +66,12 @@ const EDGE_ROLES: Readonly<Record<string, TraversalRole>> = {
   TESTS: 'supporting',
   DEPLOYED_AS: 'supporting',
   USES: 'supporting',
+  INJECTS: 'supporting',
+  ROUTES_TO: 'supporting',
+  MIDDLEWARE_FOR: 'supporting',
+  REFERENCES_RESOURCE: 'supporting',
+  BINDS: 'supporting',
+  USES_UNKNOWN: 'supporting',
 };
 
 export const roleOf = (edgeType: string): TraversalRole => EDGE_ROLES[edgeType] ?? 'supporting';
@@ -75,7 +89,23 @@ export const roleOf = (edgeType: string): TraversalRole => EDGE_ROLES[edgeType] 
  * requirement lands. EXTENDS, IMPLEMENTS and the event edges are absent because they are contract
  * relationships, where a change genuinely does propagate to the other side.
  */
-const WEAK_WHEN_REVERSED = new Set(['CALLS', 'IMPORTS', 'USES']);
+const WEAK_WHEN_REVERSED = new Set([
+  'CALLS',
+  'IMPORTS',
+  'USES',
+  'INJECTS',
+  'ROUTES_TO',
+  'MIDDLEWARE_FOR',
+  'REFERENCES_RESOURCE',
+  'BINDS',
+]);
+
+/**
+ * An unclassified relationship is weak in BOTH directions (§12.2.1). Reversing it is not what makes
+ * it weak — not knowing what it means is, so it can never reach `likely` however it is walked, and
+ * it never corroborates another route.
+ */
+const NEVER_STRONG = 'USES_UNKNOWN';
 
 export interface ImpactCandidate {
   readonly nodeId: string;
@@ -98,11 +128,11 @@ export interface ImpactCandidate {
    */
   readonly admissible: boolean;
   /**
-   * True when EVERY route here is a single reverse hop across a weak dependency edge — structural
-   * coupling with no corroboration. Classification reads this to keep such candidates at `possible`
-   * rather than presenting mere connectedness as likely change.
+   * True when EVERY route here is a single weak hop: a reverse dependency edge, or an edge whose
+   * meaning is unknown. Structural coupling with no corroboration. Classification reads this to keep
+   * such candidates at `possible` rather than presenting mere connectedness as likely change.
    */
-  readonly weakReverseOnly: boolean;
+  readonly weakLinkOnly: boolean;
   readonly edgeEvidenceIds: readonly string[];
   readonly match: ConceptMatch;
 }
@@ -253,8 +283,9 @@ const mergeCandidate = (state: TraversalState, incoming: ImpactCandidate): void 
     corroboratingEdgeTypes: union(existing.corroboratingEdgeTypes, incoming.corroboratingEdgeTypes),
     // OR, not AND: one legitimate route is enough to admit the candidate.
     admissible: existing.admissible || incoming.admissible,
-    // AND: any route that is more than a bare reverse hop corroborates the candidate.
-    weakReverseOnly: existing.weakReverseOnly && incoming.weakReverseOnly,
+    // AND: any route that is more than a bare weak hop corroborates the candidate. An unknown
+    // relationship never supplies that, so two unknowns stay two unknowns.
+    weakLinkOnly: existing.weakLinkOnly && incoming.weakLinkOnly,
     edgeEvidenceIds: union(existing.edgeEvidenceIds, incoming.edgeEvidenceIds),
   });
 };
@@ -272,7 +303,7 @@ const traverseFromMatch = (
     edgeTypes: [],
     corroboratingEdgeTypes: [],
     admissible: true,
-    weakReverseOnly: false,
+    weakLinkOnly: false,
     edgeEvidenceIds: [],
     match,
   };
@@ -305,8 +336,10 @@ const stepCandidate = (
     edgeTypes,
     corroboratingEdgeTypes: [...new Set(edgeTypes)].sort(),
     admissible: current.admissible && routeAdmissible(current, step),
-    weakReverseOnly:
-      current.distance === 0 && step.towardDependents && WEAK_WHEN_REVERSED.has(step.edge.type),
+    weakLinkOnly:
+      current.distance === 0 &&
+      (step.edge.type === NEVER_STRONG ||
+        (step.towardDependents && WEAK_WHEN_REVERSED.has(step.edge.type))),
     edgeEvidenceIds: [...current.edgeEvidenceIds, ...step.edge.knowledge.evidenceIds],
     match,
   };

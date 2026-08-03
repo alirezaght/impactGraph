@@ -146,12 +146,12 @@ IMPORTS|file:src/main/java/com/example/deals/DealController.java->file:src/main/
 IMPORTS|file:src/main/java/com/example/deals/DealExpiryJob.java->file:src/main/java/com/example/deals/DealService.java|static-analysis
 IMPORTS|file:src/main/java/com/example/deals/DealService.java->file:src/main/java/com/example/deals/DealAuditLog.java|static-analysis
 IMPORTS|file:src/main/java/com/example/deals/DealService.java->file:src/main/java/com/example/deals/DealRepository.java|static-analysis
+INJECTS|symbol:src/main/java/com/example/deals/DealController.java#DealController->symbol:src/main/java/com/example/deals/DealService.java#DealService|static-analysis
+INJECTS|symbol:src/main/java/com/example/deals/DealExpiryJob.java#DealExpiryJob->symbol:src/main/java/com/example/deals/DealService.java#DealService|framework-convention
+INJECTS|symbol:src/main/java/com/example/deals/DealService.java#DealService->symbol:src/main/java/com/example/deals/DealAuditLog.java#DealAuditLog|static-analysis
+INJECTS|symbol:src/main/java/com/example/deals/DealService.java#DealService->symbol:src/main/java/com/example/deals/DealRepository.java#DealRepository|static-analysis
 PUBLISHES|symbol:src/main/java/com/example/deals/DealEventPublisher.java#DealEventPublisher.publishConfiguredEvent->topic:deal-audit-events|framework-convention
 PUBLISHES|symbol:src/main/java/com/example/deals/DealEventPublisher.java#DealEventPublisher.publishDealCreated->topic:deal-events|framework-convention
 SUBSCRIBES_TO|symbol:src/main/java/com/example/deals/DealEventConsumer.java#DealEventConsumer.dealEventsAdapter->subscription:deal-events-worker|framework-convention
 SUBSCRIBES_TO|symbol:src/main/java/com/example/deals/DealEventConsumer.java#DealEventConsumer.onDealEvent->subscription:deal-events-worker|framework-convention
 TRIGGERS|spring:job:symbol:src/main/java/com/example/deals/DealExpiryJob.java#DealExpiryJob.expireStaleDeals->symbol:src/main/java/com/example/deals/DealExpiryJob.java#DealExpiryJob.expireStaleDeals|framework-convention
-USES|symbol:src/main/java/com/example/deals/DealController.java#DealController->symbol:src/main/java/com/example/deals/DealService.java#DealService|static-analysis
-USES|symbol:src/main/java/com/example/deals/DealExpiryJob.java#DealExpiryJob->symbol:src/main/java/com/example/deals/DealService.java#DealService|framework-convention
-USES|symbol:src/main/java/com/example/deals/DealService.java#DealService->symbol:src/main/java/com/example/deals/DealAuditLog.java#DealAuditLog|static-analysis
-USES|symbol:src/main/java/com/example/deals/DealService.java#DealService->symbol:src/main/java/com/example/deals/DealRepository.java#DealRepository|static-analysis

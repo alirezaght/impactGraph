@@ -42,12 +42,28 @@ export const evidenceSourceSchema = z.discriminatedUnion('kind', [
   gitCommitSourceSchema,
 ]);
 
+/**
+ * §12.2.1 derivation diagnostics: how an adapter arrived at a relationship. Additive and optional,
+ * so every already-written artifact stays valid. Typed fields rather than a free-text blob —
+ * `originalClassification` is what makes the relationship split measurable.
+ */
+export const evidenceDerivationSchema = z
+  .object({
+    mechanism: z.string().min(1),
+    relationship: z.string().min(1),
+    producer: z.string().min(1),
+    originalClassification: z.string().min(1).optional(),
+    reason: z.string().min(1).optional(),
+  })
+  .strict();
+
 export const evidenceRecordArtifactSchema = z
   .object({
     schemaVersion: z.literal(1),
     id: z.string().min(1),
     kind: z.string().min(1),
     source: evidenceSourceSchema,
+    derivation: evidenceDerivationSchema.optional(),
     repositorySnapshotId: z.string().min(1),
     createdAt: z.string().min(1),
   })
