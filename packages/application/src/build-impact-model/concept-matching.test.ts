@@ -166,6 +166,20 @@ describe('matchConcepts and ubiquitous dependencies', () => {
 
     expect(result.matches.map((match) => match.nodeId)).toEqual(['dependency:typescript']);
   });
+
+  // A single-package repository declares every dependency in 100% of its packages, so a bare
+  // share threshold makes every dependency un-anchorable there — which is most repositories.
+  it('anchors dependencies in a single-package repository', () => {
+    const result = matchConcepts(workspaceOf(1, 1), ['typescript']);
+
+    expect(result.matches.map((match) => match.nodeId)).toEqual(['dependency:typescript']);
+  });
+
+  it('needs a meaningful number of declarers before ubiquity applies', () => {
+    const result = matchConcepts(workspaceOf(2, 3), ['typescript']);
+
+    expect(result.matches.map((match) => match.nodeId)).toEqual(['dependency:typescript']);
+  });
 });
 
 describe('matchConcepts production-before-test ranking', () => {

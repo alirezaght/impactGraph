@@ -1,1 +1,14 @@
 schemaVersion: 1
+
+# Concept → canonical component name. An alias match carries the human-confirmed-mapping signal
+# (§14), so it scores like an exact symbol match — these are assertions about this repository, not
+# guesses, and each one should name a component a reader can verify.
+aliases:
+  # The .vsix IS the packaged extension, and no node represents the archive itself. Without this,
+  # every requirement about packaging resolves to nothing.
+  .vsix: impactgraph
+
+  # Production code reaches the key through `context.secrets`, so nothing is *named* SecretStorage
+  # except a test double in src/test/suite/secrets.ts. This points the concept at the symbol that
+  # actually identifies the stored secret, so the constraint anchors on production code.
+  SecretStorage: API_KEY_SECRET

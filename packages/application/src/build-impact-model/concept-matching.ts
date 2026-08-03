@@ -42,6 +42,13 @@ const MAX_SIMILAR_MATCHES = 3;
  */
 const UBIQUITOUS_DEPENDENCY_SHARE = 0.5;
 
+/**
+ * The share is meaningless below this many declarers: a single-package repository declares
+ * everything in 100% of its packages, which would make every dependency un-anchorable in most
+ * repositories. Being declared two or three times is not ubiquity at any repository size.
+ */
+const MIN_UBIQUITOUS_DECLARERS = 4;
+
 /** A similar name must be at least this fraction concept, measured in characters. */
 const MIN_NAME_COVERAGE = 0.6;
 
@@ -139,10 +146,15 @@ const isUbiquitousDependency = (
   graph: KnowledgeGraph,
   node: GraphNode,
   packageCount: number,
-): boolean =>
-  node.type === 'third-party-service' &&
-  packageCount > 0 &&
-  declarerCount(graph, node) > packageCount * UBIQUITOUS_DEPENDENCY_SHARE;
+): boolean => {
+  if (node.type !== 'third-party-service' || packageCount <= 0) {
+    return false;
+  }
+  const declarers = declarerCount(graph, node);
+  return (
+    declarers >= MIN_UBIQUITOUS_DECLARERS && declarers > packageCount * UBIQUITOUS_DEPENDENCY_SHARE
+  );
+};
 
 interface Resolution {
   readonly mechanism: MatchMechanism;

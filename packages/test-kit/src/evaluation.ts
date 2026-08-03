@@ -11,6 +11,21 @@ export interface ImpactGroundTruth {
    * text does NOT name — the §41.5 / §46 "surprise" cases.
    */
   readonly minSurprises: number;
+  /**
+   * CLOSED set of every name that may legitimately appear at required/likely, `directImpacts`
+   * included. This is what makes offline precision computable: without a closed set, a name the
+   * ground truth does not mention is indistinguishable from an unlabeled true positive, so the
+   * only honest measure is recall. Anything at that tier outside this set is a false positive.
+   *
+   * Omit it when the sample is not exhaustively labeled — precision is then reported but not
+   * gated, rather than silently computed against an incomplete list.
+   */
+  readonly allowedImpacts?: readonly string[];
+  /**
+   * Names that must NOT appear at ANY tier. Regression pins for false positives that were
+   * observed and fixed: cheap to write, and they fail loudly if the matching rules regress.
+   */
+  readonly forbiddenImpacts?: readonly string[];
 }
 
 export interface SampleEvaluation {
@@ -29,6 +44,17 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       directImpacts: ['DealService'],
       // BaseService (inheritance) and DealRepository (data access) are not named in the text.
       minSurprises: 2,
+      // Filtering expired deals plausibly touches the base class it extends, the repository the
+      // query runs through, the Searchable contract behind "search results", and the factory
+      // whose signature would follow.
+      allowedImpacts: [
+        'DealService',
+        'deal-service.ts',
+        'BaseService',
+        'DealRepository',
+        'Searchable',
+        'buildDealService',
+      ],
     },
   },
   {
@@ -40,6 +66,10 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       directImpacts: ['DealRepository'],
       // DealService and the deals API consume the repository without being named.
       minSurprises: 1,
+      // `buildDealService` is deliberately absent: adding a method to the repository does not
+      // change the factory that constructs a service around it. The engine promotes it to likely
+      // on a direct-function-call signal, and that is the false positive this sample measures.
+      allowedImpacts: ['DealRepository', 'deal-repository.ts', 'createRepository', 'DealService'],
     },
   },
   {
@@ -49,6 +79,44 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
     groundTruth: {
       directImpacts: ['Deal'],
       minSurprises: 0,
+      allowedImpacts: ['Deal', 'schema.prisma'],
+      // "Deal" prefixes half the identifiers here. These pins do NOT guard the name-coverage
+      // threshold — an exact match on `Deal` short-circuits similarity before coverage is
+      // consulted — but they do catch a regression in exact-match precedence or traversal bounds.
+      // The coverage threshold is guarded by the `Base` sample below, which has no exact match.
+      forbiddenImpacts: ['DealService', 'DealRepository', 'buildDealService'],
+    },
+  },
+  {
+    // The name-coverage calibration guard. `Base` matches no component exactly, and the correct
+    // answer is an unknown-concept warning rather than the similarly-named BaseService: a
+    // specification naming something absent must not be quietly resolved to a near-name.
+    // "Base" covers 4 of the 11 characters in "BaseService" (0.36), so loosening the coverage
+    // threshold below that makes both names appear and fails this sample.
+    name: 'absent component near-name',
+    specFileName: 'sample-absent-base.md',
+    specText:
+      '# Shared logging\nThe `Base` helper must expose a shared logger for every service.\n',
+    groundTruth: {
+      directImpacts: [],
+      minSurprises: 0,
+      allowedImpacts: [],
+      forbiddenImpacts: ['BaseService', 'base-service.ts'],
+    },
+  },
+  {
+    // Regression case for declared-dependency resolution. A specification naming a library used
+    // to match nothing at all, and the analysis then said the change had no impact. Also pins the
+    // single-package case: every dependency here is declared by 100% of packages, so a bare
+    // ubiquity share made all of them un-anchorable.
+    name: 'prisma client packaging',
+    specFileName: 'sample-prisma-packaging.md',
+    specText:
+      '# Client packaging\nThe deployed bundle must contain the `prisma` client so the repository can open its database.\n',
+    groundTruth: {
+      directImpacts: ['prisma'],
+      minSurprises: 1,
+      allowedImpacts: ['prisma', 'ts-basic'],
     },
   },
 ];
