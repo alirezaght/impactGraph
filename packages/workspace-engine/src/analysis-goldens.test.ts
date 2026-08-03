@@ -13,6 +13,7 @@ import { join } from 'node:path';
 
 import {
   analysisGoldenPath,
+  firstRelationship,
   fixtureRepoPath,
   reviewGoldenPath,
   SAMPLE_EVALUATIONS,
@@ -55,6 +56,7 @@ const goldenFor = (analysis: ImpactAnalysis, graph: KnowledgeGraph): string => {
     impactType: impact.impactType,
     directness: impact.directness,
     confidence: impact.confidence,
+    relationship: firstRelationship(graph, impact.dependencyPath),
     signalTypes: impact.confidenceSignals.map((signal) => signal.type),
   }));
   return serializeAnalysisGolden({
@@ -143,6 +145,87 @@ describe('impact goldens on the ts-basic reference repository (§42.3)', () => {
       ).toBe(readFileSync(path, 'utf8'));
     });
   }
+
+  // Movement diagnostics. A quality change often moves candidates between tiers, or changes which
+  // relationship explains them, without altering the total count — the tier demotions that fixed
+  // the reverse-call overstatement added and removed nothing. A bare pass/fail on the golden text
+  // cannot show that, and a relationship-vocabulary change (splitting USES) would look like no
+  // change at all in the counts while materially altering future propagation.
+  it('reports how candidates moved relative to the committed goldens', () => {
+    interface Row {
+      readonly likelihood: string;
+      readonly relationship: string;
+    }
+    const parse = (text: string): Map<string, Row> => {
+      const rows = new Map<string, Row>();
+      for (const line of text.split('\n')) {
+        const parts = line.split('|');
+        // requirementId|name|likelihood|type|directness|confidence|relationship|signals
+        if (parts.length >= 8 && parts[0]?.startsWith('req-') === true) {
+          rows.set(`${parts[0]}|${parts[1] ?? ''}`, {
+            likelihood: parts[2] ?? '',
+            relationship: parts[6] ?? '',
+          });
+        }
+      }
+      return rows;
+    };
+    const RANK: Readonly<Record<string, number>> = { required: 3, likely: 2, possible: 1 };
+    const totals: Record<string, number> = {};
+    const tierMoves: Record<string, number> = {};
+    const movedBy: Record<string, number> = {};
+    const bump = (bag: Record<string, number>, key: string): void => {
+      bag[key] = (bag[key] ?? 0) + 1;
+    };
+    const classify = (baseline: Row | undefined, row: Row): void => {
+      if (baseline === undefined) {
+        bump(totals, 'added');
+        return;
+      }
+      const delta = (RANK[row.likelihood] ?? 0) - (RANK[baseline.likelihood] ?? 0);
+      if (delta !== 0) {
+        bump(totals, delta > 0 ? 'promoted' : 'demoted');
+        bump(tierMoves, `${baseline.likelihood} → ${row.likelihood}`);
+        bump(movedBy, row.relationship);
+        return;
+      }
+      if (row.relationship === baseline.relationship) {
+        bump(totals, 'unchanged');
+        return;
+      }
+      bump(totals, 'relationship-changed');
+      bump(movedBy, `${baseline.relationship} → ${row.relationship}`);
+    };
+    for (const sample of SAMPLE_EVALUATIONS) {
+      const path = analysisGoldenPath('ts-basic', slug(sample.name));
+      if (!existsSync(path)) {
+        continue;
+      }
+      const before = parse(readFileSync(path, 'utf8'));
+      const after = parse(actual.get(sample.name) ?? '');
+      for (const [key, row] of after) {
+        classify(before.get(key), row);
+      }
+      for (const key of before.keys()) {
+        if (!after.has(key)) {
+          bump(totals, 'removed');
+        }
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      [
+        `CANDIDATE MOVEMENT vs committed goldens: ${JSON.stringify(totals)}`,
+        Object.keys(tierMoves).length === 0
+          ? '  tier moves: none'
+          : `  tier moves: ${JSON.stringify(tierMoves)}`,
+        Object.keys(movedBy).length === 0
+          ? '  by relationship: none'
+          : `  by relationship: ${JSON.stringify(movedBy)}`,
+      ].join('\n'),
+    );
+    expect(totals).toBeDefined();
+  });
 
   it('matches the committed review golden for an implemented change (§42.3)', async () => {
     expect(firstAnalysisId).toBeDefined();

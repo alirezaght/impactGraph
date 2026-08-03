@@ -10,6 +10,7 @@ export type { GoldenGraphEdge, GoldenGraphInput, GoldenGraphNode } from './graph
 export {
   analysisGoldenPath,
   reviewGoldenPath,
+  firstRelationship,
   serializeAnalysisGolden,
   serializeReviewGolden,
   shouldUpdateGolden,

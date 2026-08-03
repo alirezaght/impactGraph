@@ -1,15 +1,15 @@
 impacts:
-req-0e24b3d5|cross-stack|likely|domain-model|indirect|0.50|ambiguity+exact-concept-to-symbol-match+graph-distance
-req-0e24b3d5|cross-stack|possible|domain-model|indirect|0.25|ambiguity+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-0e24b3d5|deals-web|required|domain-model|direct|0.75|ambiguity+exact-concept-to-symbol-match
-req-0e24b3d5|deals-web|required|infrastructure|direct|0.75|ambiguity+exact-concept-to-symbol-match
-req-0e24b3d5|main.tf|likely|domain-model|indirect|0.50|ambiguity+exact-concept-to-symbol-match+graph-distance
-req-d00e8268|GET /api/deals|likely|api-contract|indirect|0.65|exact-concept-to-symbol-match+graph-distance
-req-d00e8268|app|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|cross-stack|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|index|possible|read-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|list_deals|required|domain-model|direct|0.90|exact-concept-to-symbol-match
-req-d00e8268|loadDeals|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|main.py|likely|domain-model|indirect|0.65|exact-concept-to-symbol-match+graph-distance
+req-0e24b3d5|cross-stack|likely|domain-model|indirect|0.50|CONTAINS|ambiguity+exact-concept-to-symbol-match+graph-distance
+req-0e24b3d5|cross-stack|possible|domain-model|indirect|0.25|CONTAINS|ambiguity+exact-concept-to-symbol-match+graph-distance+graph-distance
+req-0e24b3d5|deals-web|required|domain-model|direct|0.75|anchor|ambiguity+exact-concept-to-symbol-match
+req-0e24b3d5|deals-web|required|infrastructure|direct|0.75|anchor|ambiguity+exact-concept-to-symbol-match
+req-0e24b3d5|main.tf|likely|domain-model|indirect|0.50|CONTAINS|ambiguity+exact-concept-to-symbol-match+graph-distance
+req-d00e8268|GET /api/deals|likely|api-contract|indirect|0.65|EXPOSES|exact-concept-to-symbol-match+graph-distance
+req-d00e8268|app|possible|domain-model|indirect|0.40|EXPOSES|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-d00e8268|cross-stack|possible|domain-model|indirect|0.40|CONTAINS|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-d00e8268|index|possible|read-model|indirect|0.40|EXPOSES|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-d00e8268|list_deals|required|domain-model|direct|0.90|anchor|exact-concept-to-symbol-match
+req-d00e8268|loadDeals|possible|domain-model|indirect|0.40|EXPOSES|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-d00e8268|main.py|likely|domain-model|indirect|0.65|CONTAINS|exact-concept-to-symbol-match+graph-distance
 
 warnings:

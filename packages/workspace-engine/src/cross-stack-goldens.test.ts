@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import {
   analysisGoldenPath,
   CROSS_STACK_EVALUATIONS,
+  firstRelationship,
   fixtureRepoPath,
   reviewGoldenPath,
   serializeAnalysisGolden,
@@ -91,6 +92,7 @@ const goldenFor = (analysis: ImpactAnalysis, graph: KnowledgeGraph): string => {
     impactType: impact.impactType,
     directness: impact.directness,
     confidence: impact.confidence,
+    relationship: firstRelationship(graph, impact.dependencyPath),
     signalTypes: impact.confidenceSignals.map((signal) => signal.type),
   }));
   return serializeAnalysisGolden({

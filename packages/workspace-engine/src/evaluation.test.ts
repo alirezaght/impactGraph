@@ -103,6 +103,12 @@ interface PossibleTierReport {
   readonly labelled: number;
   readonly strictPrecision: number | undefined;
   readonly inclusivePrecision: number | undefined;
+  /**
+   * A smoother comparison than the two bounds: allowed counts fully, plausible half. Diagnostic
+   * only — strict and inclusive precision remain the authoritative figures, because a single
+   * weighted number hides which side of the bound a change moved.
+   */
+  readonly weightedUtility: number | undefined;
   readonly reviewNeeded: number;
   readonly perRequirement: number;
   readonly traversalOnly: number;
@@ -138,6 +144,8 @@ const reportPossibleTier = (
     strictPrecision: possible.length === 0 ? undefined : share(allowed, possible.length),
     inclusivePrecision:
       possible.length === 0 ? undefined : share(allowed + plausible, possible.length),
+    weightedUtility:
+      possible.length === 0 ? undefined : share(allowed + 0.5 * plausible, possible.length),
     reviewNeeded: possible.filter((impact) => labels.get(impact.nodeId)?.reviewNeeded === true)
       .length,
     perRequirement: share(possible.length, requirementCount),
@@ -327,6 +335,7 @@ describe('impact-quality evaluation on the reference repository (PRD §41, §46)
         labelled: `${String(report.labelled)}/${String(report.total)}`,
         strict: report.strictPrecision?.toFixed(2) ?? '—',
         inclusive: report.inclusivePrecision?.toFixed(2) ?? '—',
+        utility: report.weightedUtility?.toFixed(2) ?? '—',
         review: report.reviewNeeded,
         perReq: report.perRequirement.toFixed(1),
         traversalOnly: report.traversalOnly,

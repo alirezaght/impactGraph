@@ -1,5 +1,5 @@
 impacts:
-req-afd3ecfd|prisma|required|integration|direct|0.90|exact-concept-to-symbol-match
-req-afd3ecfd|ts-basic|likely|domain-model|indirect|0.65|exact-concept-to-symbol-match+graph-distance
+req-afd3ecfd|prisma|required|integration|direct|0.90|anchor|exact-concept-to-symbol-match
+req-afd3ecfd|ts-basic|likely|domain-model|indirect|0.65|DEPENDS_ON|exact-concept-to-symbol-match+graph-distance
 
 warnings:

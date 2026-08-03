@@ -1,6 +1,8 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { KnowledgeGraph } from '@impactgraph/domain';
+
 // Golden-file serialization for impact analyses and review reports (PRD §42.3, Story 17.3),
 // completing the graph serializer in graph-golden.ts. Same discipline: volatile fields
 // (analysis/run/snapshot IDs, timestamps, evidence IDs) are excluded, and impacts are keyed by
@@ -14,6 +16,13 @@ export interface GoldenImpact {
   readonly impactType: string;
   readonly directness: string;
   readonly confidence: number;
+  /**
+   * The relationship the walk crossed FIRST, derived from the dependency path rather than stored on
+   * the impact. Pinned because propagation now depends on which relationship reached a candidate: a
+   * DI injection and a template call currently share the name `USES`, so splitting that vocabulary
+   * would otherwise look like no change at all while materially altering future propagation.
+   */
+  readonly relationship: string;
   readonly signalTypes: readonly string[];
 }
 
@@ -55,12 +64,13 @@ const impactLine = (impact: GoldenImpact): string =>
     impact.impactType,
     impact.directness,
     impact.confidence.toFixed(2),
+    impact.relationship,
     [...impact.signalTypes].sort(lexicographic).join('+'),
   ].join('|');
 
 /**
  * Stable text form of an impact analysis: sorted impact lines
- * (`requirementId|name|likelihood|type|directness|confidence|signals`) then sorted warning
+ * (`requirementId|name|likelihood|type|directness|confidence|relationship|signals`) then sorted warning
  * codes. Confidence is pinned to two decimals — a weighting change must be a reviewed diff.
  */
 export const serializeAnalysisGolden = (analysis: GoldenAnalysisInput): string => {
@@ -112,4 +122,31 @@ export const shouldUpdateGolden = (name: string): boolean => {
     return true;
   }
   return flag.split(',').some((entry) => entry.trim() === name);
+};
+
+/**
+ * The relationship type of a candidate's first hop, read back off its dependency path.
+ *
+ * Derived rather than stored: `RequirementImpact` carries the path but not the edge types, and
+ * adding them would be a persisted-schema change. Shared by the golden serializers and the
+ * evaluation harness so all three describe relationship provenance the same way.
+ */
+export const firstRelationship = (
+  graph: Pick<KnowledgeGraph, 'edges' | 'outgoing' | 'incoming'>,
+  dependencyPath: readonly string[],
+): string => {
+  const [from, to] = dependencyPath;
+  if (from === undefined || to === undefined) {
+    return 'anchor';
+  }
+  for (const edgeId of [
+    ...(graph.outgoing.get(from as never) ?? []),
+    ...(graph.incoming.get(from as never) ?? []),
+  ]) {
+    const edge = graph.edges.get(edgeId);
+    if (edge !== undefined && (edge.sourceId === to || edge.targetId === to)) {
+      return edge.type;
+    }
+  }
+  return 'unresolved';
 };
