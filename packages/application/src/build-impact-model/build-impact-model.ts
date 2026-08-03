@@ -178,6 +178,9 @@ const recordMatchWarnings = (
       requirementId,
     });
   }
+  for (const note of matched.eligibilityNotes) {
+    warnings.push({ code: 'uncertain-eligibility', message: note, requirementId });
+  }
 };
 
 /** Rule-based classification of every candidate, minus the §Z9 learned exclusions. */

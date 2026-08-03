@@ -1,3 +1,5 @@
+import { assessUbiquity } from './dependency-ubiquity.js';
+
 import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
 
 // Story 6.1 — concept-to-node matching. Every match records which mechanism produced it (the
@@ -26,6 +28,12 @@ export interface ConceptMatchResult {
    * coincidental name collision.
    */
   readonly ambiguousConcepts: readonly string[];
+  /**
+   * Cases where a dependency's eligibility could not be established. Reported rather than guessed:
+   * an undeterminable ecosystem never suppresses a match, so the user learns why a broad-looking
+   * dependency was still allowed to anchor.
+   */
+  readonly eligibilityNotes: readonly string[];
 }
 
 const normalize = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -34,20 +42,6 @@ const MAX_MATCHES_PER_CONCEPT = 5;
 
 /** Above this, a similarity-only concept is treated as unresolved rather than matched. */
 const MAX_SIMILAR_MATCHES = 3;
-
-/**
- * A dependency more than this fraction of the workspace declares is shared tooling, not a
- * discriminating anchor: predicting "every package" narrows nothing, and it is how a word like
- * "TypeScript" in "exclude TypeScript sources" reaches the compiler every package builds with.
- */
-const UBIQUITOUS_DEPENDENCY_SHARE = 0.5;
-
-/**
- * The share is meaningless below this many declarers: a single-package repository declares
- * everything in 100% of its packages, which would make every dependency un-anchorable in most
- * repositories. Being declared two or three times is not ubiquity at any repository size.
- */
-const MIN_UBIQUITOUS_DECLARERS = 4;
 
 /** A similar name must be at least this fraction concept, measured in characters. */
 const MIN_NAME_COVERAGE = 0.6;
@@ -132,30 +126,6 @@ const findByName = (
   return { exact: exact.sort(byId), similar: similar.sort(byId) };
 };
 
-const declarerCount = (graph: KnowledgeGraph, node: GraphNode): number => {
-  let count = 0;
-  for (const edgeId of graph.incoming.get(node.id) ?? []) {
-    if (graph.edges.get(edgeId)?.type === 'DEPENDS_ON') {
-      count += 1;
-    }
-  }
-  return count;
-};
-
-const isUbiquitousDependency = (
-  graph: KnowledgeGraph,
-  node: GraphNode,
-  packageCount: number,
-): boolean => {
-  if (node.type !== 'third-party-service' || packageCount <= 0) {
-    return false;
-  }
-  const declarers = declarerCount(graph, node);
-  return (
-    declarers >= MIN_UBIQUITOUS_DECLARERS && declarers > packageCount * UBIQUITOUS_DEPENDENCY_SHARE
-  );
-};
-
 interface Resolution {
   readonly mechanism: MatchMechanism;
   readonly nodes: readonly GraphNode[];
@@ -165,10 +135,19 @@ const resolve = (
   graph: KnowledgeGraph,
   concept: string,
   aliases: Readonly<Record<string, string>>,
-  packageCount: number,
+  notes: string[],
 ): Resolution | 'ambiguous' | undefined => {
   const usable = (nodes: readonly GraphNode[]): GraphNode[] =>
-    nodes.filter((node) => !isUbiquitousDependency(graph, node, packageCount));
+    nodes.filter((node) => {
+      if (node.type !== 'third-party-service') {
+        return true;
+      }
+      const assessment = assessUbiquity(graph, node);
+      if (assessment.diagnostic !== undefined) {
+        notes.push(assessment.diagnostic);
+      }
+      return !assessment.ubiquitous;
+    });
   const direct = findByName(graph, concept);
   if (direct.exact.length > 0) {
     const nodes = usable(direct.exact);
@@ -209,14 +188,9 @@ export const matchConcepts = (
   const matches: ConceptMatch[] = [];
   const unknownConcepts: string[] = [];
   const ambiguousConcepts: string[] = [];
-  let packageCount = 0;
-  for (const node of graph.nodes.values()) {
-    if (node.type === 'package') {
-      packageCount += 1;
-    }
-  }
+  const notes: string[] = [];
   for (const concept of [...new Set(concepts)].sort()) {
-    const found = resolve(graph, concept, aliases, packageCount);
+    const found = resolve(graph, concept, aliases, notes);
     if (found === undefined) {
       unknownConcepts.push(concept);
       continue;
@@ -238,5 +212,10 @@ export const matchConcepts = (
       });
     }
   }
-  return { matches, unknownConcepts, ambiguousConcepts };
+  return {
+    matches,
+    unknownConcepts,
+    ambiguousConcepts,
+    eligibilityNotes: [...new Set(notes)].sort(),
+  };
 };

@@ -130,7 +130,14 @@ describe('matchConcepts and ubiquitous dependencies', () => {
     const nodes: GraphNode[] = [node('dependency:typescript', 'third-party-service', 'typescript')];
     const edges = [];
     for (let index = 0; index < totalPackages; index += 1) {
-      nodes.push(node(`package:p${String(index)}`, 'package', `p${String(index)}`));
+      nodes.push(
+        node(
+          `package:p${String(index)}`,
+          'package',
+          `p${String(index)}`,
+          `packages/p${String(index)}/package.json`,
+        ),
+      );
       if (index < declarers) {
         const edge = createGraphEdge({
           id: `depends-on:package:p${String(index)}->dependency:typescript`,

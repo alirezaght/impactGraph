@@ -61,6 +61,8 @@ export interface AnalysisWarning {
     | 'unknown-concept'
     /** A concept spread over too many unrelated components to anchor an impact (§C2). */
     | 'ambiguous-concept'
+    /** A dependency's ecosystem could not be established, so it was not suppressed. */
+    | 'uncertain-eligibility'
     /** A requirement produced no impacts at all — the analysis says nothing about it. */
     | 'unmatched-requirement'
     | 'traversal-cutoff'
