@@ -17,6 +17,10 @@ const sharedExclude = [
 // setup must be green on day one (only the `quality` project has tests today).
 export default defineConfig({
   test: {
+    // `--expose-gc` so memory tests can assert on LIVE bytes. Without a forced collection,
+    // `heapUsed` also counts garbage the run has already abandoned, and a retention regression
+    // is indistinguishable from ordinary allocation churn.
+    poolOptions: { forks: { execArgv: ['--expose-gc'] } },
     projects: [
       {
         test: {
@@ -50,6 +54,9 @@ export default defineConfig({
             'packages/{repository-intelligence,language-adapters,framework-adapters,git,persistence,ai-inference,workspace-engine}/**/*.test.ts',
           ],
           exclude: sharedExclude,
+          // `--expose-gc` so memory tests can assert on LIVE bytes. Without a forced collection,
+          // `heapUsed` reports uncollected garbage too, and a retention regression is
+          // indistinguishable from ordinary allocation churn.
         },
       },
       {

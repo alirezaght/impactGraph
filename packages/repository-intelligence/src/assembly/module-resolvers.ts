@@ -18,6 +18,10 @@ import type { ModuleResolver, RepositoryFile } from '@impactgraph/language-adapt
 // leading dots it carries — can ever name a path outside the repository (PRD §42.5).
 
 /**
+ * Takes the scanned paths and the manifest bodies rather than the whole file set: path-alias and
+ * workspace-package resolution are the only things here that need file *content*, and both read
+ * manifests only. Passing every file would keep the repository on the heap for the whole run.
+ *
  * Resolvers are built once per index run and closed over the scanned paths. `.astro` and every
  * other extension fall to the TS resolver: Astro frontmatter uses TypeScript import syntax
  * (ADR-0014), and the TS resolver tries the literal path first, so `'../layouts/Base.astro'`
@@ -31,9 +35,11 @@ import type { ModuleResolver, RepositoryFile } from '@impactgraph/language-adapt
  * sources itself into `CONTAINS` edges (`language-adapters/src/terraform/terraform-modules.ts`).
  * A no-op entry here would be dead code that implied otherwise.
  */
-export const createModuleResolver = (files: readonly RepositoryFile[]): ModuleResolver => {
-  const filePaths = new Set(files.map((file) => file.relativePath));
-  const tsconfig = files.find((file) => file.relativePath === 'tsconfig.json');
+export const createModuleResolver = (
+  filePaths: ReadonlySet<string>,
+  manifests: readonly RepositoryFile[],
+): ModuleResolver => {
+  const tsconfig = manifests.find((file) => file.relativePath === 'tsconfig.json');
   const typescript = createTsModuleResolver(
     filePaths,
     tsconfig === undefined ? undefined : parseTsPathAliases(tsconfig.content),
@@ -46,7 +52,7 @@ export const createModuleResolver = (files: readonly RepositoryFile[]): ModuleRe
   // package name under Node's rules regardless of which file imported it, and no language
   // resolver can answer it from a path. Only names declared by a manifest in the scanned set
   // match, so a third-party specifier still resolves to nothing.
-  const packages = workspacePackages(files, filePaths);
+  const packages = workspacePackages(manifests, filePaths);
   return (fromFilePath, specifier) => {
     const lower = fromFilePath.toLowerCase();
     const extension = Object.keys(byExtension).find((candidate) => lower.endsWith(candidate));

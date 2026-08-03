@@ -1,6 +1,3 @@
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-
 import { NEVER_CANCELLED, operationCancelled } from '@impactgraph/application';
 import { err, ok } from '@impactgraph/domain';
 import {
@@ -15,8 +12,10 @@ import { buildDiscoveryFacts } from './assembly/discovery-facts.js';
 import { enrichWithFrameworks } from './assembly/framework-enrichment.js';
 import { createModuleResolver } from './assembly/module-resolvers.js';
 import { buildPackageFacts } from './assembly/package-facts.js';
+import { hashFiles, readForParse } from './hash-files.js';
 import { scanWorkspace } from './scanner/scanner.js';
 
+import type { HashedFile } from './hash-files.js';
 import type { ScanWarning } from './scanner/scanner.js';
 import type {
   CancellationToken,
@@ -33,7 +32,6 @@ import type {
   IndexingContext,
   LanguageAdapter,
   ParseWarning,
-  RepositoryFile,
 } from '@impactgraph/language-adapters';
 
 export interface IndexRepositoryRequest {
@@ -71,34 +69,6 @@ export interface IndexSummary {
   readonly scanWarnings: readonly ScanWarning[];
   readonly parseWarnings: readonly ParseWarning[];
 }
-
-interface HashedFile extends RepositoryFile {
-  readonly contentHash: string;
-}
-
-const readFiles = (
-  scanned: readonly { relativePath: string; absolutePath: string }[],
-  warnings: ParseWarning[],
-): HashedFile[] => {
-  const files: HashedFile[] = [];
-  for (const entry of scanned) {
-    try {
-      const content = readFileSync(entry.absolutePath, 'utf8');
-      files.push({
-        relativePath: entry.relativePath,
-        content,
-        contentHash: createHash('sha256').update(content).digest('hex'),
-      });
-    } catch {
-      warnings.push({
-        filePath: entry.relativePath,
-        adapterId: 'scanner',
-        message: 'unreadable file skipped',
-      });
-    }
-  }
-  return files;
-};
 
 interface ParsePlan {
   readonly reused: GraphFragment[];
@@ -141,6 +111,7 @@ interface ParseRun {
   readonly fallback: LanguageAdapter;
   readonly context: IndexingContext;
   readonly totalFiles: number;
+  readonly warnings: ParseWarning[];
 }
 
 /**
@@ -171,8 +142,19 @@ const parseAndCache = async (
       filesProcessed: run.totalFiles - toParse.length + index,
       totalFiles: run.totalFiles,
     });
+    // Read here, not in the hashing pass: the content is unreachable again as soon as the
+    // adapter returns, so only one file body is ever live (PRD §33).
+    const repositoryFile = readForParse(file);
+    if (repositoryFile === undefined) {
+      run.warnings.push({
+        filePath: file.relativePath,
+        adapterId: 'scanner',
+        message: 'unreadable file skipped',
+      });
+      continue;
+    }
     const adapter = run.deps.registry.adapterFor(file.relativePath) ?? run.fallback;
-    const fragment = await adapter.indexFiles([file], run.context);
+    const fragment = await adapter.indexFiles([repositoryFile], run.context);
     fragments.push(fragment);
     batch.push({
       filePath: file.relativePath,
@@ -206,7 +188,7 @@ export const indexRepository = async (
   };
 
   const readWarnings: ParseWarning[] = [];
-  const files = readFiles(scan.files, readWarnings);
+  const { files, manifests } = hashFiles(scan.files, readWarnings);
   const plan =
     (request.incremental ?? true)
       ? await planReuse(files, deps.store, context)
@@ -219,6 +201,7 @@ export const indexRepository = async (
     fallback,
     context,
     totalFiles: files.length,
+    warnings: readWarnings,
   });
   if (!parsed.ok) {
     return parsed;
@@ -236,7 +219,11 @@ export const indexRepository = async (
     filesProcessed: files.length,
     totalFiles: files.length,
   });
-  const assembled = assembleGraph(fragments, context, createModuleResolver(files));
+  const assembled = assembleGraph(
+    fragments,
+    context,
+    createModuleResolver(new Set(files.map((file) => file.relativePath)), manifests),
+  );
   const graph = await enrichWithFrameworks(
     assembled,
     deps.frameworkAdapters ?? [],
