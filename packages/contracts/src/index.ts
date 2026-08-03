@@ -9,7 +9,13 @@ export {
 } from './artifacts/knowledge.js';
 export type { ProvenanceDto, KnowledgeEnvelopeDto } from './artifacts/knowledge.js';
 
-export { graphNodeArtifactSchema, graphEdgeArtifactSchema } from './artifacts/graph.js';
+export {
+  graphNodeArtifactSchema,
+  graphEdgeArtifactSchema,
+  routeContractSchema,
+  upgradeGraphNodeArtifact,
+} from './artifacts/graph.js';
+export type { GraphNodeUpgrade } from './artifacts/graph.js';
 export type { GraphNodeArtifactDto, GraphEdgeArtifactDto } from './artifacts/graph.js';
 
 export { evidenceSourceSchema, evidenceRecordArtifactSchema } from './artifacts/evidence.js';

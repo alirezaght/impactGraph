@@ -15,6 +15,31 @@ import type {
   KnowledgeEnvelopeInput,
 } from '../provenance/knowledge-envelope.js';
 
+/** One path or query parameter of a route contract. */
+export interface RouteParameter {
+  readonly name: string;
+  readonly required: boolean;
+}
+
+/**
+ * A route's contract as structured data (PRD §12.1.1).
+ *
+ * Verb and path used to exist only inside the node's display name, which meant every consumer
+ * recovered them by splitting a string — `cross-stack/route-index.ts` did exactly that. A route
+ * contract is an intrinsic property of one architectural component, not a set of components: making
+ * nodes for a verb, a path and each parameter would invent traversal paths and require edge types
+ * just to reassemble a single declaration. So it is typed data on the node it describes.
+ *
+ * The display name becomes presentation derived from this, never the source of truth.
+ */
+export interface RouteContract {
+  readonly path: string;
+  /** Absent when the framework declares a path without constraining the verb. */
+  readonly method?: string;
+  readonly pathParameters: readonly RouteParameter[];
+  readonly queryParameters: readonly RouteParameter[];
+}
+
 /** A component of the analyzed system (PRD §12.1) with its mandatory provenance envelope. */
 export interface GraphNode {
   readonly id: NodeId;
@@ -22,8 +47,14 @@ export interface GraphNode {
   readonly type: NodeType;
   readonly name: string;
   readonly path?: string;
+  /** Present on route nodes (`api-endpoint`, page routes). Absent on everything else. */
+  readonly route?: RouteContract;
   readonly knowledge: KnowledgeEnvelope;
 }
+
+/** `GET /api/deals` — presentation only. Nothing may parse this back into verb and path. */
+export const routeDisplayName = (route: RouteContract): string =>
+  `${route.method ?? 'ANY'} ${route.path}`;
 
 export interface CreateGraphNodeInput {
   readonly id: string;
@@ -31,8 +62,37 @@ export interface CreateGraphNodeInput {
   readonly type: string;
   readonly name: string;
   readonly path?: string;
+  readonly route?: RouteContract;
   readonly knowledge: KnowledgeEnvelopeInput;
 }
+
+const routeIssues = (route: RouteContract | undefined): ValidationIssue[] => {
+  if (route === undefined) {
+    return [];
+  }
+  const issues: ValidationIssue[] = [];
+  if (!route.path.startsWith('/')) {
+    issues.push(validationIssue('invalid-route', 'route.path', 'a route path must start with "/"'));
+  }
+  if (route.method !== undefined && route.method !== route.method.toUpperCase()) {
+    issues.push(
+      validationIssue('invalid-route', 'route.method', 'a route method must be upper case'),
+    );
+  }
+  for (const parameter of [...route.pathParameters, ...route.queryParameters]) {
+    if (parameter.name.trim().length === 0) {
+      issues.push(validationIssue('invalid-route', 'route', 'a route parameter must have a name'));
+    }
+  }
+  return issues;
+};
+
+const copyRoute = (route: RouteContract): RouteContract => ({
+  path: route.path,
+  ...(route.method === undefined ? {} : { method: route.method }),
+  pathParameters: route.pathParameters.map((parameter) => ({ ...parameter })),
+  queryParameters: route.queryParameters.map((parameter) => ({ ...parameter })),
+});
 
 const vocabularyIssues = (input: CreateGraphNodeInput): ValidationIssue[] => {
   if (!isNodeCategory(input.category)) {
@@ -57,7 +117,11 @@ const vocabularyIssues = (input: CreateGraphNodeInput): ValidationIssue[] => {
 };
 
 const nodeFieldIssues = (input: CreateGraphNodeInput): ValidationIssue[] => {
-  const issues = [...blankIdIssue(input.id, 'id'), ...vocabularyIssues(input)];
+  const issues = [
+    ...blankIdIssue(input.id, 'id'),
+    ...vocabularyIssues(input),
+    ...routeIssues(input.route),
+  ];
   if (input.name.trim().length === 0) {
     issues.push(validationIssue('blank-field', 'name', 'name must not be blank'));
   }
@@ -84,5 +148,11 @@ export const createGraphNode = (
     name: input.name,
     knowledge: buildKnowledgeEnvelope(input.knowledge),
   };
-  return ok(deepFreeze(input.path === undefined ? base : { ...base, path: input.path }));
+  return ok(
+    deepFreeze({
+      ...base,
+      ...(input.path === undefined ? {} : { path: input.path }),
+      ...(input.route === undefined ? {} : { route: copyRoute(input.route) }),
+    }),
+  );
 };

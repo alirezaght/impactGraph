@@ -16,10 +16,24 @@ import type { KnowledgeEnvelopeJson } from './knowledge-json.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
 import type { GraphEdge } from '../repository/graph-edge.js';
+import type { RouteContract, RouteParameter } from '../repository/graph-node.js';
 import type { GraphNode } from '../repository/graph-node.js';
 
-export const GRAPH_NODE_SCHEMA_VERSION = 1;
+/** 2 since §12.1.1: a node may carry a structured route contract. */
+export const GRAPH_NODE_SCHEMA_VERSION = 2;
 export const GRAPH_EDGE_SCHEMA_VERSION = 1;
+
+export interface RouteParameterJson {
+  readonly name: string;
+  readonly required: boolean;
+}
+
+export interface RouteContractJson {
+  readonly path: string;
+  readonly method?: string;
+  readonly pathParameters: readonly RouteParameterJson[];
+  readonly queryParameters: readonly RouteParameterJson[];
+}
 
 export interface GraphNodeJson {
   readonly schemaVersion: number;
@@ -28,6 +42,7 @@ export interface GraphNodeJson {
   readonly type: string;
   readonly name: string;
   readonly path?: string;
+  readonly route?: RouteContractJson;
   readonly knowledge: KnowledgeEnvelopeJson;
 }
 
@@ -49,7 +64,11 @@ export const serializeGraphNode = (node: GraphNode): GraphNodeJson => {
     name: node.name,
     knowledge: serializeKnowledgeEnvelope(node.knowledge),
   };
-  return node.path === undefined ? base : { ...base, path: node.path };
+  return {
+    ...base,
+    ...(node.path === undefined ? {} : { path: node.path }),
+    ...(node.route === undefined ? {} : { route: node.route }),
+  };
 };
 
 export const serializeGraphEdge = (edge: GraphEdge): GraphEdgeJson => ({
@@ -63,6 +82,46 @@ export const serializeGraphEdge = (edge: GraphEdge): GraphEdgeJson => ({
 
 const notAnObject = (what: string): ValidationError =>
   validationError([validationIssue('invalid-type', '', `${what} JSON must be an object`)]);
+
+const readParameters = (
+  raw: unknown,
+  field: string,
+  issues: ValidationIssue[],
+): RouteParameter[] => {
+  if (!Array.isArray(raw)) {
+    issues.push(validationIssue('invalid-route', `route.${field}`, `${field} must be an array`));
+    return [];
+  }
+  return raw.map((entry) => {
+    if (!isRawObject(entry) || typeof entry['name'] !== 'string') {
+      issues.push(validationIssue('invalid-route', `route.${field}`, 'a parameter needs a name'));
+      return { name: '', required: false };
+    }
+    return { name: entry['name'], required: entry['required'] === true };
+  });
+};
+
+/** Reads the §12.1.1 contract. Absent is legitimate — most nodes are not routes. */
+const readRouteContract = (
+  value: Record<string, unknown>,
+  issues: ValidationIssue[],
+): RouteContract | undefined => {
+  const raw = value['route'];
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (!isRawObject(raw) || typeof raw['path'] !== 'string') {
+    issues.push(validationIssue('invalid-route', 'route', 'a route contract needs a path'));
+    return undefined;
+  }
+  const method = raw['method'];
+  return {
+    path: raw['path'],
+    ...(typeof method === 'string' ? { method } : {}),
+    pathParameters: readParameters(raw['pathParameters'], 'pathParameters', issues),
+    queryParameters: readParameters(raw['queryParameters'], 'queryParameters', issues),
+  };
+};
 
 export const parseGraphNode = (value: unknown): Result<GraphNode, ValidationError> => {
   if (!isRawObject(value)) {
@@ -85,7 +144,15 @@ export const parseGraphNode = (value: unknown): Result<GraphNode, ValidationErro
   if (issues.length > 0) {
     return err(validationError(issues));
   }
-  return createGraphNode(path === undefined ? base : { ...base, path });
+  const route = readRouteContract(value, issues);
+  if (issues.length > 0) {
+    return err(validationError(issues));
+  }
+  return createGraphNode({
+    ...base,
+    ...(path === undefined ? {} : { path }),
+    ...(route === undefined ? {} : { route }),
+  });
 };
 
 export const parseGraphEdge = (value: unknown): Result<GraphEdge, ValidationError> => {

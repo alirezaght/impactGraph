@@ -18,7 +18,9 @@ export type ValidationIssueCode =
   | 'out-of-range'
   | 'missing-signals'
   | 'unknown-signal'
-  | 'wrong-sign-signal';
+  | 'wrong-sign-signal'
+  /** A route contract on a node is malformed (PRD §12.1.1). */
+  | 'invalid-route';
 
 export interface ValidationIssue {
   readonly code: ValidationIssueCode;
