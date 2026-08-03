@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { matchesGitignore, parseGitignore } from './gitignore.js';
 import { createIgnoreMatcher } from './ignore.js';
+
+import type { GitignoreRule } from './gitignore.js';
 
 // Workspace scanner (PRD §15.1, §40.1, §42.5). Repository content is untrusted: symlinks are
 // never followed out of the root, directory symlinks are not traversed (cycle-proof), and
@@ -12,6 +15,8 @@ const DEFAULT_MAX_FILE_SIZE_BYTES = 1_000_000;
 export interface ScanOptions {
   readonly ignoreGlobs?: readonly string[];
   readonly maxFileSizeBytes?: number;
+  /** Honour `.gitignore` files found while walking (default true, PRD §40.1). */
+  readonly respectGitignore?: boolean;
 }
 
 export interface ScannedFile {
@@ -59,6 +64,7 @@ interface ScanState {
   readonly rootReal: string;
   readonly maxSize: number;
   readonly matcher: ReturnType<typeof createIgnoreMatcher>;
+  readonly respectGitignore: boolean;
   readonly files: ScannedFile[];
   readonly warnings: ScanWarning[];
   readonly packages: PackageInfo[];
@@ -170,7 +176,37 @@ const visitFile = (state: ScanState, absolute: string, relative: string, isLink:
   }
 };
 
-const walk = (state: ScanState, absoluteDir: string, relativeDir: string): void => {
+/**
+ * Rules from this directory's `.gitignore`, appended after the inherited ones so a nested file
+ * overrides its parent. An unreadable `.gitignore` contributes nothing rather than failing the
+ * scan — repository content is untrusted input, never a precondition.
+ */
+const gitignoreRulesFor = (
+  state: ScanState,
+  absoluteDir: string,
+  relativeDir: string,
+  inherited: readonly GitignoreRule[],
+): readonly GitignoreRule[] => {
+  if (!state.respectGitignore) {
+    return inherited;
+  }
+  let contents: string;
+  try {
+    contents = readFileSync(join(absoluteDir, '.gitignore'), 'utf8');
+  } catch {
+    return inherited;
+  }
+  const local = parseGitignore(contents, relativeDir);
+  return local.length === 0 ? inherited : [...inherited, ...local];
+};
+
+const walk = (
+  state: ScanState,
+  absoluteDir: string,
+  relativeDir: string,
+  inheritedRules: readonly GitignoreRule[],
+): void => {
+  const rules = gitignoreRulesFor(state, absoluteDir, relativeDir, inheritedRules);
   const entries = readdirSync(absoluteDir, { withFileTypes: true }).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -183,11 +219,16 @@ const walk = (state: ScanState, absoluteDir: string, relativeDir: string): void 
       if (isLink) {
         // Never traverse directory symlinks: cycle-proof and containment-proof (PRD §42.5).
         state.warnings.push({ path: relative, reason: 'symlink-directory' });
-      } else if (state.matcher.ignoresDirectory(relative)) {
+      } else if (
+        state.matcher.ignoresDirectory(relative) ||
+        matchesGitignore(rules, relative, true)
+      ) {
         state.ignoredCount += 1;
       } else {
-        walk(state, absolute, relative);
+        walk(state, absolute, relative, rules);
       }
+    } else if (matchesGitignore(rules, relative, false)) {
+      state.ignoredCount += 1;
     } else {
       visitFile(state, absolute, relative, isLink);
     }
@@ -207,12 +248,13 @@ export const scanWorkspace = (rootDir: string, options: ScanOptions = {}): ScanR
     rootReal: realpathSync(rootDir),
     maxSize: options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE_BYTES,
     matcher: createIgnoreMatcher(options.ignoreGlobs ?? []),
+    respectGitignore: options.respectGitignore ?? true,
     files: [],
     warnings: [],
     packages: [],
     ignoredCount: 0,
   };
-  walk(state, state.rootReal, '');
+  walk(state, state.rootReal, '', []);
   return {
     files: state.files,
     warnings: state.warnings,

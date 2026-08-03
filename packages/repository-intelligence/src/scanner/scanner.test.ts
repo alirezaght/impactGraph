@@ -88,6 +88,44 @@ describe('workspace scanner (Story 2.1)', () => {
     expect(result.files.some((f) => f.relativePath.startsWith('src/loop/'))).toBe(false);
   });
 
+  it('prunes dependency, build, and tool-cache directories across stacks (§40.1)', () => {
+    for (const noise of ['.venv', '__pycache__', '.mypy_cache', '.pytest_cache', 'target']) {
+      mkdirSync(join(dir, 'svc', noise), { recursive: true });
+      writeFileSync(join(dir, 'svc', noise, 'junk.py'), 'x\n');
+    }
+    writeFileSync(join(dir, 'svc', 'real.py'), 'x\n');
+
+    const paths = scanWorkspace(dir).files.map((f) => f.relativePath);
+    expect(paths).toContain('svc/real.py');
+    expect(paths.filter((p) => p !== 'svc/real.py').some((p) => p.startsWith('svc/'))).toBe(false);
+  });
+
+  it('honours .gitignore, including nested files and negation (§40.1)', () => {
+    writeFileSync(join(dir, '.gitignore'), '*.log\n!keep.log\n/local/\n');
+    writeFileSync(join(dir, 'a.log'), 'x\n');
+    writeFileSync(join(dir, 'keep.log'), 'x\n');
+    mkdirSync(join(dir, 'local'));
+    writeFileSync(join(dir, 'local', 'scratch.ts'), 'x\n');
+    mkdirSync(join(dir, 'svc'));
+    writeFileSync(join(dir, 'svc', '.gitignore'), 'secret.ts\n');
+    writeFileSync(join(dir, 'svc', 'secret.ts'), 'x\n');
+    writeFileSync(join(dir, 'svc', 'public.ts'), 'x\n');
+
+    const paths = scanWorkspace(dir).files.map((f) => f.relativePath);
+    expect(paths).toContain('keep.log');
+    expect(paths).toContain('svc/public.ts');
+    expect(paths).not.toContain('a.log');
+    expect(paths).not.toContain('local/scratch.ts');
+    expect(paths).not.toContain('svc/secret.ts');
+  });
+
+  it('scans gitignored paths when .gitignore support is turned off', () => {
+    writeFileSync(join(dir, '.gitignore'), '*.log\n');
+    writeFileSync(join(dir, 'a.log'), 'x\n');
+    const paths = scanWorkspace(dir, { respectGitignore: false }).files.map((f) => f.relativePath);
+    expect(paths).toContain('a.log');
+  });
+
   it('refuses file symlinks that escape the workspace root (§42.5)', () => {
     const outside = mkdtempSync(join(tmpdir(), 'impactgraph-outside-'));
     writeFileSync(join(outside, 'secret.ts'), 'export const s = 1;\n');
