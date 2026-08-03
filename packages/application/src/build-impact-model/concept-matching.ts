@@ -88,21 +88,29 @@ const containsRun = (haystack: readonly string[], needle: readonly string[]): bo
  * would then accept "TypeScript" ≈ "TypeScriptAdapter" (2 of 3 tokens) while rejecting the same
  * pair spelled in kebab-case. Characters make the same word behave the same way in every casing.
  */
-const isSimilar = (concept: string, name: string): boolean => {
+export const nameCoverage = (concept: string, name: string): number => {
+  const conceptLength = normalize(concept).length;
+  const nameLength = normalize(withoutExtension(name)).length;
+  const longer = Math.max(conceptLength, nameLength);
+  return longer === 0 ? 0 : Math.min(conceptLength, nameLength) / longer;
+};
+
+export const tokensAlign = (concept: string, name: string): boolean => {
   const conceptTokens = tokensOf(concept);
   const nameTokens = tokensOf(name);
   const [shorterTokens, longerTokens] =
     conceptTokens.length <= nameTokens.length
       ? [conceptTokens, nameTokens]
       : [nameTokens, conceptTokens];
-  if (shorterTokens.length === 0 || !containsRun(longerTokens, shorterTokens)) {
+  return shorterTokens.length > 0 && containsRun(longerTokens, shorterTokens);
+};
+
+/** `minCoverage` is a seam for calibration; production always uses the constant above. */
+const isSimilar = (concept: string, name: string, minCoverage = MIN_NAME_COVERAGE): boolean => {
+  if (!tokensAlign(concept, name)) {
     return false;
   }
-  const conceptLength = normalize(concept).length;
-  const nameLength = normalize(withoutExtension(name)).length;
-  const shorter = Math.min(conceptLength, nameLength);
-  const longer = Math.max(conceptLength, nameLength);
-  return longer > 0 && shorter / longer >= MIN_NAME_COVERAGE;
+  return nameCoverage(concept, name) >= minCoverage;
 };
 
 const findByName = (
