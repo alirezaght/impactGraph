@@ -4,6 +4,7 @@ import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { failWith } from '../failure.js';
 
 import { renderGraphHtml } from './graph-html.js';
+import { loadImpactView } from './graph-impact-source.js';
 import { loadGraphView } from './graph-view-source.js';
 
 import type { Failable } from '../failure.js';
@@ -15,9 +16,17 @@ import type { GraphGrouping, GraphView } from './graph-view-model.js';
 
 export const DEFAULT_GRAPH_FILENAME = 'impactgraph-graph.html';
 
+/** Default destination for an impact export, so the two views never overwrite each other. */
+export const DEFAULT_IMPACT_FILENAME = 'impactgraph-impact.html';
+
 export interface GraphExportRequest {
   readonly rootDir: string;
   readonly grouping: GraphGrouping;
+  /**
+   * Which view to render. Absent renders the current architecture — exactly as before. Present
+   * renders that stored analysis's blast radius instead; an unknown id is a configuration error.
+   */
+  readonly analysisId?: string | undefined;
   /** Destination, relative to `rootDir` unless absolute. Defaults to the workspace root file. */
   readonly outPath?: string | undefined;
   /**
@@ -33,8 +42,11 @@ export interface GraphExportResult {
   readonly view: GraphView;
 }
 
+const defaultFilenameFor = (request: GraphExportRequest): string =>
+  request.analysisId === undefined ? DEFAULT_GRAPH_FILENAME : DEFAULT_IMPACT_FILENAME;
+
 export const resolveGraphOutPath = (request: GraphExportRequest): Failable<string> => {
-  const requested = request.outPath ?? DEFAULT_GRAPH_FILENAME;
+  const requested = request.outPath ?? defaultFilenameFor(request);
   const root = resolve(request.rootDir);
   const target = isAbsolute(requested) ? requested : resolve(root, requested);
   if (request.allowOutsideRoot) {
@@ -50,7 +62,17 @@ export const resolveGraphOutPath = (request: GraphExportRequest): Failable<strin
   return { ok: true, value: target };
 };
 
-/** Load the current graph, render it, and write exactly one file. No network, no source content. */
+/** One renderer, two view sources — the caller's `analysisId` chooses which one supplies the view. */
+const loadViewFor = async (request: GraphExportRequest): Promise<Failable<GraphView>> =>
+  request.analysisId === undefined
+    ? loadGraphView(request.rootDir, request.grouping)
+    : loadImpactView({
+        rootDir: request.rootDir,
+        analysisId: request.analysisId,
+        grouping: request.grouping,
+      });
+
+/** Load the view, render it, and write exactly one file. No network, no source content. */
 export const exportGraphHtmlFile = async (
   request: GraphExportRequest,
 ): Promise<Failable<GraphExportResult>> => {
@@ -58,7 +80,7 @@ export const exportGraphHtmlFile = async (
   if (!outPath.ok) {
     return outPath;
   }
-  const view = await loadGraphView(request.rootDir, request.grouping);
+  const view = await loadViewFor(request);
   if (!view.ok) {
     return view;
   }

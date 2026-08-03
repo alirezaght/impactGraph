@@ -20,6 +20,13 @@ export type {
   GoldenImpact,
   GoldenReviewInput,
 } from './analysis-golden.js';
+export {
+  anAnalysis,
+  aComponent,
+  anImpact,
+  aRequirement,
+  aSpecification,
+} from './impact-view-builders.js';
 export { createFakeModelProvider } from './fakes/model-provider.js';
 export type { FakeModelProvider } from './fakes/model-provider.js';
 export {

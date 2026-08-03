@@ -255,8 +255,8 @@ describe('MCP tool workflow (§21.1) on a fixture repository', () => {
     await expectOwnershipOverlay(tool, toolError);
   });
 
-  it('export_graph_html writes one self-contained, source-free local HTML file (§18.6)', async () => {
-    await expectGraphHtmlExport(tool, toolError);
+  it('export_graph_html writes one self-contained, source-free local HTML file (§18.6/§18.4)', async () => {
+    await expectGraphHtmlExport(tool, toolError, analysisId);
   });
 
   it('unknown nodes and invalid inputs produce typed errors, never crashes', async () => {

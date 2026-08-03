@@ -131,6 +131,31 @@ Three things about its shape are deliberate:
   carries names, types, **repository-relative** paths, provenance and counts — never source text,
   evidence excerpts or line ranges.
 
+### Two view sources, one document (§18.4/§18.6)
+
+The same `graph` document serves both the architecture view and a stored analysis's **blast
+radius**, discriminated by `view.kind` (`'architecture' | 'impact'`). This is a discriminant on the
+read model, not a second contract: `groups`, `nodes`, `edges`, `budget` and `edgeTotals` mean the
+same thing in both, so one layout engine, one SVG emitter and one HTML shell serve both.
+
+- **`view.impact`** (`cli/impact-export.ts`) is present exactly when `kind` is `'impact'`. It adds
+  the §18.5 payload: per-requirement attribution over the **whole** specification (including
+  requirements that produced no impacts), and per-impact likelihood, impact type, directness, hop
+  count, dependency path, provenance, explanation, expected changes and the §14 **contributing
+  signals** — a confidence number is never published without them. Evidence is a **count**, because
+  evidence ids embed line ranges (see `privacy-and-security.md` §5).
+- **`nodes[].impact`** carries the aggregate a drawn box shows for a component impacted by several
+  requirements: its strongest likelihood, highest confidence, hop range and requirement ids.
+  `nodes[].proposed` marks a component an option would create.
+- **`edges[].status`** is emitted **only** for `'proposed'`. Aggregation keys on it as well as on
+  `knowledgeCategory`, so a current relationship and a proposed one between the same two groups stay
+  two entries — the §18.4 current-vs-proposed split survives the roll-up exactly as the §3 category
+  split does. A document with no `status` anywhere is entirely current structure.
+- **Staleness is data, not an inference.** `boundSnapshotId` / `resolvedSnapshotId` /
+  `snapshotMatches` say which snapshot the analysis was computed against and which one supplied the
+  component names; `specificationStale` / `currentSpecificationVersion` say whether the spec has
+  moved past the version the analysis saw (§40.2). Nothing is silently refreshed.
+
 ### Proposed structure on the analyze document (§18.4)
 
 `analyze` carries an **additive, optional** v1 field `proposedStructure`

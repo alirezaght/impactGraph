@@ -124,12 +124,23 @@ export {
 export type { CliSelectOptionOutput, CliAcceptDeviationOutput } from './cli/decision-outputs.js';
 export {
   GRAPH_GROUPING_KEYS,
+  GRAPH_VIEW_KIND_KEYS,
   cliGraphOutputSchema,
+  graphEdgeStatusSchema,
   graphGroupingSchema,
   graphRenderCategorySchema,
+  graphViewKindSchema,
   graphViewSchema,
 } from './cli/graph-export.js';
 export type { CliGraphOutput, GraphGroupingDto, GraphViewDto } from './cli/graph-export.js';
+export {
+  impactDirectnessSchema,
+  impactLikelihoodSchema,
+  impactNodeFactsSchema,
+  impactProposedFactsSchema,
+  impactViewFactsSchema,
+} from './cli/impact-export.js';
+export type { ImpactNodeFactsDto, ImpactViewFactsDto } from './cli/impact-export.js';
 
 export { workspaceConfigSchema, DEFAULT_WORKSPACE_CONFIG } from './config/workspace-config.js';
 export type { WorkspaceConfigDto } from './config/workspace-config.js';

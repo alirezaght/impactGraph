@@ -11,6 +11,8 @@ export interface CommandContext {
   readonly outPath?: string | undefined;
   /** `--group` — §18.4 grouping key for the graph export. */
   readonly grouping?: GraphGroupingDto | undefined;
+  /** `--analysis` — render that stored analysis's blast radius instead of the architecture. */
+  readonly analysisId?: string | undefined;
   /** Output sink — stdout in production, captured in tests. Never console.* (lint). */
   readonly write: (line: string) => void;
 }

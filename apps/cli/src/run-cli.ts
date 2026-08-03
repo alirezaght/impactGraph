@@ -25,8 +25,10 @@ const USAGE = [
   '  index           index the repository into the local knowledge graph',
   '  status          show the current index generation',
   '  architecture    summarize detected packages and graph composition',
-  '  graph           write a self-contained architecture diagram to a local HTML file',
+  '  graph           write a self-contained diagram to a local HTML file',
   '                  [--out <file.html>] [--group context|application|package]',
+  '                  [--analysis <analysisId>]  render an impact analysis instead of the',
+  '                  current architecture: what a specification is predicted to touch',
   '  analyze <spec>  analyze a specification against the indexed graph (§46)',
   '  approve <id>    approve an impact analysis as the frozen review baseline',
   '  select-option <analysisId> <optionId> [description]  record a §26/§C8 option selection',
@@ -43,6 +45,7 @@ interface ParsedArgs {
   readonly rootDir: string;
   readonly outPath?: string | undefined;
   readonly grouping?: GraphGroupingDto | undefined;
+  readonly analysisId?: string | undefined;
   readonly invalid?: string;
 }
 
@@ -53,7 +56,22 @@ interface ParseState {
   rootDir: string;
   outPath?: string | undefined;
   grouping?: GraphGroupingDto | undefined;
+  analysisId?: string | undefined;
 }
+
+/**
+ * A value-taking flag must be followed by a value, not by the next flag. Without this, `--analysis`
+ * with no argument silently swallowed `--root` and then failed with a baffling "analysis not found:
+ * '--root'" instead of naming the real mistake.
+ */
+const missingValue = (
+  flag: string,
+  value: string | undefined,
+  expected: string,
+): string | undefined =>
+  value === undefined || value.length === 0 || value.startsWith('-')
+    ? `${flag} expects ${expected}`
+    : undefined;
 
 /** Each flag parser consumes the following value and returns an error message or undefined. */
 const FLAG_PARSERS: Record<
@@ -75,8 +93,9 @@ const FLAG_PARSERS: Record<
     return undefined;
   },
   '--out': (value, state) => {
-    if (value === undefined || value.length === 0) {
-      return '--out expects a file path';
+    const invalid = missingValue('--out', value, 'a file path');
+    if (invalid !== undefined) {
+      return invalid;
     }
     state.outPath = value;
     return undefined;
@@ -86,6 +105,14 @@ const FLAG_PARSERS: Record<
       return `--group expects ${GRAPH_GROUPING_KEYS.join(', ')}`;
     }
     state.grouping = value as GraphGroupingDto;
+    return undefined;
+  },
+  '--analysis': (value, state) => {
+    const invalid = missingValue('--analysis', value, 'an analysis id');
+    if (invalid !== undefined) {
+      return invalid;
+    }
+    state.analysisId = value;
     return undefined;
   },
 };
@@ -169,6 +196,7 @@ export const runCli = async (
     args: parsed.positionals,
     outPath: parsed.outPath,
     grouping: parsed.grouping,
+    analysisId: parsed.analysisId,
     write: options.write,
   };
   if (parsed.invalid !== undefined || parsed.command === undefined) {

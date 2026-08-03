@@ -12,6 +12,10 @@
           "type": "integer",
           "minimum": 0
         },
+        "view": {
+          "type": "string",
+          "enum": ["architecture", "impact"]
+        },
         "snapshotId": {
           "type": "string",
           "minLength": 1
@@ -50,11 +54,54 @@
         },
         "truncated": {
           "type": "boolean"
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analysisStatus": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "impacts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementsWithImpacts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementsTotal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementsWithoutImpacts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshotMatchesAnalysis": {
+          "type": "boolean"
+        },
+        "specificationStale": {
+          "type": "boolean"
+        },
+        "proposedRelationships": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "required": [
         "path",
         "byteSize",
+        "view",
         "snapshotId",
         "grouping",
         "groups",

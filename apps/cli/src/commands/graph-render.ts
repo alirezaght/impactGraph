@@ -20,15 +20,58 @@ const displayPath = (rootDir: string, outPath: string): string => {
   return relativePath.startsWith('..') || relativePath.length === 0 ? outPath : relativePath;
 };
 
+/** Impact-view headline: what a reader of the terminal needs before opening the file. */
+const impactLines = (view: GraphView): string[] => {
+  const facts = view.impact;
+  if (facts === undefined) {
+    return [];
+  }
+  const totals = facts.totals;
+  const byLikelihood = totals.byLikelihood;
+  const lines = [
+    `analysis: ${facts.analysisId} (${facts.analysisStatus})`,
+    `specification: ${facts.specificationTitle} v${String(facts.specificationVersion)}`,
+    `impacts: ${String(totals.impactCount)} on ${String(totals.componentCount)} components — required ${String(byLikelihood.required)}, likely ${String(byLikelihood.likely)}, possible ${String(byLikelihood.possible)}, unlikely ${String(byLikelihood.unlikely)}`,
+    `reach: ${String(totals.directCount)} direct, ${String(totals.indirectCount)} indirect up to ${String(totals.maxHops)} hops`,
+    `requirements: ${String(totals.requirementsWithImpacts)} of ${String(totals.requirementCount)} produced impacts`,
+  ];
+  if (totals.requirementsWithoutImpacts > 0) {
+    lines.push(
+      `coverage gap: ${String(totals.requirementsWithoutImpacts)} requirements produced no impacts — the analysis says nothing about them`,
+    );
+  }
+  if (!facts.snapshotMatches) {
+    lines.push(
+      `snapshot drift: analysis bound to ${facts.boundSnapshotId}, names resolved against ${facts.resolvedSnapshotId}`,
+    );
+  }
+  if (facts.specificationStale) {
+    lines.push(
+      `stale: the specification is now at v${String(facts.currentSpecificationVersion)} — re-analyze to refresh`,
+    );
+  }
+  if (facts.warnings.length > 0) {
+    lines.push(`warnings: ${String(facts.warnings.length)} — listed in the file`);
+  }
+  return lines;
+};
+
+const architectureLines = (view: GraphView): string[] => {
+  const budget = view.budget;
+  return [
+    `snapshot: ${view.snapshotId}`,
+    `nodes: ${String(budget.shownNodes)} of ${String(budget.architectureNodes)} architecture-level drawn (${String(budget.graphNodes)} indexed in total)`,
+  ];
+};
+
 const summaryLines = (context: CommandContext, written: GraphExportResult): string[] => {
   const view = written.view;
   const budget = view.budget;
   const totals = view.edgeTotals;
   const lines = [
     `wrote ${displayPath(context.rootDir, written.path)} (${formatBytes(written.byteSize)})`,
-    `snapshot: ${view.snapshotId}`,
+    ...(view.impact === undefined ? architectureLines(view) : impactLines(view)),
     `grouping: ${view.grouping} — ${String(budget.groupsShown)} of ${String(budget.groups)} groups drawn`,
-    `nodes: ${String(budget.shownNodes)} of ${String(budget.architectureNodes)} architecture-level drawn (${String(budget.graphNodes)} indexed in total)`,
     `relationships: ${String(totals.aggregatedShown)} aggregated arrows from ${String(totals.interGroup)} cross-group edges`,
   ];
   if (budget.hiddenNodes > 0 || budget.groupsHidden > 0) {

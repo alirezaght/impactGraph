@@ -1,9 +1,36 @@
+import type { ImpactNodeFacts, ImpactViewFacts } from './graph-impact-model.js';
+import type { CategoryCounts, RenderCategory } from './graph-render-category.js';
+
 // The read model behind `impactgraph graph` / `export_graph_html` (PRD §18.3/§18.6, §33).
 //
-// It is a PROJECTION of the current deterministic graph at the architecture level: groups
-// (bounded context / application / package) with the aggregated relationships between them.
-// It deliberately carries names, types, paths, provenance and counts — never source text and
-// never evidence excerpts, because the rendered file is meant to be attachable to a ticket.
+// One shape, TWO view sources:
+//   * `architecture` — a projection of the current deterministic graph at the architecture level:
+//     groups (bounded context / application / package) with the aggregated relationships between
+//     them (`graph-view.ts`);
+//   * `impact` — a projection of a stored impact analysis: the components a specification is
+//     predicted to touch, in the same groups, with likelihood as the primary signal
+//     (`graph-impact-view.ts`).
+//
+// The `kind` discriminant exists so the layout, the SVG emitter and the HTML shell stay single
+// implementations: they read the discriminant where the two views genuinely differ (cell size,
+// cell contents, which sections the document carries) instead of each growing a second code path.
+//
+// Both projections deliberately carry names, types, paths, provenance and counts — never source
+// text and never evidence excerpts, because the rendered file is meant to be attachable to a
+// ticket.
+
+export const GRAPH_VIEW_KINDS = ['architecture', 'impact'] as const;
+
+export type GraphViewKind = (typeof GRAPH_VIEW_KINDS)[number];
+
+/**
+ * §18.4 current-vs-proposed. A `proposed` relationship is one an architectural option WOULD
+ * create; it is never merged with a current one — aggregation keys on this field, so the two
+ * halves cannot collapse into a single arrow (§3).
+ */
+export const GRAPH_EDGE_STATUSES = ['current', 'proposed'] as const;
+
+export type GraphEdgeStatus = (typeof GRAPH_EDGE_STATUSES)[number];
 
 /** Grouping keys, in the §18.4 order: context first, application as the alternative. */
 export const GRAPH_GROUPINGS = ['context', 'application', 'package'] as const;
@@ -26,22 +53,9 @@ export const MAX_VISIBLE_EDGES = 300;
 /** Nodes that resolve to no group are collected here — never guessed into one (§Z5). */
 export const UNGROUPED_LABEL = '(ungrouped)';
 
-/**
- * §3/§43.6 — the five ways a record can read. `unknown` exists because
- * `knowledgeCategoryForProvenance` returns undefined for an unrecognized provenance and that
- * case must be rendered explicitly rather than defaulting to "deterministic".
- */
-export const RENDER_CATEGORIES = [
-  'deterministic',
-  'ai-inferred',
-  'human-confirmed',
-  'reserved',
-  'unknown',
-] as const;
-
-export type RenderCategory = (typeof RENDER_CATEGORIES)[number];
-
-export type CategoryCounts = Readonly<Record<RenderCategory, number>>;
+// §3/§43.6 — the knowledge categories, re-exported so existing importers keep one import site.
+export { RENDER_CATEGORIES, emptyCategoryCounts } from './graph-render-category.js';
+export type { CategoryCounts, RenderCategory } from './graph-render-category.js';
 
 /** One drawn component. `path` is repository-relative; absolute paths never enter the view. */
 export interface GraphViewNode {
@@ -53,6 +67,16 @@ export interface GraphViewNode {
   readonly path?: string | undefined;
   readonly provenance: string;
   readonly knowledgeCategory: RenderCategory;
+  /**
+   * Present only in an `impact` view. Its presence is what tells the SVG emitter to draw the
+   * impact cell (likelihood meter, confidence, hops) instead of the plain architecture cell.
+   */
+  readonly impact?: ImpactNodeFacts | undefined;
+  /**
+   * §18.4: a component an architectural option WOULD create. It does not exist in the repository,
+   * carries no impact facts, and is drawn with the long-dash + `[PROPOSED]` treatment.
+   */
+  readonly proposed?: boolean | undefined;
 }
 
 export interface GraphViewGroup {
@@ -74,11 +98,15 @@ export interface GraphViewEdgeKind {
  * An aggregated group-to-group relationship. Aggregation NEVER crosses knowledge categories:
  * a deterministic import and an AI-inferred one produce two edges, so §3 separation survives
  * the roll-up. `kinds` keeps the individual edge types with their counts (`IMPORTS ×12`).
+ *
+ * Nor does aggregation cross `status`: a current relationship and a proposed one between the same
+ * pair of groups are two separate arrows, drawn differently and labelled differently (§18.4).
  */
 export interface GraphViewEdge {
   readonly sourceGroupId: string;
   readonly targetGroupId: string;
   readonly knowledgeCategory: RenderCategory;
+  readonly status: GraphEdgeStatus;
   readonly kinds: readonly GraphViewEdgeKind[];
   readonly count: number;
 }
@@ -109,6 +137,7 @@ export interface GraphViewEdgeTotals {
 }
 
 export interface GraphView {
+  readonly kind: GraphViewKind;
   readonly snapshotId: string;
   readonly grouping: GraphGrouping;
   readonly groups: readonly GraphViewGroup[];
@@ -116,15 +145,9 @@ export interface GraphView {
   readonly edges: readonly GraphViewEdge[];
   readonly budget: GraphViewBudget;
   readonly edgeTotals: GraphViewEdgeTotals;
+  /** Present exactly when `kind === 'impact'`. */
+  readonly impact?: ImpactViewFacts | undefined;
 }
-
-export const emptyCategoryCounts = (): Record<RenderCategory, number> => ({
-  deterministic: 0,
-  'ai-inferred': 0,
-  'human-confirmed': 0,
-  reserved: 0,
-  unknown: 0,
-});
 
 /**
  * Node types that read as architecture. Excluded on purpose: `file`/`symbol`/`directory` and the

@@ -78,6 +78,11 @@ a { color: inherit; }
 .node-shape.inner { stroke: var(--ink); }
 .member-name { font-size: 12px; font-weight: 600; }
 .member-meta { font-size: 9.5px; fill: var(--ink-soft); letter-spacing: .02em; }
+/* Likelihood: the meter is a COUNT OF FILLED SHAPES, not a shade — it survives greyscale and a
+   monochrome printout, and the spelled-out word sits beside it either way (§37). */
+.member-likelihood { font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.meter-on { fill: var(--ink); stroke: var(--ink); stroke-width: 1; }
+.meter-off { fill: none; stroke: var(--ink); stroke-width: 1; }
 .edge-line { fill: none; stroke: var(--ink); stroke-width: 1.6; }
 .edge-label-bg { fill: var(--paper); stroke: var(--rule); stroke-width: .75; }
 .edge-label { font-size: 10px; text-anchor: middle; font-variant-numeric: tabular-nums; }

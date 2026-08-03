@@ -1,35 +1,34 @@
 import { z } from 'zod';
 
-import { KNOWLEDGE_CATEGORIES } from '../artifacts/explanation.js';
+import { graphCategoryCountsSchema, graphRenderCategorySchema } from './graph-categories.js';
+import { impactNodeFactsSchema, impactViewFactsSchema } from './impact-export.js';
 
-// `impactgraph graph --format json` / `export_graph_html` (PRD §18.3/§18.6, §20, §33) — the
-// architecture read model behind the self-contained HTML export, as data.
+export { graphRenderCategorySchema };
+
+// `impactgraph graph --format json` / `export_graph_html` (PRD §18.3/§18.6, §20, §33) — the read
+// model behind the self-contained HTML export, as data.
+//
+// One shape, two view sources: `architecture` (the current indexed graph) and `impact` (a stored
+// analysis's blast radius). `kind` is the discriminant; `impact` carries the extra §18.5 payload and
+// is present exactly when `kind` is `impact`.
 //
 // Deliberately absent from this contract: source text, evidence excerpts, line ranges and
 // absolute paths. The document carries names, types, repository-relative paths, provenance and
 // counts, which is exactly what the rendered file is allowed to contain.
+
+/** Which view source produced the document. */
+export const GRAPH_VIEW_KIND_KEYS = ['architecture', 'impact'] as const;
+
+export const graphViewKindSchema = z.enum(GRAPH_VIEW_KIND_KEYS);
+
+/** §18.4 current-vs-proposed. Emitted only for `proposed`; absent means a current relationship. */
+export const graphEdgeStatusSchema = z.enum(['current', 'proposed']);
 
 export const GRAPH_GROUPING_KEYS = ['context', 'application', 'package'] as const;
 
 export const graphGroupingSchema = z.enum(GRAPH_GROUPING_KEYS);
 
 export type GraphGroupingDto = z.infer<typeof graphGroupingSchema>;
-
-/**
- * The four §12.3 knowledge categories plus an explicit `unknown`. §43.6: an unrecognized
- * provenance must be rendered as unknown, never silently defaulted to "deterministic".
- */
-export const graphRenderCategorySchema = z.enum([...KNOWLEDGE_CATEGORIES, 'unknown'] as const);
-
-const categoryCountsSchema = z
-  .object({
-    deterministic: z.number().int().min(0),
-    'ai-inferred': z.number().int().min(0),
-    'human-confirmed': z.number().int().min(0),
-    reserved: z.number().int().min(0),
-    unknown: z.number().int().min(0),
-  })
-  .strict();
 
 const graphViewGroupSchema = z
   .object({
@@ -39,7 +38,7 @@ const graphViewGroupSchema = z
     totalNodes: z.number().int().min(0),
     shownNodes: z.number().int().min(0),
     hiddenNodes: z.number().int().min(0),
-    countsByKnowledgeCategory: categoryCountsSchema,
+    countsByKnowledgeCategory: graphCategoryCountsSchema,
   })
   .strict();
 
@@ -54,6 +53,10 @@ const graphViewNodeSchema = z
     path: z.string().min(1).optional(),
     provenance: z.string().min(1),
     knowledgeCategory: graphRenderCategorySchema,
+    /** Impact-view only: likelihood, confidence, hops and requirement attribution for this box. */
+    impact: impactNodeFactsSchema.optional(),
+    /** Impact-view only: a component an architectural option would create (§18.4). */
+    proposed: z.literal(true).optional(),
   })
   .strict();
 
@@ -63,6 +66,8 @@ const graphViewEdgeSchema = z
     targetGroupId: z.string().min(1),
     /** Aggregation never crosses categories, so this is a single value, never a mixture (§3). */
     knowledgeCategory: graphRenderCategorySchema,
+    /** Emitted only for a proposed relationship; absent means current. Never a mixture (§18.4). */
+    status: graphEdgeStatusSchema.optional(),
     kinds: z.array(z.object({ type: z.string().min(1), count: z.number().int().min(1) }).strict()),
     count: z.number().int().min(1),
   })
@@ -96,6 +101,7 @@ const graphEdgeTotalsSchema = z
 
 export const graphViewSchema = z
   .object({
+    kind: graphViewKindSchema,
     snapshotId: z.string().min(1),
     grouping: graphGroupingSchema,
     groups: z.array(graphViewGroupSchema),
@@ -103,6 +109,8 @@ export const graphViewSchema = z
     edges: z.array(graphViewEdgeSchema),
     budget: graphBudgetSchema,
     edgeTotals: graphEdgeTotalsSchema,
+    /** Present exactly when `kind` is `impact` — the §18.5 payload the diagram summarizes. */
+    impact: impactViewFactsSchema.optional(),
   })
   .strict();
 

@@ -1,3 +1,4 @@
+import { PROPOSED_BADGE } from './graph-impact-style.js';
 import { CATEGORY_STYLES, markerElement, styleFor } from './graph-style.js';
 import { escapeXml, formatCount } from './graph-text.js';
 
@@ -98,10 +99,14 @@ export const groupsTable = (view: GraphView): string =>
   [
     `<section aria-labelledby="groups-heading">`,
     `<h2 id="groups-heading">Groups</h2>`,
-    `<table><caption>Every group drawn in the diagram, with its full node count and the provenance breakdown of those nodes.</caption><thead>`,
+    `<table><caption>${
+      view.kind === 'impact'
+        ? 'Every group drawn in the diagram, with how many of its components the analysis predicts an impact on, broken down by the provenance of those predictions.'
+        : 'Every group drawn in the diagram, with its full node count and the provenance breakdown of those nodes.'
+    }</caption><thead>`,
     headerRow([
       'Group',
-      'Nodes (all levels)',
+      view.kind === 'impact' ? 'Components impacted' : 'Nodes (all levels)',
       'Drawn',
       'Not drawn',
       ...CATEGORY_STYLES.map((style) => style.badge),
@@ -123,12 +128,18 @@ export const groupsTable = (view: GraphView): string =>
 const kindList = (edge: GraphViewEdge): string =>
   edge.kinds.map((kind) => `${escapeXml(kind.type)} ×${formatCount(kind.count)}`).join(', ');
 
+/** A proposed relationship is labelled as such in the table too, not only in the diagram (§18.4). */
+const statusCell = (edge: GraphViewEdge): string =>
+  edge.status === 'proposed'
+    ? `<span class="badge">${PROPOSED_BADGE}</span> would be created`
+    : 'current';
+
 export const edgesTable = (view: GraphView): string =>
   [
     `<section aria-labelledby="edges-heading">`,
     `<h2 id="edges-heading">Relationships</h2>`,
-    `<table><caption>Aggregated group-to-group relationships. Aggregation never crosses knowledge categories, so a deterministic dependency and an inferred one are listed separately.</caption><thead>`,
-    headerRow(['From', 'To', 'Relationship types', 'Edges', 'Category']),
+    `<table><caption>Aggregated group-to-group relationships. Aggregation never crosses knowledge categories — nor current versus proposed status — so a deterministic dependency, an inferred one and a proposed one are listed separately.</caption><thead>`,
+    headerRow(['From', 'To', 'Relationship types', 'Edges', 'Category', 'Status']),
     `</thead><tbody>`,
     ...view.edges.map((edge) =>
       row([
@@ -137,6 +148,7 @@ export const edgesTable = (view: GraphView): string =>
         kindList(edge),
         formatCount(edge.count),
         `<span class="badge">${escapeXml(styleFor(edge.knowledgeCategory).badge)}</span>`,
+        statusCell(edge),
       ]),
     ),
     `</tbody></table>`,

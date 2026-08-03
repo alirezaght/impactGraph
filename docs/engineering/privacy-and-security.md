@@ -91,6 +91,20 @@ in every mode. There is no hosted backend and no remote database.
     client's working directory is arbitrary (`resolveGraphOutPath`, `allowOutsideRoot`).
   - **Determinism** is part of the security story too: the output has no clock and no randomness,
     so a committed golden makes any change to what the file contains a reviewed diff.
+- **Exported HTML impact analysis** (`impactgraph graph --analysis <id>`, MCP `export_graph_html`
+  with `analysisId`, `packages/workspace-engine/src/reports/graph-impact-*.ts`): the same renderer,
+  the same guarantees, re-asserted over a document that carries **much more** than the architecture
+  view — requirement prose, engine explanations, dependency paths and confidence signals. That is
+  the surface where a leak would actually happen, so `apps/cli/src/graph-impact.test.ts` and
+  `apps/mcp-server/src/registry-graph-flow.ts` repeat every assertion above against it. Two
+  additions specific to this view:
+  - **Evidence identifiers are never published**, only their count. An evidence id embeds a file
+    path with a line and column (`ev:symbol-declaration:path:53:14`); the architecture view already
+    excludes line ranges, and the impact view holds the same line. The node id already carries the
+    path and symbol name, which is what a reader needs to navigate.
+  - **Specification prose is included** (requirement statements) because requirement attribution is
+    unreadable without it — but it is the user's own specification, never repository source. The
+    distinction is deliberate and is what the source-text assertions test.
 
 ## 6. Threat-model summary
 

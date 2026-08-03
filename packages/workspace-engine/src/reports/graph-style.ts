@@ -107,6 +107,10 @@ const MARKER_SHAPES: Readonly<Record<string, string>> = {
   'arrow-reserved': '<rect x="6" y="0.5" width="2.5" height="7" fill="currentColor" />',
   'arrow-unknown':
     '<path d="M 1 0.5 L 8 4 L 1 7.5" fill="none" stroke="currentColor" stroke-width="1.4" />',
+  // §18.4 proposed structure: a SOURCE-end marker. No current relationship draws one, so its mere
+  // presence separates proposed from current without touching the provenance channels.
+  'arrow-proposed-source':
+    '<path d="M 0 4 L 5 0 L 10 4 L 5 8 z" fill="none" stroke="currentColor" stroke-width="1.4" />',
 };
 
 export const MARKER_IDS: readonly string[] = Object.keys(MARKER_SHAPES);

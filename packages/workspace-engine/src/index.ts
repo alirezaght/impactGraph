@@ -91,7 +91,9 @@ export { buildReviewMarkdown, reviewSummaryLine } from './reports/review-markdow
 export { buildExportOutput } from './reports/export-output.js';
 export {
   ARCHITECTURE_NODE_TYPES,
+  GRAPH_EDGE_STATUSES,
   GRAPH_GROUPINGS,
+  GRAPH_VIEW_KINDS,
   MAX_VISIBLE_EDGES,
   MAX_VISIBLE_NODES,
   RENDER_CATEGORIES,
@@ -99,25 +101,49 @@ export {
   isGraphGrouping,
 } from './reports/graph-view-model.js';
 export type {
+  GraphEdgeStatus,
   GraphGrouping,
   GraphView,
   GraphViewEdge,
   GraphViewGroup,
+  GraphViewKind,
   GraphViewNode,
   RenderCategory,
 } from './reports/graph-view-model.js';
 export { buildGraphView } from './reports/graph-view.js';
 export type { GraphViewInput } from './reports/graph-view.js';
-export { loadGraphView } from './reports/graph-view-source.js';
+export { loadGraphView, groupingForGraph } from './reports/graph-view-source.js';
 export { renderGraphHtml } from './reports/graph-html.js';
 export {
   DEFAULT_GRAPH_FILENAME,
+  DEFAULT_IMPACT_FILENAME,
   exportGraphHtmlFile,
   resolveGraphOutPath,
 } from './reports/graph-file.js';
 export type { GraphExportRequest, GraphExportResult } from './reports/graph-file.js';
 export { buildGraphOutput } from './reports/graph-output.js';
 export { CATEGORY_STYLES, styleFor } from './reports/graph-style.js';
+// --- the impact view source (PRD §18.4/§18.5) ---------------------------------------------------
+export { buildImpactView } from './reports/graph-impact-view.js';
+export type { ImpactViewInput } from './reports/graph-impact-view.js';
+export { loadImpactView } from './reports/graph-impact-source.js';
+export type { ImpactViewRequest } from './reports/graph-impact-source.js';
+export type { ComponentFacts } from './reports/graph-impact-cells.js';
+export { PROPOSED_GROUP_LABEL, UNASSIGNED_GROUP_LABELS } from './reports/graph-impact-model.js';
+export type {
+  ImpactNodeFacts,
+  ImpactRow,
+  ImpactTotals,
+  ImpactViewFacts,
+} from './reports/graph-impact-model.js';
+export {
+  LIKELIHOOD_SEGMENTS,
+  LIKELIHOOD_STYLES,
+  PROPOSED_BADGE,
+  PROPOSED_DASH,
+  likelihoodStyleFor,
+  likelihoodText,
+} from './reports/graph-impact-style.js';
 export type { CategoryStyle } from './reports/graph-style.js';
 export { answerQuestion, listClarifications } from './clarifications.js';
 export type { AnswerQuestionRequest, AnswerQuestionOutcome } from './clarifications.js';

@@ -25,8 +25,11 @@ const packageNames = (graph: KnowledgeGraph): ReadonlySet<string> => {
  * §18.4 grouping. `context` is the default and falls back to the owning application when no
  * bounded context is assigned — a fallback that is LABELLED in the view rather than presented as
  * a context, because inventing a context from a path is exactly what §Z5 forbids.
+ *
+ * Exported because BOTH view sources group the same way: an impact view that grouped components
+ * differently from the architecture view would be answering a different question.
  */
-const groupingFor = (
+export const groupingForGraph = (
   rootDir: string,
   graph: KnowledgeGraph,
   grouping: GraphGrouping,
@@ -69,7 +72,7 @@ export const loadGraphView = async (
         grouping,
         nodes: [...graph.nodes.values()],
         edges: [...graph.edges.values()],
-        groupOf: groupingFor(rootDir, graph, grouping),
+        groupOf: groupingForGraph(rootDir, graph, grouping),
       }),
     };
   });

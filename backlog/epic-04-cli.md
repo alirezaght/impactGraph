@@ -87,3 +87,41 @@ extension webview, reachable only through an Extension Development Host.
 - [x] `graph-file.ts` — the one place the file is written, shared by the CLI and the MCP tool; `allowOutsideRoot` distinguishes a human's `--out` from a tool-supplied path.
 - [x] `contracts/cli/graph-export.ts` + `contracts/tools/graph-export-tools.ts`; JSON Schemas regenerated.
 - [x] Tests: privacy assertions, budget announcement, golden, byte-identical re-export, three-category rendering (`apps/cli/src/graph{,-export}.test.ts`, `apps/mcp-server/src/registry-graph-flow.ts`).
+
+## Story 4.6 — `impactgraph graph --analysis` (headless impact view)
+
+**Goal:** A user can SEE a specification's blast radius. Story 4.5 gave the architecture a headless
+visual surface; an impact analysis still had none outside the extension webview, which is gated
+behind a `.vsix`. This is a second **view source** feeding the same renderer, not a second renderer.
+
+**Acceptance criteria**
+
+- [x] `impactgraph graph --analysis <analysisId>` writes the same kind of self-contained local HTML file (default `./impactgraph-impact.html`, so the two views never overwrite each other), and `--format json` emits the same view as contract-validated data. With no `--analysis`, behaviour is byte-for-byte what it was.
+- [x] An unknown analysis id is a typed `configurationError` that **names the available ids**, rather than failing blankly. _(`--analysis` with no value is also rejected, instead of swallowing the next flag)_
+- [x] Impacted components are grouped the way the architecture view groups (context / application / package), via the **same** `groupingForGraph` — an impact view that grouped differently would be answering a different question.
+- [x] **Likelihood is the primary signal and reads without colour**: a four-segment meter whose filled count is the encoding, the spelled-out word, and the fraction (`REQUIRED 4/4`). Confidence is text to two decimals; impact type is text. _(§13/§37)_
+- [x] **Provenance stays a separate reading** (§3): border shape, dash pattern and `FACT`/`INFERRED`/`CONFIRMED` badge. Likelihood and provenance never share a channel, so three identically-likely impacts with three different provenances are still three visibly different boxes.
+- [x] **Requirement attribution** for every requirement in the specification, including those that produced no impacts — and the coverage gap is stated in words on the page and in the terminal.
+- [x] **Hop counts** on every impact, with the dependency path spelled out hop by hop and each hop resolved back to the real graph edge type (looked up in both directions, since a traversal walks `symbol → file` over an edge stored as `file CONTAINS symbol`). An unresolvable hop reads `unknown`, never "deterministic". _(§43.6)_
+- [x] **§14 contributing signals** published with every confidence score, with signed contributions.
+- [x] **Current vs proposed never merge** (§18.4): proposed relationships aggregate on a separate `status` key and are drawn with a long dash, a source-end marker no current edge draws, and `[PROPOSED]` in the label; proposed components get their own group and never enter a real bounded context.
+- [x] **Absent data reads as absent** (§Z5): `(no context assigned)` / `(no application assigned)` / `(no package assigned)`, `NOT IN SNAPSHOT` for a node the analysis cites but the resolved graph lacks, `no impacts predicted`, `no human decision`.
+- [x] **Staleness is stated, never silently refreshed** (§40.2/§40.3): names are resolved against the snapshot the analysis was BOUND to; a snapshot mismatch, a superseded specification version and a non-approved status each produce a notice.
+- [x] The §33 budget is the shared one — strongest claims survive the cap, truncation is announced, and **every** impact stays in the Impacts table whether or not it was drawn.
+- [x] Every Story 4.5 privacy assertion re-run over the impact document, which carries far more (requirement prose, explanations, paths, signals). Evidence is a **count**: evidence ids embed line ranges and are not published.
+- [x] Reachable over MCP via the **existing** `export_graph_html` with an optional `analysisId` (roster stays 40), returning `view` plus the coverage numbers so an agent cannot report a blast radius while staying quiet about uncovered requirements. Tool-supplied paths stay confined on this path too.
+
+**Tasks**
+
+- [x] `graph-view-model.ts` gains a `kind` discriminant and an edge `status`; `graph-render-category.ts` and `graph-view-budget.ts` extracted so both view sources share the categories and the §33 budget without importing each other.
+- [x] `graph-impact-{model,cells,edges,rows,view,style,source}.ts` — the impact read model and its loader. Assembly lives in `reports/`; no new engine query functions.
+- [x] `graph-layout-rows.ts` extracted from `graph-layout.ts`; the view's `kind` selects a cell size and nothing else.
+- [x] `graph-svg-impact.ts`, `graph-html-impact{,-tables}.ts`; the HTML shell picks a section set by `kind`.
+- [x] `contracts/cli/impact-export.ts` (+ `graph-categories.ts` to keep the two schema modules acyclic); `export_graph_html` input/output extended; JSON Schemas regenerated.
+- [x] Fixture builders in `packages/test-kit/src/impact-view-builders.ts`; tests in `apps/cli/src/graph-impact{,-encoding,-view}.test.ts` and `apps/mcp-server/src/registry-graph-flow.ts`.
+
+**Dogfooding note.** Rendered against this repository's approved analysis
+`analysis-spec-packaging-and-key-flow-v1-mscxv83j`: 125 impacts on 123 components across 14 context
+groups, 8 direct and 117 indirect up to 2 hops, **4 of 10 requirements** producing impacts — and
+**one requirement absorbing 102 of the 125**. The requirement table made both defects legible at a
+glance, which is the argument for putting attribution before the impacts table rather than after it.
