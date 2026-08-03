@@ -10,7 +10,6 @@ req-0d28f757|deal-repository.ts|possible|domain-model|indirect|0.40|exact-concep
 req-0d28f757|deal-service.test.ts|possible|testing|indirect|0.55|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance+test-association
 req-0d28f757|deal-service.ts|likely|domain-model|indirect|0.65|exact-concept-to-symbol-match+graph-distance
 req-0d28f757|index.ts|possible|domain-model|indirect|0.50|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-0d28f757|index.ts|possible|domain-model|indirect|0.50|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-0d28f757|testBuildDealService|possible|domain-model|indirect|0.50|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-0d28f757|ts-basic|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
 

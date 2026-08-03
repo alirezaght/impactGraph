@@ -230,6 +230,11 @@ const classifyRequirementCandidates = (
       requirementId: requirement.id,
     });
   }
+  // `traversal.ownershipOnly` is deliberately NOT warned about. Declining to propagate out of a
+  // container is a routine modelling rule that applies to almost every analysis — the same class of
+  // decision as never walking CONTAINS downward, which has never warranted a warning. Routing it
+  // through `warnings` would make `warningsFound` the normal exit code and devalue the signal. The
+  // list stays on the traversal result for diagnostics and tests.
   const scored = scoreCandidates(pipeline, requirement.id, traversal.candidates);
   const capped = capByStrength(scored, request.traversal?.maxCandidates ?? DEFAULT_MAX_CANDIDATES);
   impacts.push(...capped.kept);

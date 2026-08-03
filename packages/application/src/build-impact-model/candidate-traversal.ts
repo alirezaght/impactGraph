@@ -31,6 +31,37 @@ const IMPACT_EDGE_TYPES = new Set([
   'CONTAINS',
 ]);
 
+/**
+ * What crossing an edge means for impact propagation.
+ *
+ * propagating — the target genuinely depends on the source, so change flows across it.
+ * ownership   — the target merely CONTAINS or declares the source. Useful for locating a symbol,
+ *               rolling an impact up to its file, and explaining where an anchor lives; it is not
+ *               evidence that the file's other declarations are affected.
+ * supporting  — a real relationship of a weaker kind (tests, deployment) that may still carry
+ *               impact but does not assert dependency.
+ */
+export type TraversalRole = 'propagating' | 'ownership' | 'supporting';
+
+const EDGE_ROLES: Readonly<Record<string, TraversalRole>> = {
+  IMPORTS: 'propagating',
+  CALLS: 'propagating',
+  EXTENDS: 'propagating',
+  IMPLEMENTS: 'propagating',
+  READS_FROM: 'propagating',
+  WRITES_TO: 'propagating',
+  PUBLISHES: 'propagating',
+  SUBSCRIBES_TO: 'propagating',
+  DEPENDS_ON: 'propagating',
+  EXPOSES: 'propagating',
+  CONTAINS: 'ownership',
+  TESTS: 'supporting',
+  DEPLOYED_AS: 'supporting',
+  USES: 'supporting',
+};
+
+export const roleOf = (edgeType: string): TraversalRole => EDGE_ROLES[edgeType] ?? 'supporting';
+
 export interface ImpactCandidate {
   readonly nodeId: string;
   readonly distance: number;
@@ -45,6 +76,12 @@ export interface ImpactCandidate {
    * paths do not compound into three import signals.
    */
   readonly corroboratingEdgeTypes: readonly string[];
+  /**
+   * True when at least one route to this candidate is a legitimate propagation shape. Judged per
+   * ROUTE rather than from the merged evidence, because the two edges of a single chain are one
+   * piece of evidence and not two.
+   */
+  readonly admissible: boolean;
   readonly edgeEvidenceIds: readonly string[];
   readonly match: ConceptMatch;
 }
@@ -65,11 +102,38 @@ export interface TraversalResult {
   readonly candidates: readonly ImpactCandidate[];
   /** True when `maxExpansions` stopped the walk — a safety trip, not a filtered result. */
   readonly exhausted: boolean;
+  /** Candidates refused admission because every route to them left the anchor's own container. */
+  readonly ownershipOnly: readonly string[];
 }
+
+/**
+ * Ownership carries impact to the container and to the container's DEPENDENTS, not to the
+ * container's own dependencies.
+ *
+ * Reaching the file that declares an anchored symbol is useful — the file is where the change
+ * lands — and so is reaching whatever imports that file, which is the §46 promise to surface
+ * dependents the specification never named. What is not evidence is the third shape:
+ * `anchor —CONTAINS↑→ its file —imports→ something the file depends on`. That inverts the
+ * direction of impact and changes the subject from "affected by this symbol" to "anything this
+ * symbol's file happens to use", which is how co-located base classes and sibling contracts arrive.
+ */
+const routeAdmissible = (from: ImpactCandidate, step: Step): boolean => {
+  const firstEdge = from.edgeTypes[0];
+  if (firstEdge === undefined || roleOf(firstEdge) !== 'ownership') {
+    return true;
+  }
+  return step.towardDependents;
+};
 
 interface Step {
   readonly edge: GraphEdge;
   readonly neighborId: NodeId;
+  /**
+   * True when the step moved toward things that DEPEND on the node we came from, rather than toward
+   * that node's own dependencies. Impact flows to dependents, so the direction decides whether a
+   * second hop out of a container is propagation or merely the container's own imports.
+   */
+  readonly towardDependents: boolean;
 }
 
 /**
@@ -91,11 +155,15 @@ const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
     if (edge.type === 'CONTAINS' || edge.type === 'DEPENDS_ON') {
       if (edge.sourceId !== nodeId) {
         // upward: to the container, or to the node that declares this dependency
-        steps.push({ edge, neighborId: edge.sourceId });
+        steps.push({ edge, neighborId: edge.sourceId, towardDependents: true });
       }
       continue;
     }
-    steps.push({ edge, neighborId: edge.sourceId === nodeId ? edge.targetId : edge.sourceId });
+    steps.push({
+      edge,
+      neighborId: edge.sourceId === nodeId ? edge.targetId : edge.sourceId,
+      towardDependents: edge.targetId === nodeId,
+    });
   }
   return steps;
 };
@@ -162,6 +230,8 @@ const mergeCandidate = (state: TraversalState, incoming: ImpactCandidate): void 
   state.best.set(incoming.nodeId, {
     ...winner,
     corroboratingEdgeTypes: union(existing.corroboratingEdgeTypes, incoming.corroboratingEdgeTypes),
+    // OR, not AND: one legitimate route is enough to admit the candidate.
+    admissible: existing.admissible || incoming.admissible,
     edgeEvidenceIds: union(existing.edgeEvidenceIds, incoming.edgeEvidenceIds),
   });
 };
@@ -178,6 +248,7 @@ const traverseFromMatch = (
     dependencyPath: [match.nodeId],
     edgeTypes: [],
     corroboratingEdgeTypes: [],
+    admissible: true,
     edgeEvidenceIds: [],
     match,
   };
@@ -209,6 +280,7 @@ const stepCandidate = (
     dependencyPath: [...current.dependencyPath, step.neighborId],
     edgeTypes,
     corroboratingEdgeTypes: [...new Set(edgeTypes)].sort(),
+    admissible: current.admissible && routeAdmissible(current, step),
     edgeEvidenceIds: [...current.edgeEvidenceIds, ...step.edge.knowledge.evidenceIds],
     match,
   };
@@ -262,8 +334,14 @@ export const traverseCandidates = (
       traverseFromMatch(graph, match, options.maxDepth ?? 2, state);
     }
   }
-  const candidates = [...state.best.values()].sort(
+  const discovered = [...state.best.values()].sort(
     (a, b) => a.distance - b.distance || a.nodeId.localeCompare(b.nodeId),
   );
-  return { candidates, exhausted: state.exhausted };
+  return {
+    candidates: discovered.filter((candidate) => candidate.admissible),
+    exhausted: state.exhausted,
+    ownershipOnly: discovered
+      .filter((candidate) => !candidate.admissible)
+      .map((candidate) => candidate.nodeId),
+  };
 };

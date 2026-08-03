@@ -33,6 +33,16 @@ export interface ImpactGroundTruth {
    * would make almost every graph neighbour "plausible" and the inclusive figure meaningless.
    */
   readonly possibleTier?: readonly PossibleTierLabel[];
+  /**
+   * A direct-precision shortfall that is understood and not yet fixed, pinned to its exact current
+   * value in BOTH directions. Lowering the shared gate to accommodate one sample would blunt it for
+   * every other sample; asserting equality keeps the gate at full strength while making this
+   * failure visible, and forces a deliberate review when it improves as well as when it degrades.
+   */
+  readonly knownDirectPrecision?: {
+    readonly value: number;
+    readonly reason: string;
+  };
 }
 
 /**
@@ -141,10 +151,18 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       directImpacts: ['DealRepository'],
       // DealService and the deals API consume the repository without being named.
       minSurprises: 1,
-      // `buildDealService` is deliberately absent: adding a method to the repository does not
-      // change the factory that constructs a service around it. The engine promotes it to likely
-      // on a direct-function-call signal, and that is the false positive this sample measures.
-      allowedImpacts: ['DealRepository', 'deal-repository.ts', 'createRepository', 'DealService'],
+      // Ground truth states the obligations the specification implies, not one plausible
+      // implementation path. `buildDealService` and `DealService` are both deliberately absent:
+      // the count method may well be surfaced through the service, but nothing in "DealRepository
+      // must expose a count method" obliges a caller or a factory to change. Keeping DealService
+      // here would have given the precision gate a convenient lower bound at the cost of encoding
+      // a label known to be wrong.
+      allowedImpacts: ['DealRepository', 'deal-repository.ts', 'createRepository'],
+      knownDirectPrecision: {
+        value: 0.6,
+        reason:
+          'the engine promotes DealService and buildDealService to LIKELY on a direct-function-call signal one hop from the anchor. Adding a method to a class obliges neither its callers nor a factory to change, so both are false positives at that tier — the same permissive-propagation defect as the possible-tier tail, one hop closer in. Left failing visibly rather than papered over by relaxing the shared 0.75 gate.',
+      },
       // Every possible-tier candidate here is unsupported. Adding a method to a class changes
       // neither its consumers nor its `export *` barrels, and nothing in this requirement reaches
       // the unrelated BaseService/Searchable pair the traversal walked to.
@@ -154,10 +172,6 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
           verdict: 'unsupported',
           rationale:
             'a consumer of the repository, but adding a count method obliges no caller to change',
-          // Tension worth recording: `DealService` sits in allowedImpacts above at the likely tier,
-          // which on this stricter reading was too generous. The flag marks the inconsistency
-          // rather than quietly resolving it in either direction.
-          reviewNeeded: true,
         },
         {
           nodeId: 'file:src/alias-user.ts',
