@@ -14,9 +14,10 @@ coverage/
 # VS Code extension packaging
 *.vsix
 
-# Generated exports (`impactgraph graph`) — derived output, never committed.
+# Generated exports (`impactgraph graph` / `export_graph_html`) — derived output, never committed.
 impactgraph-graph.html
 impactgraph-impact.html
+reports/
 
 # ImpactGraph runtime caches (the derived SQLite index is disposable — ADR-0006).
 # Committed .impactgraph/ config (YAML) stays tracked; only caches are ignored.

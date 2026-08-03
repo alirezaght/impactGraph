@@ -12,3 +12,4 @@ CHANGELOG.md
 # committed configuration in .impactgraph/*.yml stays formatted.
 .impactgraph/artifacts
 .impactgraph/cache
+reports
