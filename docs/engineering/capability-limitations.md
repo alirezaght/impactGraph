@@ -39,15 +39,15 @@ was not what the original entry assumed.
 `USES` was emitted for at least six unrelated facts, and appeared to double as the fallback when a
 more specific classification failed (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/sub adapters):
 
-| Producer                                | Actual relationship                     | Now emits              |
-| --------------------------------------- | --------------------------------------- | ---------------------- |
-| `assemble.ts` (`injects`)               | constructor injection (DI)              | `INJECTS`              |
-| `spring-injection.ts`                   | Spring dependency injection             | `INJECTS`              |
-| `express-adapter.ts`                    | application middleware attachment       | `USES_MIDDLEWARE`      |
-| `cross-stack/page-links.ts`             | page-to-page navigation reference       | `NAVIGATES_TO`         |
-| `cross-stack/template-calls.ts`         | template path matched to a route        | see below              |
-| `terraform-graph.ts`                    | Terraform secret reference              | `REFERENCES_RESOURCE`  |
-| pub/sub adapters (`?? 'USES'` fallback) | nothing — the path is unreachable       | `USES_UNKNOWN`, unused |
+| Producer                                | Actual relationship               | Now emits              |
+| --------------------------------------- | --------------------------------- | ---------------------- |
+| `assemble.ts` (`injects`)               | constructor injection (DI)        | `INJECTS`              |
+| `spring-injection.ts`                   | Spring dependency injection       | `INJECTS`              |
+| `express-adapter.ts`                    | application middleware attachment | `USES_MIDDLEWARE`      |
+| `cross-stack/page-links.ts`             | page-to-page navigation reference | `NAVIGATES_TO`         |
+| `cross-stack/template-calls.ts`         | template path matched to a route  | see below              |
+| `terraform-graph.ts`                    | Terraform secret reference        | `REFERENCES_RESOURCE`  |
+| pub/sub adapters (`?? 'USES'` fallback) | nothing — the path is unreachable | `USES_UNKNOWN`, unused |
 
 `template-calls.ts` emits three types, not one, because a reference site states which: a `fetch`
 crosses a network boundary (`CALLS_ENDPOINT`), a `form.action` submits (`SUBMITS_TO`), and an
