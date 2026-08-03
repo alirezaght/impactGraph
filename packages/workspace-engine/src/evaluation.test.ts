@@ -36,10 +36,18 @@ interface EvaluationResult {
   readonly surpriseCount: number;
   /** Precision over required/likely against the closed set; undefined when unlabeled. */
   readonly directPrecision: number | undefined;
-  /** Total impacts per labeled component — how much unlabeled noise rides along. */
+  /**
+   * Over-promotion at the required/likely tier: how many components are presented as confident per
+   * component that legitimately belongs there. Deliberately tier-scoped — measuring TOTAL impacts
+   * against the required/likely allowed set conflates two things, because the possible tier is meant
+   * to be exploratory, and it made the ratio worsen whenever ground truth got stricter rather than
+   * when the engine got worse. Possible-tier volume is measured separately.
+   */
   readonly candidateInflation: number | undefined;
   /** Names that must never appear and did. Always gated: any hit is a regression. */
   readonly forbiddenHits: readonly string[];
+  /** Names at required/likely, for pinning documented gaps. */
+  readonly relevantNames: readonly string[];
   /** Diagnostics, reported but not gated — they describe shape, not correctness. */
   readonly possiblePerRequirement: number;
   readonly traversalOnlyShare: number;
@@ -180,6 +188,7 @@ const evaluate = (
     recall: directImpacts.length === 0 ? 1 : found.length / directImpacts.length,
     unsupportedClaimRate: share(unsupported, impacts.length),
     surpriseCount: [...names].filter((name) => !sample.specText.includes(name)).length,
+    relevantNames: [...names],
     // Predicting nothing where nothing is expected is perfect precision, not zero — but
     // predicting anything against an empty allowed set is unbounded inflation, which is the
     // signal that catches a sample whose correct answer is silence.
@@ -193,10 +202,10 @@ const evaluate = (
       allowed === undefined
         ? undefined
         : allowed.size === 0
-          ? impacts.length === 0
+          ? names.size === 0
             ? 0
             : Number.POSITIVE_INFINITY
-          : impacts.length / allowed.size,
+          : names.size / allowed.size,
     forbiddenHits: (forbiddenImpacts ?? []).filter((name) => allNames.has(name)),
     possiblePerRequirement: share(
       impacts.filter((impact) => impact.likelihood === 'possible').length,
@@ -379,6 +388,22 @@ describe('impact-quality evaluation on the reference repository (PRD §41, §46)
         gap.value,
         2,
       );
+    }
+  });
+
+  it('pins the components that ought to be likely and are not, in both directions', () => {
+    for (const sample of SAMPLE_EVALUATIONS) {
+      const gap = sample.groundTruth.shouldBeLikelyButIsNot;
+      if (gap === undefined) {
+        continue;
+      }
+      const result = results.find((candidate) => candidate.name === sample.name);
+      for (const name of gap) {
+        expect(
+          result?.relevantNames,
+          `${sample.name}: '${name}' is a documented gap — a breaking signature change does oblige its callers, but the engine models no change kind and holds them at possible. If this now passes, change-contract semantics landed and the pin should be deleted deliberately.`,
+        ).not.toContain(name);
+      }
     }
   });
 

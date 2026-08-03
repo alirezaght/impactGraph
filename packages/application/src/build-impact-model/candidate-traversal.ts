@@ -62,6 +62,21 @@ const EDGE_ROLES: Readonly<Record<string, TraversalRole>> = {
 
 export const roleOf = (edgeType: string): TraversalRole => EDGE_ROLES[edgeType] ?? 'supporting';
 
+/**
+ * Edges whose REVERSE traversal proves structural connection and nothing more.
+ *
+ * Walking from a callee to its caller, or from a module to something that imports it, says the
+ * neighbour is coupled to the anchor — not that it must change. Adding a method to a class obliges
+ * no existing caller and no factory to change, so a single reverse hop across one of these may not
+ * on its own produce a `likely` impact.
+ *
+ * DEPENDS_ON is deliberately absent: a manifest declaring a dependency is a far more direct
+ * statement than a call, and the package declaring a native binding is exactly where a packaging
+ * requirement lands. EXTENDS, IMPLEMENTS and the event edges are absent because they are contract
+ * relationships, where a change genuinely does propagate to the other side.
+ */
+const WEAK_WHEN_REVERSED = new Set(['CALLS', 'IMPORTS', 'USES']);
+
 export interface ImpactCandidate {
   readonly nodeId: string;
   readonly distance: number;
@@ -82,6 +97,12 @@ export interface ImpactCandidate {
    * piece of evidence and not two.
    */
   readonly admissible: boolean;
+  /**
+   * True when EVERY route here is a single reverse hop across a weak dependency edge — structural
+   * coupling with no corroboration. Classification reads this to keep such candidates at `possible`
+   * rather than presenting mere connectedness as likely change.
+   */
+  readonly weakReverseOnly: boolean;
   readonly edgeEvidenceIds: readonly string[];
   readonly match: ConceptMatch;
 }
@@ -232,6 +253,8 @@ const mergeCandidate = (state: TraversalState, incoming: ImpactCandidate): void 
     corroboratingEdgeTypes: union(existing.corroboratingEdgeTypes, incoming.corroboratingEdgeTypes),
     // OR, not AND: one legitimate route is enough to admit the candidate.
     admissible: existing.admissible || incoming.admissible,
+    // AND: any route that is more than a bare reverse hop corroborates the candidate.
+    weakReverseOnly: existing.weakReverseOnly && incoming.weakReverseOnly,
     edgeEvidenceIds: union(existing.edgeEvidenceIds, incoming.edgeEvidenceIds),
   });
 };
@@ -249,6 +272,7 @@ const traverseFromMatch = (
     edgeTypes: [],
     corroboratingEdgeTypes: [],
     admissible: true,
+    weakReverseOnly: false,
     edgeEvidenceIds: [],
     match,
   };
@@ -281,6 +305,8 @@ const stepCandidate = (
     edgeTypes,
     corroboratingEdgeTypes: [...new Set(edgeTypes)].sort(),
     admissible: current.admissible && routeAdmissible(current, step),
+    weakReverseOnly:
+      current.distance === 0 && step.towardDependents && WEAK_WHEN_REVERSED.has(step.edge.type),
     edgeEvidenceIds: [...current.edgeEvidenceIds, ...step.edge.knowledge.evidenceIds],
     match,
   };

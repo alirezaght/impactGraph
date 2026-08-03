@@ -115,11 +115,27 @@ export const signalsFor = (
   return signals;
 };
 
-const likelihoodFor = (distance: number): ImpactLikelihood => {
-  if (distance === 0) {
+/**
+ * Structural reachability is evidence of POSSIBLE impact; it is not by itself enough for LIKELY.
+ *
+ * A candidate one hop out normally reads as likely, but not when the only thing connecting it to the
+ * anchor is a reverse call, import, or use. Those prove coupling, not obligation: adding a method to
+ * a class does not oblige its callers or its factory to change, and presenting them as likely
+ * misrepresents structural connection as actionable guidance.
+ *
+ * Corroboration restores likely — a second independent route, a contract relationship such as
+ * EXTENDS or IMPLEMENTS, or recent co-change history. What this cannot yet do is distinguish an
+ * additive change from a breaking one: a signature change genuinely does oblige every caller, and
+ * that needs the change kind the specification implies, which the engine does not model.
+ */
+const likelihoodFor = (candidate: ImpactCandidate, corroborated: boolean): ImpactLikelihood => {
+  if (candidate.distance === 0) {
     return 'required';
   }
-  return distance === 1 ? 'likely' : 'possible';
+  if (candidate.distance > 1) {
+    return 'possible';
+  }
+  return candidate.weakReverseOnly && !corroborated ? 'possible' : 'likely';
 };
 
 const explanationFor = (candidate: ImpactCandidate, node: GraphNode): string => {
@@ -153,7 +169,7 @@ export const classifyCandidate = (
     value: {
       requirementId,
       nodeId: candidate.nodeId,
-      likelihood: likelihoodFor(candidate.distance),
+      likelihood: likelihoodFor(candidate, (context.coChangeCount ?? 0) >= 2),
       impactType: impactTypeFor(node),
       directness,
       confidence: confidence.value.value,

@@ -43,6 +43,12 @@ export interface ImpactGroundTruth {
     readonly value: number;
     readonly reason: string;
   };
+  /**
+   * Components a correct analysis OUGHT to surface at required/likely and currently does not,
+   * asserted as absent. Pinned in both directions like `unreachedNames` on the cross-stack samples:
+   * a documented gap that quietly starts passing is a change nobody reviewed.
+   */
+  readonly shouldBeLikelyButIsNot?: readonly string[];
 }
 
 /**
@@ -86,7 +92,6 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
         'BaseService',
         'DealRepository',
         'Searchable',
-        'buildDealService',
       ],
       possibleTier: [
         {
@@ -115,6 +120,12 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
           rationale:
             'harness for the tests that must change, but the requirement does not alter the constructor it wraps',
           reviewNeeded: true,
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#buildDealService',
+          verdict: 'unsupported',
+          rationale:
+            'a zero-argument factory that constructs the service; filtering inside search() changes neither its signature nor its body',
         },
         {
           nodeId: 'file:src/index.ts',
@@ -157,16 +168,27 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       // must expose a count method" obliges a caller or a factory to change. Keeping DealService
       // here would have given the precision gate a convenient lower bound at the cost of encoding
       // a label known to be wrong.
-      allowedImpacts: ['DealRepository', 'deal-repository.ts', 'createRepository'],
-      knownDirectPrecision: {
-        value: 0.6,
-        reason:
-          'the engine promotes DealService and buildDealService to LIKELY on a direct-function-call signal one hop from the anchor. Adding a method to a class obliges neither its callers nor a factory to change, so both are false positives at that tier — the same permissive-propagation defect as the possible-tier tail, one hop closer in. Left failing visibly rather than papered over by relaxing the shared 0.75 gate.',
-      },
+      allowedImpacts: ['DealRepository', 'deal-repository.ts'],
       // Every possible-tier candidate here is unsupported. Adding a method to a class changes
       // neither its consumers nor its `export *` barrels, and nothing in this requirement reaches
       // the unrelated BaseService/Searchable pair the traversal walked to.
       possibleTier: [
+        {
+          nodeId: 'symbol:src/lib/deal-repository.ts#createRepository',
+          verdict: 'unsupported',
+          rationale:
+            'a factory returning the repository; adding a method to the class it constructs changes neither its signature nor its body',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#DealService',
+          verdict: 'unsupported',
+          rationale: 'a caller of the repository — an added method obliges no existing caller',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#buildDealService',
+          verdict: 'unsupported',
+          rationale: 'constructs a service around the repository; unaffected by an added method',
+        },
         {
           nodeId: 'file:src/services/deal-service.ts',
           verdict: 'unsupported',
@@ -256,6 +278,68 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       minSurprises: 0,
       allowedImpacts: [],
       forbiddenImpacts: ['BaseService', 'base-service.ts'],
+    },
+  },
+  {
+    // The POSITIVE counterexample to the additive case above. `createRepository` is called by
+    // alias-user.ts and by getDeals via a renamed import; giving it a required argument is a
+    // BREAKING signature change, so every caller genuinely must change. Without this sample,
+    // "adding a method must not promote callers" could be satisfied by making callers invisible
+    // whenever a signature actually changes.
+    //
+    // The engine cannot yet tell the two apart: it models no change kind, so a reverse call edge
+    // looks identical either way, and the conservative rule holds the callers at `possible`. That
+    // shortfall is pinned rather than hidden — closing it is what change-contract semantics buys.
+    name: 'breaking factory signature',
+    specFileName: 'sample-breaking-factory.md',
+    specText:
+      '# Connection strings\n`createRepository` must take a connection string argument, so every call site passes one.\n',
+    groundTruth: {
+      directImpacts: ['createRepository'],
+      minSurprises: 0,
+      allowedImpacts: ['createRepository', 'deal-repository.ts', 'DealRepository'],
+      shouldBeLikelyButIsNot: ['alias-user.ts', 'getDeals', 'deals.ts'],
+      // Note how differently this tail labels from the additive samples: for a BREAKING change the
+      // call sites belong in the result, and three of seven possible candidates are allowed rather
+      // than one of nine. The labels discriminate by change kind even though the engine cannot.
+      possibleTier: [
+        {
+          nodeId: 'symbol:src/api/deals.ts#getDeals',
+          verdict: 'allowed',
+          rationale:
+            'calls createRepository through a renamed import; a new required argument must be passed here',
+        },
+        {
+          nodeId: 'file:src/api/deals.ts',
+          verdict: 'allowed',
+          rationale: 'holds that call site',
+        },
+        {
+          nodeId: 'file:src/alias-user.ts',
+          verdict: 'allowed',
+          rationale: 'calls createRepository() directly and must pass the new argument',
+        },
+        {
+          nodeId: 'file:src/lib/index.ts',
+          verdict: 'unsupported',
+          rationale: '`export *` barrel; a changed signature adds and removes no export',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#buildDealService',
+          verdict: 'unsupported',
+          rationale: 'constructs DealRepository directly with new, never through createRepository',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#DealService',
+          verdict: 'unsupported',
+          rationale: 'receives a repository instance; it never calls the factory',
+        },
+        {
+          nodeId: 'package:ts-basic',
+          verdict: 'unsupported',
+          rationale: 'CONTAINS propagation to the package node',
+        },
+      ],
     },
   },
   {

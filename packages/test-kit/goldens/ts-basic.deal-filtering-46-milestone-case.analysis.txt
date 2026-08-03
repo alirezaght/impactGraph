@@ -4,7 +4,7 @@ req-0d28f757|DealRepository|likely|domain-model|indirect|0.65|exact-concept-to-s
 req-0d28f757|DealService|required|domain-model|direct|0.90|exact-concept-to-symbol-match
 req-0d28f757|Searchable|likely|domain-model|indirect|0.65|exact-concept-to-symbol-match+graph-distance
 req-0d28f757|base-service.ts|possible|domain-model|indirect|0.50|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-0d28f757|buildDealService|likely|domain-model|indirect|0.75|direct-function-call+exact-concept-to-symbol-match+graph-distance
+req-0d28f757|buildDealService|possible|domain-model|indirect|0.75|direct-function-call+exact-concept-to-symbol-match+graph-distance
 req-0d28f757|createRepository|possible|domain-model|indirect|0.50|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-0d28f757|deal-repository.ts|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
 req-0d28f757|deal-service.test.ts|possible|testing|indirect|0.55|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance+test-association
