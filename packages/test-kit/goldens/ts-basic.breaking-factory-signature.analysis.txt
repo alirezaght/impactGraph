@@ -6,7 +6,7 @@ req-ff2c8f11|buildDealService|possible|domain-model|indirect|0.50|direct-functio
 req-ff2c8f11|createRepository|required|domain-model|direct|0.90|exact-concept-to-symbol-match
 req-ff2c8f11|deal-repository.ts|likely|domain-model|indirect|0.65|exact-concept-to-symbol-match+graph-distance
 req-ff2c8f11|deals.ts|possible|domain-model|indirect|0.60|direct-function-call+direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|getDeals|possible|api-contract|indirect|0.75|direct-function-call+exact-concept-to-symbol-match+graph-distance
+req-ff2c8f11|getDeals|likely|api-contract|indirect|0.75|direct-function-call+exact-concept-to-symbol-match+graph-distance
 req-ff2c8f11|index.ts|possible|domain-model|indirect|0.50|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
 req-ff2c8f11|ts-basic|possible|domain-model|indirect|0.40|exact-concept-to-symbol-match+graph-distance+graph-distance
 

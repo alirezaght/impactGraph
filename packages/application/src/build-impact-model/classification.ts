@@ -1,6 +1,9 @@
 import { computeImpactConfidence } from '@impactgraph/domain';
 
+import { obligationFor } from './change-kind.js';
+
 import type { ImpactCandidate } from './candidate-traversal.js';
+import type { PredictedChange } from './change-kind.js';
 import type {
   ConfidenceSignalType,
   GraphNode,
@@ -64,6 +67,8 @@ const EDGE_SIGNAL: Readonly<Partial<Record<string, ConfidenceSignalType>>> = {
 export interface ClassifyContext {
   /** §14: recent commits in which this candidate changed together with the matched component. */
   readonly coChangeCount?: number | undefined;
+  /** The change the requirement predicts, which decides what a reverse hop obliges. */
+  readonly change?: PredictedChange | undefined;
 }
 
 /** Everything the concept match itself says about strength — mechanism plus its two penalties. */
@@ -124,25 +129,43 @@ export const signalsFor = (
  * misrepresents structural connection as actionable guidance.
  *
  * Corroboration restores likely — a second independent route, a contract relationship such as
- * EXTENDS or IMPLEMENTS, or recent co-change history. What this cannot yet do is distinguish an
- * additive change from a breaking one: a signature change genuinely does oblige every caller, and
- * that needs the change kind the specification implies, which the engine does not model.
+ * EXTENDS or IMPLEMENTS, or recent co-change history. Failing that, the predicted change kind
+ * decides: an added method obliges no caller, a changed signature obliges every call site.
  */
-const likelihoodFor = (candidate: ImpactCandidate, corroborated: boolean): ImpactLikelihood => {
+const likelihoodFor = (
+  candidate: ImpactCandidate,
+  context: ClassifyContext,
+  corroborated: boolean,
+): ImpactLikelihood => {
   if (candidate.distance === 0) {
     return 'required';
   }
   if (candidate.distance > 1) {
     return 'possible';
   }
-  return candidate.weakReverseOnly && !corroborated ? 'possible' : 'likely';
+  if (!candidate.weakReverseOnly || corroborated) {
+    return 'likely';
+  }
+  // The only link is a reverse call, import or use. Whether that obliges a change depends on the
+  // shape of the change: a new method obliges no caller, a changed signature obliges every one.
+  const change = context.change ?? { kind: 'unknown', compatibility: 'unknown', cue: 'not read' };
+  return obligationFor(change, candidate.edgeTypes[0] ?? 'USES');
 };
 
-const explanationFor = (candidate: ImpactCandidate, node: GraphNode): string => {
+const explanationFor = (
+  candidate: ImpactCandidate,
+  node: GraphNode,
+  context: ClassifyContext,
+): string => {
   if (candidate.distance === 0) {
     return `Concept '${candidate.match.concept}' matches ${node.name} (${candidate.match.mechanism}).`;
   }
-  return `Reached from concept '${candidate.match.concept}' via ${candidate.edgeTypes.join(' → ')} (${String(candidate.distance)} hop${candidate.distance > 1 ? 's' : ''}).`;
+  const route = `Reached from concept '${candidate.match.concept}' via ${candidate.edgeTypes.join(' → ')} (${String(candidate.distance)} hop${candidate.distance > 1 ? 's' : ''}).`;
+  // A promotion driven by the predicted change must say so, or nobody can audit it.
+  if (!candidate.weakReverseOnly || context.change === undefined) {
+    return route;
+  }
+  return `${route} Predicted change: ${context.change.kind} ("${context.change.cue}"), ${context.change.compatibility}.`;
 };
 
 /** Deterministic rule-based classification — provenance stays `static-analysis` (§43.5). */
@@ -169,12 +192,12 @@ export const classifyCandidate = (
     value: {
       requirementId,
       nodeId: candidate.nodeId,
-      likelihood: likelihoodFor(candidate, (context.coChangeCount ?? 0) >= 2),
+      likelihood: likelihoodFor(candidate, context, (context.coChangeCount ?? 0) >= 2),
       impactType: impactTypeFor(node),
       directness,
       confidence: confidence.value.value,
       confidenceSignals: confidence.value.signals,
-      explanation: explanationFor(candidate, node),
+      explanation: explanationFor(candidate, node, context),
       expectedChanges: [`Review ${node.name} against requirement ${requirementId}`],
       evidenceIds,
       dependencyPath: candidate.dependencyPath,

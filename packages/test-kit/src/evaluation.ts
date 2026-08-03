@@ -297,18 +297,17 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
     groundTruth: {
       directImpacts: ['createRepository'],
       minSurprises: 0,
-      allowedImpacts: ['createRepository', 'deal-repository.ts', 'DealRepository'],
-      shouldBeLikelyButIsNot: ['alias-user.ts', 'getDeals', 'deals.ts'],
+      allowedImpacts: ['createRepository', 'deal-repository.ts', 'DealRepository', 'getDeals'],
+      // `getDeals` is now correctly promoted: change-contract semantics read "take a connection
+      // string argument" as a potentially-breaking signature change, so a reverse CALLS hop obliges
+      // the call site. What remains pinned is file-level: the FILES holding those call sites sit two
+      // hops out, and file-level import evidence cannot show that the changed symbol is referenced
+      // there — see docs/engineering/capability-limitations.md. Symbol-level imports would close it.
+      shouldBeLikelyButIsNot: ['alias-user.ts', 'deals.ts'],
       // Note how differently this tail labels from the additive samples: for a BREAKING change the
       // call sites belong in the result, and three of seven possible candidates are allowed rather
       // than one of nine. The labels discriminate by change kind even though the engine cannot.
       possibleTier: [
-        {
-          nodeId: 'symbol:src/api/deals.ts#getDeals',
-          verdict: 'allowed',
-          rationale:
-            'calls createRepository through a renamed import; a new required argument must be passed here',
-        },
         {
           nodeId: 'file:src/api/deals.ts',
           verdict: 'allowed',

@@ -3,6 +3,7 @@ import { createImpactAnalysis, err, validationError, validationIssue } from '@im
 import { buildCoChangeIndex } from '../history/co-change-index.js';
 
 import { traverseCandidates } from './candidate-traversal.js';
+import { inferChange } from './change-kind.js';
 import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
 import { gateProposedStructure } from './proposed-structure-gate.js';
@@ -186,9 +187,11 @@ const recordMatchWarnings = (
 /** Rule-based classification of every candidate, minus the §Z9 learned exclusions. */
 const scoreCandidates = (
   pipeline: RequirementPipeline,
-  requirementId: string,
+  requirement: BuildImpactModelRequest['specification']['requirements'][number],
   candidates: readonly ImpactCandidate[],
 ): RequirementImpact[] => {
+  const requirementId = requirement.id;
+  const change = inferChange(requirement.statement);
   const { request, excluded, warnings } = pipeline;
   const scored: RequirementImpact[] = [];
   for (const candidate of candidates) {
@@ -206,6 +209,7 @@ const scoreCandidates = (
     }
     const classified = classifyCandidate(candidate, node, requirementId, {
       coChangeCount: coChangeCountFor(pipeline, candidate, node),
+      change,
     });
     if (classified.ok) {
       scored.push(classified.value);
@@ -235,7 +239,7 @@ const classifyRequirementCandidates = (
   // decision as never walking CONTAINS downward, which has never warranted a warning. Routing it
   // through `warnings` would make `warningsFound` the normal exit code and devalue the signal. The
   // list stays on the traversal result for diagnostics and tests.
-  const scored = scoreCandidates(pipeline, requirement.id, traversal.candidates);
+  const scored = scoreCandidates(pipeline, requirement, traversal.candidates);
   const capped = capByStrength(scored, request.traversal?.maxCandidates ?? DEFAULT_MAX_CANDIDATES);
   impacts.push(...capped.kept);
   if (capped.dropped > 0) {
