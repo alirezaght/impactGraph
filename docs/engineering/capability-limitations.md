@@ -33,8 +33,11 @@ re-export-only relationship can be excluded while a call site is promoted.
 
 ## `USES` conflates relationships with different propagation semantics
 
-`USES` is emitted for at least six unrelated facts, and is additionally the fallback when a more
-specific classification fails (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/sub adapters):
+RESOLVED by the PRD §12.2.1 relationship split — retained here for the reachability finding, which
+was not what the original entry assumed.
+
+`USES` was emitted for at least six unrelated facts, and appeared to double as the fallback when a
+more specific classification failed (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/sub adapters):
 
 | Producer                                | Actual relationship               |
 | --------------------------------------- | --------------------------------- |
@@ -46,13 +49,20 @@ specific classification fails (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/sub ad
 | `terraform-graph.ts`                    | Terraform resource reference      |
 | pub/sub adapters (`?? 'USES'` fallback) | an unclassified messaging binding |
 
-**Consequence.** A type annotation and a runtime registry binding propagate identically, which is
-wrong in both directions. Reverse `USES` is therefore treated as weak: it can support a `possible`
-impact but not a `likely` one on its own.
+Each producer now emits a named relationship, so a type annotation and a runtime registry binding no
+longer propagate identically. No `USES` edge remains in any fixture golden.
 
-**What would close it.** Splitting the edge type by underlying fact rather than tuning `USES`
-globally. That is a PRD §12.2 vocabulary change, affecting five adapters and the golden fixtures of
-every framework, so it needs its own change and human approval.
+**The unknown bucket was not real.** Those `?? 'USES'` fallbacks are UNREACHABLE. `HandleKind` and
+`PubSubResourceKind` are both exactly `'topic' | 'subscription'` and the maps cover both entries; the
+TypeScript producer is additionally guarded by `isNamed(handle)`, and a `'client'` handle is
+constructed without a name. So the "USES is also where classification failures land" reading —
+including in the first version of this entry — described code that cannot execute.
+
+They are migrated to `USES_UNKNOWN` regardless, so that a kind added to one of those unions fails
+loudly as an unknown rather than silently borrowing a relationship it is not. What follows from the
+reachability finding is that `USES_UNKNOWN` has no live producer, so a by-producer unknown-bucket
+metric would report zero by construction, and attaching derivation provenance to those paths would
+instrument code that never runs. Both wait for a producer that can actually fail to classify.
 
 ## The predicted change kind is inferred from specification wording only
 

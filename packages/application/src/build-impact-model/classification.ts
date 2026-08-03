@@ -149,7 +149,9 @@ const likelihoodFor = (
   // The only link is a reverse call, import or use. Whether that obliges a change depends on the
   // shape of the change: a new method obliges no caller, a changed signature obliges every one.
   const change = context.change ?? { kind: 'unknown', compatibility: 'unknown', cue: 'not read' };
-  return obligationFor(change, candidate.edgeTypes[0] ?? 'USES');
+  // No recorded edge type means we cannot say what the relationship was, so it gets the weakest
+  // reading rather than the reference default, which can still promote on a removal.
+  return obligationFor(change, candidate.edgeTypes[0] ?? 'USES_UNKNOWN');
 };
 
 const explanationFor = (

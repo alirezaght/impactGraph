@@ -81,7 +81,11 @@ const emit = (emission: Emission, existing: ReadonlySet<string>): void => {
       filePath,
     );
   }
-  const type = EDGE_TYPE.get(kind) ?? 'USES';
+  // §12.2.1: USES_UNKNOWN rather than a generic USES, so an unclassifiable binding would be named
+  // honestly. Currently UNREACHABLE — the handle-kind union is exactly 'topic' | 'subscription' and
+  // the map above covers both — so this is defensive, not a live bucket. Kept because a kind added to
+  // that union must fail loudly as an unknown rather than silently borrow a relationship it is not.
+  const type = EDGE_TYPE.get(kind) ?? 'USES_UNKNOWN';
   builder.addEdge(
     {
       id: `pubsub:${type.toLowerCase()}:${sourceId}->${nodeId}`,

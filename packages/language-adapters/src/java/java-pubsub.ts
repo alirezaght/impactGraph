@@ -251,7 +251,11 @@ export interface UsageEdge {
 
 export const emitUsageEdge = (state: JavaParseState, edge: UsageEdge): void => {
   const nodeId = emitHandleNode(state, edge.handle, edge.evidenceId);
-  const type = EDGE_TYPE.get(edge.handle.kind) ?? 'USES';
+  // §12.2.1: USES_UNKNOWN rather than a generic USES, so an unclassifiable binding would be named
+  // honestly. Currently UNREACHABLE — the handle-kind union is exactly 'topic' | 'subscription' and
+  // the map above covers both — so this is defensive, not a live bucket. Kept because a kind added to
+  // that union must fail loudly as an unknown rather than silently borrow a relationship it is not.
+  const type = EDGE_TYPE.get(edge.handle.kind) ?? 'USES_UNKNOWN';
   const edgeId = `pubsub:${type.toLowerCase()}:${edge.sourceId}->${nodeId}`;
   // Publishing to one topic twice in one method is one relationship, stated once.
   if (state.emittedIntegrationFacts.has(edgeId)) {

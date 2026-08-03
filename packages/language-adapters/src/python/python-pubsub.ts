@@ -296,7 +296,11 @@ const emitUsageEdge = (emitter: Emitter, handle: PubSubHandle, call: Node): void
   }
   const nodeId = emitHandleNode(emitter, handle, evidenceId);
   const sourceId = ownerNodeId(state, call);
-  const type = EDGE_TYPE.get(handle.kind) ?? 'USES';
+  // §12.2.1: USES_UNKNOWN rather than a generic USES, so an unclassifiable binding would be named
+  // honestly. Currently UNREACHABLE — the handle-kind union is exactly 'topic' | 'subscription' and
+  // the map above covers both — so this is defensive, not a live bucket. Kept because a kind added to
+  // that union must fail loudly as an unknown rather than silently borrow a relationship it is not.
+  const type = EDGE_TYPE.get(handle.kind) ?? 'USES_UNKNOWN';
   state.builder.addEdge(
     {
       id: `pubsub:${type.toLowerCase()}:${sourceId}->${nodeId}`,

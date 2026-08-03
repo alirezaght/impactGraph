@@ -625,7 +625,9 @@ Repository nodes
 
 USES was found to carry at least seven unrelated facts — constructor injection, Spring DI, Express
 middleware and route wiring, page-to-route references, template calls, Terraform resource
-references — and to serve as the fallback when an adapter cannot classify a binding. Any traversal,
+references. It also appeared to serve as the fallback when an adapter cannot classify a binding,
+though those fallback paths turned out to be unreachable (see
+docs/engineering/capability-limitations.md). Any traversal,
 confidence, or propagation rule attached to it is therefore wrong for some producers, and a type
 annotation propagated exactly like a runtime registry binding.
 
