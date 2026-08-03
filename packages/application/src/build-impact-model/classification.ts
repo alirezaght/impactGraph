@@ -94,7 +94,9 @@ export const signalsFor = (
   context: ClassifyContext = {},
 ): ImpactSignalInput[] => {
   const signals: ImpactSignalInput[] = matchSignals(candidate.match);
-  for (const edgeType of new Set(candidate.edgeTypes)) {
+  // Distinct relationship types across every route that reached this candidate — independent
+  // evidence counts once per kind, never once per path.
+  for (const edgeType of candidate.corroboratingEdgeTypes) {
     const signal = EDGE_SIGNAL[edgeType];
     if (signal !== undefined) {
       signals.push({ type: signal, description: `via ${edgeType}` });

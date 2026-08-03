@@ -24,6 +24,9 @@ import type {
   ValidationIssue,
 } from '@impactgraph/domain';
 
+/** Output-size limit (PRD §33 graph budget), applied after scoring — not a traversal control. */
+const DEFAULT_MAX_CANDIDATES = 100;
+
 export interface BuildImpactModelRequest {
   readonly specification: Specification;
   readonly graph: KnowledgeGraph;
@@ -78,6 +81,45 @@ export const validateImpactReferences = (
   return issues;
 };
 
+const LIKELIHOOD_RANK: Readonly<Record<string, number>> = {
+  required: 0,
+  likely: 1,
+  possible: 2,
+  unlikely: 3,
+};
+
+const byStrength = (a: RequirementImpact, b: RequirementImpact): number =>
+  b.confidence - a.confidence ||
+  (LIKELIHOOD_RANK[a.likelihood] ?? 9) - (LIKELIHOOD_RANK[b.likelihood] ?? 9) ||
+  a.nodeId.localeCompare(b.nodeId);
+
+/**
+ * The output cap, applied after scoring so it selects the strongest candidates rather than the
+ * first-discovered ones. Two properties this protects:
+ *
+ * Anchors are never displaced. A component the specification named directly stays in the result
+ * even when a broader concept produced hundreds of higher-scoring dependents — otherwise a
+ * requirement can vanish from its own analysis.
+ *
+ * Raising the cap only appends. Sorting before truncation means the first N results are identical
+ * at any limit above N, so a user who widens the limit sees more, never different.
+ */
+const capByStrength = (
+  impacts: readonly RequirementImpact[],
+  limit: number,
+): { kept: RequirementImpact[]; dropped: number; highestDropped: number } => {
+  const anchors = impacts.filter((impact) => impact.dependencyPath.length <= 1).sort(byStrength);
+  const reached = impacts.filter((impact) => impact.dependencyPath.length > 1).sort(byStrength);
+  const room = Math.max(0, limit - anchors.length);
+  const kept = [...anchors.slice(0, limit), ...reached.slice(0, room)];
+  const omitted = reached.slice(room);
+  return {
+    kept,
+    dropped: impacts.length - kept.length,
+    highestDropped: omitted[0]?.confidence ?? 0,
+  };
+};
+
 const dedupeStrongest = (impacts: readonly RequirementImpact[]): RequirementImpact[] => {
   const best = new Map<string, RequirementImpact>();
   for (const impact of impacts) {
@@ -116,36 +158,37 @@ const coChangeCountFor = (
     : 0;
 };
 
-const classifyRequirementCandidates = (
-  pipeline: RequirementPipeline,
-  requirement: BuildImpactModelRequest['specification']['requirements'][number],
+/** Concepts that resolved to nothing, or to too much, are reported before any traversal runs. */
+const recordMatchWarnings = (
+  warnings: AnalysisWarning[],
+  matched: ReturnType<typeof matchConcepts>,
+  requirementId: string,
 ): void => {
-  const { request, excluded, impacts, warnings } = pipeline;
-  const matched = matchConcepts(request.graph, requirement.concepts, request.aliases ?? {});
   for (const unknown of matched.unknownConcepts) {
     warnings.push({
       code: 'unknown-concept',
       message: `no repository node matches concept '${unknown}'`,
-      requirementId: requirement.id,
+      requirementId,
     });
   }
   for (const ambiguous of matched.ambiguousConcepts) {
     warnings.push({
       code: 'ambiguous-concept',
       message: `concept '${ambiguous}' matches too many unrelated components to anchor an impact — name the intended component`,
-      requirementId: requirement.id,
+      requirementId,
     });
   }
-  const traversal = traverseCandidates(request.graph, matched.matches, request.traversal);
-  if (traversal.cutoff) {
-    warnings.push({
-      code: 'traversal-cutoff',
-      message: 'candidate limit reached — remote dependents omitted',
-      requirementId: requirement.id,
-    });
-  }
-  const before = impacts.length;
-  for (const candidate of traversal.candidates) {
+};
+
+/** Rule-based classification of every candidate, minus the §Z9 learned exclusions. */
+const scoreCandidates = (
+  pipeline: RequirementPipeline,
+  requirementId: string,
+  candidates: readonly ImpactCandidate[],
+): RequirementImpact[] => {
+  const { request, excluded, warnings } = pipeline;
+  const scored: RequirementImpact[] = [];
+  for (const candidate of candidates) {
     const node = request.graph.nodes.get(candidate.nodeId as NodeId);
     if (node === undefined) {
       continue;
@@ -154,18 +197,47 @@ const classifyRequirementCandidates = (
       warnings.push({
         code: 'configured-exclusion',
         message: `impact on '${node.name}' suppressed by a learned exclusion (§Z9)`,
-        requirementId: requirement.id,
+        requirementId,
       });
       continue;
     }
-    const classified = classifyCandidate(candidate, node, requirement.id, {
+    const classified = classifyCandidate(candidate, node, requirementId, {
       coChangeCount: coChangeCountFor(pipeline, candidate, node),
     });
     if (classified.ok) {
-      impacts.push(classified.value);
+      scored.push(classified.value);
     }
   }
-  if (impacts.length === before) {
+  return scored;
+};
+
+const classifyRequirementCandidates = (
+  pipeline: RequirementPipeline,
+  requirement: BuildImpactModelRequest['specification']['requirements'][number],
+): void => {
+  const { request, impacts, warnings } = pipeline;
+  const matched = matchConcepts(request.graph, requirement.concepts, request.aliases ?? {});
+  recordMatchWarnings(warnings, matched, requirement.id);
+  const traversal = traverseCandidates(request.graph, matched.matches, request.traversal);
+  if (traversal.exhausted) {
+    warnings.push({
+      code: 'traversal-exhausted',
+      message:
+        'traversal safety limit reached — the graph around this requirement is larger than the walk budget',
+      requirementId: requirement.id,
+    });
+  }
+  const scored = scoreCandidates(pipeline, requirement.id, traversal.candidates);
+  const capped = capByStrength(scored, request.traversal?.maxCandidates ?? DEFAULT_MAX_CANDIDATES);
+  impacts.push(...capped.kept);
+  if (capped.dropped > 0) {
+    warnings.push({
+      code: 'traversal-cutoff',
+      message: `candidate limit reached — ${String(capped.dropped)} lower-confidence candidates omitted (highest omitted confidence ${capped.highestDropped.toFixed(2)})`,
+      requirementId: requirement.id,
+    });
+  }
+  if (capped.kept.length === 0) {
     // Silence here reads as "nothing changes for this requirement", which is a much stronger
     // claim than "the engine found nothing" (§C10 readiness depends on the difference).
     warnings.push({

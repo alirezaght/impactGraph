@@ -64,6 +64,8 @@ export interface AnalysisWarning {
     /** A requirement produced no impacts at all — the analysis says nothing about it. */
     | 'unmatched-requirement'
     | 'traversal-cutoff'
+    /** The traversal safety budget stopped the walk — distinct from the output-size cap. */
+    | 'traversal-exhausted'
     | 'unsupported-claim'
     | 'invalid-reference'
     /** An impact was suppressed by a §Z9 learned exclusion in committed configuration. */
