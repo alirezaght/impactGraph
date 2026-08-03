@@ -26,6 +26,29 @@ export interface ImpactGroundTruth {
    * observed and fixed: cheap to write, and they fail loudly if the matching rules regress.
    */
   readonly forbiddenImpacts?: readonly string[];
+  /**
+   * Judgment on each POSSIBLE-tier candidate, keyed by node id because the tier contains several
+   * components sharing a name (three `index.ts` files, for one). Labelled against the requirement
+   * AS WRITTEN — not against everything a developer might touch while implementing it, which
+   * would make almost every graph neighbour "plausible" and the inclusive figure meaningless.
+   */
+  readonly possibleTier?: readonly PossibleTierLabel[];
+}
+
+/**
+ * allowed     — genuinely expected architectural impact; omitting it makes the result incomplete.
+ * plausible   — defensible secondary impact, but not required and not safe to present as likely.
+ * unsupported — no requirement-backed reason to include it.
+ */
+export type PossibleTierVerdict = 'allowed' | 'plausible' | 'unsupported';
+
+export interface PossibleTierLabel {
+  readonly nodeId: string;
+  readonly verdict: PossibleTierVerdict;
+  /** Why, in terms of the requirement. One author's judgment, recorded so it can be argued with. */
+  readonly rationale: string;
+  /** Borderline: the verdict is contestable and should not be treated as settled ground truth. */
+  readonly reviewNeeded?: boolean;
 }
 
 export interface SampleEvaluation {
@@ -55,6 +78,58 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
         'Searchable',
         'buildDealService',
       ],
+      possibleTier: [
+        {
+          nodeId: 'file:src/services/deal-service.test.ts',
+          verdict: 'allowed',
+          rationale:
+            'the requirement changes observable behaviour of search(), and this file asserts it — a filtering change that leaves the test untouched is incomplete',
+        },
+        {
+          nodeId: 'file:src/lib/base-service.ts',
+          verdict: 'plausible',
+          rationale:
+            'declares the Searchable contract behind "search results"; a filter option would change it, unconditional filtering would not',
+          reviewNeeded: true,
+        },
+        {
+          nodeId: 'file:src/lib/deal-repository.ts',
+          verdict: 'plausible',
+          rationale:
+            'expiry data has to come from somewhere; filtering in memory needs no repository change, filtering in the query does',
+          reviewNeeded: true,
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.test.ts#testBuildDealService',
+          verdict: 'plausible',
+          rationale:
+            'harness for the tests that must change, but the requirement does not alter the constructor it wraps',
+          reviewNeeded: true,
+        },
+        {
+          nodeId: 'file:src/index.ts',
+          verdict: 'unsupported',
+          rationale:
+            'pure `export *` barrel; filtering inside a method adds and removes no export, so the barrel cannot change',
+        },
+        {
+          nodeId: 'file:src/lib/index.ts',
+          verdict: 'unsupported',
+          rationale: 'pure `export *` barrel over the repository — same reasoning',
+        },
+        {
+          nodeId: 'symbol:src/lib/deal-repository.ts#createRepository',
+          verdict: 'unsupported',
+          rationale:
+            'a zero-argument factory; filtering expired deals changes neither its signature nor its body',
+        },
+        {
+          nodeId: 'package:ts-basic',
+          verdict: 'unsupported',
+          rationale:
+            'the package node carries no actionable change for behaviour inside one method — pure CONTAINS propagation',
+        },
+      ],
     },
   },
   {
@@ -70,6 +145,63 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       // change the factory that constructs a service around it. The engine promotes it to likely
       // on a direct-function-call signal, and that is the false positive this sample measures.
       allowedImpacts: ['DealRepository', 'deal-repository.ts', 'createRepository', 'DealService'],
+      // Every possible-tier candidate here is unsupported. Adding a method to a class changes
+      // neither its consumers nor its `export *` barrels, and nothing in this requirement reaches
+      // the unrelated BaseService/Searchable pair the traversal walked to.
+      possibleTier: [
+        {
+          nodeId: 'file:src/services/deal-service.ts',
+          verdict: 'unsupported',
+          rationale:
+            'a consumer of the repository, but adding a count method obliges no caller to change',
+          // Tension worth recording: `DealService` sits in allowedImpacts above at the likely tier,
+          // which on this stricter reading was too generous. The flag marks the inconsistency
+          // rather than quietly resolving it in either direction.
+          reviewNeeded: true,
+        },
+        {
+          nodeId: 'file:src/alias-user.ts',
+          verdict: 'unsupported',
+          rationale:
+            'calls createRepository() and stores the result; a new method is invisible to it',
+        },
+        {
+          nodeId: 'file:src/api/deals.ts',
+          verdict: 'unsupported',
+          rationale:
+            'calls findAll(); the requirement asks only that count exist, not that the API expose it',
+        },
+        {
+          nodeId: 'symbol:src/api/deals.ts#getDeals',
+          verdict: 'unsupported',
+          rationale: 'same — reads findAll() and is unaffected by an added method',
+        },
+        {
+          nodeId: 'file:src/lib/index.ts',
+          verdict: 'unsupported',
+          rationale: '`export *` barrel; a class method is not a new export',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.test.ts#testBuildDealService',
+          verdict: 'unsupported',
+          rationale: 'a builder for a different class',
+        },
+        {
+          nodeId: 'symbol:src/lib/base-service.ts#BaseService',
+          verdict: 'unsupported',
+          rationale: 'DealRepository does not extend it; reached only by walking through the graph',
+        },
+        {
+          nodeId: 'symbol:src/lib/base-service.ts#Searchable',
+          verdict: 'unsupported',
+          rationale: 'a search contract, unrelated to counting stored deals',
+        },
+        {
+          nodeId: 'package:ts-basic',
+          verdict: 'unsupported',
+          rationale: 'pure CONTAINS propagation to the package node',
+        },
+      ],
     },
   },
   {
@@ -80,6 +212,14 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       directImpacts: ['Deal'],
       minSurprises: 0,
       allowedImpacts: ['Deal', 'schema.prisma'],
+      possibleTier: [
+        {
+          nodeId: 'package:ts-basic',
+          verdict: 'unsupported',
+          rationale:
+            'adding a column to a model does not change the package — CONTAINS propagation',
+        },
+      ],
       // "Deal" prefixes half the identifiers here. These pins do NOT guard the name-coverage
       // threshold — an exact match on `Deal` short-circuits similarity before coverage is
       // consulted — but they do catch a regression in exact-match precedence or traversal bounds.
