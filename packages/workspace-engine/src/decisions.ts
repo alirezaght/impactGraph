@@ -1,4 +1,8 @@
-import { addUserDecision, approveImpactAnalysis } from '@impactgraph/domain';
+import {
+  addUserDecision,
+  approveImpactAnalysis,
+  supersedeImpactAnalysis,
+} from '@impactgraph/domain';
 import { artifactsPath, createImpactAnalysisArtifactStore } from '@impactgraph/persistence';
 
 import { failWith } from './failure.js';
@@ -6,10 +10,44 @@ import { loadGraphAt, withIndexStore } from './graphs.js';
 import { appendLearningProposal } from './learning.js';
 
 import type { Failable } from './failure.js';
+import type { ImpactAnalysisStorePort } from '@impactgraph/application';
 import type { ImpactAnalysis, NodeId, UserDecisionKind } from '@impactgraph/domain';
 
 // Decision + approval workflow (PRD §40.3): decisions are append-only; approval freezes.
 // Neither operation is ever taken by ImpactGraph on its own — callers act for a human.
+
+/**
+ * Mark every other approved analysis for the same specification version `superseded`. Append-only
+ * (§3): the record keeps its impacts and its history and only gains a status — nothing is deleted,
+ * so the trail of what was once approved survives.
+ */
+const supersedePreviousApprovals = async (
+  store: ImpactAnalysisStorePort,
+  approving: ImpactAnalysis,
+): Promise<Failable<undefined>> => {
+  const siblings = await store.listBySpecification(approving.specificationId);
+  if (!siblings.ok) {
+    return failWith('configurationError', siblings.error.message);
+  }
+  for (const sibling of siblings.value) {
+    if (
+      sibling.id === approving.id ||
+      sibling.status !== 'approved' ||
+      sibling.specificationVersion !== approving.specificationVersion
+    ) {
+      continue;
+    }
+    const stale = supersedeImpactAnalysis(sibling);
+    if (!stale.ok) {
+      return failWith('internalError', `cannot supersede '${sibling.id}'`);
+    }
+    const written = await store.save(stale.value);
+    if (!written.ok) {
+      return failWith('configurationError', written.error.message);
+    }
+  }
+  return { ok: true, value: undefined };
+};
 
 export const approveAnalysis = async (
   rootDir: string,
@@ -29,6 +67,14 @@ export const approveAnalysis = async (
       'configurationError',
       `analysis '${analysisId}' is '${loaded.value.status}' — only draft or reviewed analyses can be approved`,
     );
+  }
+  // §40.3: exactly ONE analysis may be approved per specification version, because "the approved
+  // analysis" IS the review baseline — two of them means `loadApprovedAnalysis` silently picks
+  // which predictions your implementation is judged against. Supersede the others FIRST, so a
+  // failure here cannot leave two approved records behind.
+  const superseded = await supersedePreviousApprovals(store, approved.value);
+  if (!superseded.ok) {
+    return superseded;
   }
   const saved = await store.save(approved.value);
   if (!saved.ok) {
