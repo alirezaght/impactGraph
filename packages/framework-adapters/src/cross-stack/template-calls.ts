@@ -37,6 +37,18 @@ const HTTP_CALL_RECEIVER = 'http:client';
 
 const ENDPOINT_ATTRIBUTES = new Set(['a.href', 'form.action']);
 
+/**
+ * The relationship a reference states, from the fact the producer already observed — never guessed.
+ * A `fetch` crosses a network boundary, a form submits, and an anchor navigates; those are obliged
+ * by different changes, so they cannot share one edge type (§12.2.1).
+ */
+const relationshipFor = (fact: CallFact): 'CALLS_ENDPOINT' | 'SUBMITS_TO' | 'NAVIGATES_TO' => {
+  if (fact.receiverName === HTTP_CALL_RECEIVER) {
+    return 'CALLS_ENDPOINT';
+  }
+  return fact.calleeName === 'form.action' ? 'SUBMITS_TO' : 'NAVIGATES_TO';
+};
+
 const isEndpointReference = (fact: CallFact): boolean => {
   if (fact.receiverName !== undefined && TEMPLATE_RECEIVERS.has(fact.receiverName)) {
     return ENDPOINT_ATTRIBUTES.has(fact.calleeName);
@@ -76,10 +88,7 @@ const linkRoute = (input: LinkInput, route: RouteEntry): void => {
   builder.addEdge(
     {
       id: `cross-stack:uses:${sourceId}->${route.nodeId}`,
-      // §12.2.1 ROUTES_TO, deliberately not CALLS: this matches a path STRING in a template against
-      // a declared route. Nothing here identifies a callable symbol, and naming it a call would
-      // assert a relationship the producer cannot see.
-      type: 'ROUTES_TO',
+      type: relationshipFor(fact),
       sourceId,
       targetId: route.nodeId,
       // Both sides: the template attribute that names the path, and the declaration of the route

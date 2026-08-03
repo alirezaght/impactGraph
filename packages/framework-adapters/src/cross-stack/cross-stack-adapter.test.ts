@@ -79,9 +79,11 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
         [templateFact('form.action', '/api/deals')],
       ),
     );
+    // A `<form action>` with no stated method names a path and not a verb, so both declared verbs
+    // are legitimate correspondences — and both are submissions (§12.2.1).
     expect(edgeIds(fragment).sort()).toEqual([
-      'ROUTES_TO|symbol:src/pages/index.astro#index->route:GET /api/deals',
-      'ROUTES_TO|symbol:src/pages/index.astro#index->route:POST /api/deals',
+      'SUBMITS_TO|symbol:src/pages/index.astro#index->route:GET /api/deals',
+      'SUBMITS_TO|symbol:src/pages/index.astro#index->route:POST /api/deals',
     ]);
   });
 
@@ -132,8 +134,8 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
       ),
     );
     expect(edgeIds(fragment).sort()).toEqual([
-      'ROUTES_TO|file:src/lib/api.ts->route:GET /api/deals',
-      'ROUTES_TO|symbol:src/lib/api.ts#loadDeals->route:GET /api/deals',
+      'CALLS_ENDPOINT|file:src/lib/api.ts->route:GET /api/deals',
+      'CALLS_ENDPOINT|symbol:src/lib/api.ts#loadDeals->route:GET /api/deals',
     ]);
   });
 

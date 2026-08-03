@@ -25,7 +25,9 @@ export const EDGE_TYPES = [
   // §12.2.1 — the relationship split. USES carried seven unrelated facts and doubled as the
   // adapter fallback, so any rule attached to it was wrong for some producers.
   'INJECTS',
-  'ROUTES_TO',
+  'NAVIGATES_TO',
+  'SUBMITS_TO',
+  'CALLS_ENDPOINT',
   'USES_MIDDLEWARE',
   'REFERENCES_RESOURCE',
   // Reserved (§12.2.1): no producer yet — every pub/sub adapter resolves direction already.

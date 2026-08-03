@@ -178,8 +178,8 @@ export const obligationFor = (change: PredictedChange, edgeType: string): Obliga
   if (edgeType === 'USES_UNKNOWN') {
     return 'possible';
   }
-  // Relationships without their own table read as references — the weaker default. ROUTES_TO,
-  // USES_MIDDLEWARE and REFERENCES_RESOURCE stay there deliberately until each has been reasoned
-  // about on its own terms.
+  // Relationships without their own table read as references — the weaker default. The routing
+  // types, USES_MIDDLEWARE and REFERENCES_RESOURCE stay there deliberately: routing propagation
+  // needs structured route contracts, which the graph does not yet carry.
   return (OBLIGATION_BY_RELATIONSHIP[edgeType] ?? REFERENCE_OBLIGATION)[change.kind];
 };

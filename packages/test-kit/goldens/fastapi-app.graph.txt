@@ -33,6 +33,7 @@ symbol:tests/test_deals.py#client|symbol|repository|client|static-analysis
 symbol:tests/test_deals.py#test_list_deals|function|application|test_list_deals|static-analysis
 
 edges:
+CALLS_ENDPOINT|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention|ev2
 CALLS|symbol:app/main.py#publish_deal->symbol:app/models.py#Deal|static-analysis|ev1
 CALLS|symbol:app/routers/deals.py#get_deal->symbol:app/models.py#Deal|static-analysis|ev1
 CALLS|symbol:app/routers/deals.py#list_deals->symbol:app/models.py#Deal|static-analysis|ev1
@@ -69,7 +70,6 @@ IMPORTS|file:app/main.py->file:app/routers/deals.py|static-analysis|ev1
 IMPORTS|file:app/main.py->file:app/routers/health.py|static-analysis|ev1
 IMPORTS|file:app/routers/deals.py->file:app/models.py|static-analysis|ev1
 IMPORTS|file:tests/test_deals.py->file:app/main.py|static-analysis|ev1
-ROUTES_TO|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention|ev2
 TESTS|file:tests/test_deals.py->file:app/main.py|framework-convention|ev1
 TRIGGERS|job:symbol:app/main.py#notify_watchers->symbol:app/main.py#notify_watchers|framework-convention|ev1
 TRIGGERS|symbol:app/main.py#publish_deal->job:symbol:app/main.py#notify_watchers|framework-convention|ev1

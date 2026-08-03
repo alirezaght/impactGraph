@@ -180,7 +180,7 @@ describe('graph movement', () => {
     const after = parseGraphGolden(
       graph(
         'INJECTS|symbol:a->symbol:b|static-analysis|ev1',
-        'ROUTES_TO|symbol:b->symbol:a|static-analysis|ev1',
+        'NAVIGATES_TO|symbol:b->symbol:a|static-analysis|ev1',
       ),
     );
 

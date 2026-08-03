@@ -636,10 +636,20 @@ stated way, whatever the producer, so a propagation rule can stay local and mean
 
 - INJECTS — consumer → injected dependency. The SOURCE receives the dependency; the TARGET is the
   thing supplied. Covers constructor injection and framework DI containers.
-- ROUTES_TO — referrer → the route or page it addresses. Covers a template or client that names an
-  HTTP path matched against a declared route, and a page-to-page navigation reference. Note what it
-  is NOT: the template producer matches a path STRING against declared routes, so it is a route
-  correspondence and not a call. CALLS is reserved for expressions that identify a callable symbol.
+- NAVIGATES_TO — referrer → the route or page it navigates to. Produced from `<a href>` and
+  `<area href>`, attributes that name somewhere to GO.
+- SUBMITS_TO — form → the route it submits to. Produced from `<form action>`, and the form's
+  `method` attribute is observed when stated. Separate from NAVIGATES_TO because a submission and a
+  link are obliged by different changes: a verb change reaches a form and not a link.
+- CALLS_ENDPOINT — client code → the HTTP endpoint it calls. Produced from a `fetch` to a
+  same-origin literal path. Distinct from CALLS, which names a callable SYMBOL; this crosses a
+  network boundary and its target is a route contract.
+
+  ROUTES_TO was the first attempt at all three and is withdrawn: it fused a navigation link, a form
+  submission and a programmatic call, and the attribute that distinguishes them is something the
+  producers already read (see docs/engineering/route-evidence-audit.md). One type could not carry
+  three different obligations.
+
 - USES_MIDDLEWARE — attaching application or router → the middleware it attaches. Named for its
   direction: every dependency-shaped edge in this roster points consumer → dependency, as IMPORTS
   and INJECTS do, so a propagation rule need not ask which way a given producer wired it.

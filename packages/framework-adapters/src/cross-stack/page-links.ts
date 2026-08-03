@@ -81,8 +81,9 @@ const link = (input: PageLinkInput, fact: CallFact, page: PageEntry, sourceId: s
   input.builder.addEdge(
     {
       id: `cross-stack:navigates:${sourceId}->${page.nodeId}`,
-      // §12.2.1: referrer → the page it addresses.
-      type: 'ROUTES_TO',
+      // §12.2.1: `<a href>`/`<area href>` name somewhere to go. `<form action>` is excluded
+      // upstream, so this producer only ever states navigation.
+      type: 'NAVIGATES_TO',
       sourceId,
       targetId: page.nodeId,
       knowledge: deterministicEnvelope(

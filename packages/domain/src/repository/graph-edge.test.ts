@@ -48,7 +48,9 @@ describe('edge vocabulary (PRD §12.2)', () => {
       // §12.2.1 relationship split — USES carried seven unrelated facts and doubled as the
       // adapter fallback for unclassifiable bindings.
       'INJECTS',
-      'ROUTES_TO',
+      'NAVIGATES_TO',
+      'SUBMITS_TO',
+      'CALLS_ENDPOINT',
       'USES_MIDDLEWARE',
       'REFERENCES_RESOURCE',
       'BINDS',
