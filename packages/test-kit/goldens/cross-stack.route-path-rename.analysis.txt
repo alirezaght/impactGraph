@@ -1,0 +1,16 @@
+impacts:
+req-e0877e86|/|possible|read-model|indirect|0.05|NAVIGATES_TO|87865884|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|GET /api/deals|required|api-contract|direct|0.35|anchor|a383ec38|ambiguity+semantic-concept-match
+req-e0877e86|POST /api/deals|required|api-contract|direct|0.35|anchor|edbbae58|ambiguity+semantic-concept-match
+req-e0877e86|api.ts|possible|domain-model|indirect|0.05|CALLS_ENDPOINT|31115171|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|app|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|createDeal|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|b5836a3b|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|create_deal|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|index.astro|possible|domain-model|indirect|0.05|NAVIGATES_TO|45985358|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|index|possible|read-model|indirect|0.10|NAVIGATES_TO|a34896c2|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|list_deals|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|loadDeals|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|b5836a3b|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|main.py|possible|domain-model|indirect|0.05|EXPOSES|025e5453|ambiguity+graph-distance+graph-distance+semantic-concept-match
+
+warnings:
+unknown-concept

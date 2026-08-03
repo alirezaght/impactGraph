@@ -44,10 +44,15 @@ more specific classification failed (`EDGE_TYPE.get(kind) ?? 'USES'` in the pub/
 | `assemble.ts` (`injects`)               | constructor injection (DI)              | `INJECTS`              |
 | `spring-injection.ts`                   | Spring dependency injection             | `INJECTS`              |
 | `express-adapter.ts`                    | application middleware attachment       | `USES_MIDDLEWARE`      |
-| `cross-stack/page-links.ts`             | page-to-page navigation reference       | `ROUTES_TO`            |
-| `cross-stack/template-calls.ts`         | template path string matched to a route | `ROUTES_TO`            |
+| `cross-stack/page-links.ts`             | page-to-page navigation reference       | `NAVIGATES_TO`         |
+| `cross-stack/template-calls.ts`         | template path matched to a route        | see below              |
 | `terraform-graph.ts`                    | Terraform secret reference              | `REFERENCES_RESOURCE`  |
 | pub/sub adapters (`?? 'USES'` fallback) | nothing — the path is unreachable       | `USES_UNKNOWN`, unused |
+
+`template-calls.ts` emits three types, not one, because a reference site states which: a `fetch`
+crosses a network boundary (`CALLS_ENDPOINT`), a `form.action` submits (`SUBMITS_TO`), and an
+`a[href]` navigates (`NAVIGATES_TO`). `ROUTES_TO` was proposed for this row and withdrawn — one type
+over three obligations would have re-created the problem the split was fixing.
 
 Each producer now emits a named relationship, so a type annotation and a runtime registry binding no
 longer propagate identically. No `USES` edge remains in any fixture golden.
@@ -77,3 +82,55 @@ at `possible`. This under-promotes rather than over-promotes, which is the safe 
 **What would close it.** Nothing cheaply. Deeper inference would need the AI layer, whose output is
 never authoritative (§34), so any promotion derived from it would still require deterministic
 corroboration.
+
+## Route parameter requiredness is `unknown` for brace-syntax frameworks
+
+A route contract records its path parameters with three-state requiredness
+(`packages/domain/src/repository/graph-node.ts`), populated per path notation by
+`framework-adapters/src/route-parameters.ts`:
+
+| Notation | Frameworks       | What the notation states       | Recorded                |
+| -------- | ---------------- | ------------------------------ | ----------------------- |
+| `:id`    | Express, NestJS  | required, and `:id?` optional  | `required` / `optional` |
+| `{id}`   | Spring, FastAPI  | dynamic segment only           | `unknown`               |
+| `[id]`   | Astro file route | required; `[...rest]` optional | `required` / `optional` |
+
+**Why brace syntax cannot do better.** Optionality lives outside the path: Spring puts it in
+`@PathVariable(required = false)`, FastAPI in the handler signature's default value. Neither is read
+by a route producer, so `unknown` is the observation. It must stay `unknown` until a producer reads
+one of them — a rule that treated it as `required` would be conditioning on a guess.
+
+**Query parameters are always empty, and the emptiness is not an observation.** A route path does not
+declare them (`normalizeRoutePath` drops the query string because it is an argument to an endpoint,
+not part of its identity). No rule may read an empty `queryParameters` as "accepts none".
+
+## No evaluation sample constrains parameter-level impact
+
+The two fixtures the evaluation harnesses run against contain no parameterized route:
+
+- `ts-basic` (the §41 accuracy samples) has one `api-endpoint`, `symbol:src/api/deals.ts#getDeals`,
+  detected by convention with no route contract at all.
+- `cross-stack` (the §C16 reach samples) declares `/api/deals` only — static, no path parameters.
+
+Parameterized routes exist only in `express-app`, `nestjs-app`, `fastapi-app` and `java-spring`,
+none of which has an evaluation harness. A probe confirmed the consequence directly: a requirement
+reading "the deal detail endpoint must accept an optional `include` parameter" produces
+`unmatched-requirement` against `cross-stack`, because there is nothing to match.
+
+**Consequence.** Parameter requiredness is persisted, serialized, movement-tracked and unit-tested,
+but no ground truth constrains an impact conclusion drawn from it. That is stated rather than papered
+over: a sample written against a fixture with no parameterized route could only have recorded engine
+behaviour, which is what ground truth exists not to do.
+
+**What is constrained instead.** The verb is observable in both harness fixtures, so the routing
+samples pin the capability that genuinely exists — `route path rename` and `route handler behaviour`
+in `CROSS_STACK_EVALUATIONS` are a pair over one endpoint. A path-scoped requirement obliges every
+verb at that path (`POST /api/deals` is `required`); a verb-scoped one obliges exactly one and leaves
+the other `possible`. `requiredTier.mustNotContain` asserts that boundary, and the assertion was
+sabotage-verified to fail when the two are conflated.
+
+**What would close the parameter gap.** A parameterized route in a harness fixture — an Astro
+`web/src/pages/api/deals/[id].ts` would give `cross-stack` a contract with an observable `required`
+parameter. That is fixture work with its own golden movement, and it should be done when a rule
+actually reads a parameter, not before: a sample constraining a rule that does not exist would pin
+the absence of behaviour.

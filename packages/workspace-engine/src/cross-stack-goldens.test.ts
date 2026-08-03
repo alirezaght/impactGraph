@@ -120,6 +120,8 @@ const reviewGolden = (review: ImplementationReview): string =>
 interface Analyzed {
   readonly serialized: string;
   readonly names: ReadonlySet<string>;
+  /** Node ids at the `required` tier, so a sample can assert the obliged/affected boundary. */
+  readonly requiredIds: ReadonlySet<string>;
 }
 
 /** Which stack a changed file belongs to, by extension — the crudest possible honest test. */
@@ -182,6 +184,11 @@ describe('cross-stack impact and review on the cross-stack fixture (PRD §C16)',
             (impact) => graph.nodes.get(impact.nodeId as NodeId)?.name ?? impact.nodeId,
           ),
         ),
+        requiredIds: new Set(
+          analysis.requirementImpacts
+            .filter((impact) => impact.likelihood === 'required')
+            .map((impact) => impact.nodeId),
+        ),
       });
       firstAnalysisId ??= analysis.id;
     }
@@ -220,6 +227,26 @@ describe('cross-stack impact and review on the cross-stack fixture (PRD §C16)',
             `analysis did not reach the ${stack} stack — '${expected}' is missing`,
           ).toContain(expected);
         }
+      }
+    });
+
+    it(`'${sample.name}' puts the right components at the required tier`, () => {
+      const tier = sample.groundTruth.requiredTier;
+      if (tier === undefined) {
+        return;
+      }
+      const required = analyzed.get(sample.name)?.requiredIds ?? new Set<string>();
+      for (const id of tier.mustContain ?? []) {
+        expect([...required], `'${id}' must be obliged to change by this requirement`).toContain(
+          id,
+        );
+      }
+      for (const id of tier.mustNotContain ?? []) {
+        // Affected is not obliged. This failing means the analysis stopped distinguishing them.
+        expect(
+          [...required],
+          `'${id}' is affected by this requirement but not obliged to change by it`,
+        ).not.toContain(id);
       }
     });
 

@@ -49,6 +49,18 @@ export interface ImpactGroundTruth {
    * a documented gap that quietly starts passing is a change nobody reviewed.
    */
   readonly shouldBeLikelyButIsNot?: readonly string[];
+  /**
+   * Which components must and must not carry the `required` tier.
+   *
+   * `mustNotContain` is the half that does work: a component the analysis legitimately surfaces at a
+   * lower tier cannot be expressed by `forbiddenImpacts`, which asserts total absence. Distinguishing
+   * "affected" from "obliged to change" is the whole claim of a tiered result, and without an
+   * assertion on the boundary a sample can only prove reach.
+   */
+  readonly requiredTier?: {
+    readonly mustContain?: readonly string[];
+    readonly mustNotContain?: readonly string[];
+  };
 }
 
 /**
@@ -129,6 +141,54 @@ export const CROSS_STACK_EVALUATIONS: readonly CrossStackEvaluation[] = [
     // caller that reaches the same route by `USES`. The edge is now walked, and both names are
     // asserted as REACHED in `crossStackNames` instead of pinned as absent. This note stays as
     // the record of why the traversal roster gained an entry (epic-16, Story 16.7).
+  },
+  {
+    // §12.1.1 — a route's verb is first-class, and these two samples exist as a PAIR: the same
+    // fixture, the same endpoint, one requirement scoped to a path and one scoped to a verb. Neither
+    // sample proves anything alone; the discrimination between them is the claim.
+    //
+    // A path moving obliges every verb served at that path. `POST /api/deals` is therefore
+    // `required` here even though the text names no verb — and asserting that is what stops a future
+    // "match the first route at this path" shortcut from looking correct.
+    name: 'route path rename',
+    specFileName: 'sample-route-path-rename.md',
+    specText: '# Deals path\nThe `/api/deals` endpoint path must move to `/api/v2/deals`.\n',
+    groundTruth: {
+      directImpacts: ['GET /api/deals', 'POST /api/deals'],
+      // The front end that calls the path and the template that links to it are named nowhere.
+      minSurprises: 2,
+      requiredTier: {
+        mustContain: ['route:GET /api/deals', 'route:POST /api/deals'],
+      },
+    },
+    crossStackNames: {
+      // A URL path is the only thing the text states, and it reaches both sides of it: the Python
+      // module that declares the routes and the TypeScript functions that call them.
+      python: ['list_deals', 'main.py'],
+      typescript: ['loadDeals', 'createDeal'],
+    },
+  },
+  {
+    // The other half of the pair. Naming the verb narrows the obligation to one route: the POST
+    // handler at the same path serves a different contract and a change to what GET returns does not
+    // oblige it. It stays in the result at a lower tier, which is the correct answer — "affected" and
+    // "must change" are different claims — so `mustNotContain` is the assertion, not absence.
+    name: 'route handler behaviour',
+    specFileName: 'sample-route-handler-behaviour.md',
+    specText: '# Deal listing\nThe handler serving `GET /api/deals` must exclude archived deals.\n',
+    groundTruth: {
+      directImpacts: ['GET /api/deals', 'list_deals'],
+      minSurprises: 1,
+      requiredTier: {
+        mustContain: ['route:GET /api/deals'],
+        mustNotContain: ['route:POST /api/deals'],
+      },
+    },
+    crossStackNames: {
+      python: ['list_deals'],
+      // The caller must still be surfaced — the response shape it reads is what changes.
+      typescript: ['loadDeals'],
+    },
   },
   {
     name: 'deal events topic',
