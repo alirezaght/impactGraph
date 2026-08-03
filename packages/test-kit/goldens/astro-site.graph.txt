@@ -47,4 +47,4 @@ EXPOSES|symbol:src/pages/index.astro#index->page:/|framework-convention
 IMPORTS|file:src/pages/index.astro->file:src/layouts/Base.astro|static-analysis
 IMPORTS|file:src/pages/index.astro->file:src/scripts/deal-filter.ts|static-analysis
 READS_FROM|symbol:src/pages/index.astro#index->collection:deals|framework-convention
-USES|symbol:src/layouts/Base.astro#Base->page:/|framework-convention
+ROUTES_TO|symbol:src/layouts/Base.astro#Base->page:/|framework-convention

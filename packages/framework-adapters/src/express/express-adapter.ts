@@ -140,7 +140,8 @@ const addMiddleware = (
     builder.addEdge(
       {
         id: `express:uses:file:${fact.filePath}->${middlewareId}`,
-        type: 'USES',
+        // §12.2.1: attachment, not dispatch. Source is the file wiring it up, target the middleware.
+        type: 'USES_MIDDLEWARE',
         sourceId: `file:${fact.filePath}`,
         targetId: middlewareId,
         knowledge: deterministicEnvelope(context, [fact.evidenceId], 'framework-convention'),

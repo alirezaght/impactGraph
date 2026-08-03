@@ -32,7 +32,7 @@ const IMPACT_EDGE_TYPES = new Set([
   // behaviour-neutral; propagation rules per type come afterwards, deliberately.
   'INJECTS',
   'ROUTES_TO',
-  'MIDDLEWARE_FOR',
+  'USES_MIDDLEWARE',
   'REFERENCES_RESOURCE',
   'BINDS',
   'USES_UNKNOWN',
@@ -68,7 +68,7 @@ const EDGE_ROLES: Readonly<Record<string, TraversalRole>> = {
   USES: 'supporting',
   INJECTS: 'supporting',
   ROUTES_TO: 'supporting',
-  MIDDLEWARE_FOR: 'supporting',
+  USES_MIDDLEWARE: 'supporting',
   REFERENCES_RESOURCE: 'supporting',
   BINDS: 'supporting',
   USES_UNKNOWN: 'supporting',
@@ -95,7 +95,7 @@ const WEAK_WHEN_REVERSED = new Set([
   'USES',
   'INJECTS',
   'ROUTES_TO',
-  'MIDDLEWARE_FOR',
+  'USES_MIDDLEWARE',
   'REFERENCES_RESOURCE',
   'BINDS',
 ]);

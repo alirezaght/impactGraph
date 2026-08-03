@@ -69,7 +69,7 @@ IMPORTS|file:app/main.py->file:app/routers/deals.py|static-analysis
 IMPORTS|file:app/main.py->file:app/routers/health.py|static-analysis
 IMPORTS|file:app/routers/deals.py->file:app/models.py|static-analysis
 IMPORTS|file:tests/test_deals.py->file:app/main.py|static-analysis
+ROUTES_TO|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention
 TESTS|file:tests/test_deals.py->file:app/main.py|framework-convention
 TRIGGERS|job:symbol:app/main.py#notify_watchers->symbol:app/main.py#notify_watchers|framework-convention
 TRIGGERS|symbol:app/main.py#publish_deal->job:symbol:app/main.py#notify_watchers|framework-convention
-USES|symbol:tests/test_deals.py#test_list_deals->route:GET /deals|framework-convention

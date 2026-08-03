@@ -96,8 +96,8 @@ DEPENDS_ON|terraform:output.shard_topic_names->terraform:google_pubsub_topic.sha
 DEPENDS_ON|terraform:output.shard_topic_names->terraform:google_pubsub_topic.shard[2]|configuration
 DEPENDS_ON|terraform:provider.google->terraform:var.project_id|configuration
 DEPENDS_ON|terraform:provider.google->terraform:var.region|configuration
+REFERENCES_RESOURCE|terraform:data.google_secret_manager_secret.db_password->terraform:secret:db-password|configuration
+REFERENCES_RESOURCE|terraform:google_secret_manager_secret_iam_member.deals_api_db_password->terraform:secret:db-password|configuration
+REFERENCES_RESOURCE|terraform:modules/json-syntax/google_secret_manager_secret_iam_member.json_worker_db_password->terraform:secret:db-password|configuration
 SUBSCRIBES_TO|terraform:google_pubsub_subscription.deal_events_worker->terraform:google_pubsub_topic.deal_events|configuration
 SUBSCRIBES_TO|terraform:modules/json-syntax/google_pubsub_subscription.json_events_worker->terraform:modules/json-syntax/google_pubsub_topic.json_events|configuration
-USES|terraform:data.google_secret_manager_secret.db_password->terraform:secret:db-password|configuration
-USES|terraform:google_secret_manager_secret_iam_member.deals_api_db_password->terraform:secret:db-password|configuration
-USES|terraform:modules/json-syntax/google_secret_manager_secret_iam_member.json_worker_db_password->terraform:secret:db-password|configuration

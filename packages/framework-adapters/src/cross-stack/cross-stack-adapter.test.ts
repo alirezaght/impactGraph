@@ -80,8 +80,8 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
       ),
     );
     expect(edgeIds(fragment).sort()).toEqual([
-      'USES|symbol:src/pages/index.astro#index->route:GET /api/deals',
-      'USES|symbol:src/pages/index.astro#index->route:POST /api/deals',
+      'ROUTES_TO|symbol:src/pages/index.astro#index->route:GET /api/deals',
+      'ROUTES_TO|symbol:src/pages/index.astro#index->route:POST /api/deals',
     ]);
   });
 
@@ -132,8 +132,8 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
       ),
     );
     expect(edgeIds(fragment).sort()).toEqual([
-      'USES|file:src/lib/api.ts->route:GET /api/deals',
-      'USES|symbol:src/lib/api.ts#loadDeals->route:GET /api/deals',
+      'ROUTES_TO|file:src/lib/api.ts->route:GET /api/deals',
+      'ROUTES_TO|symbol:src/lib/api.ts#loadDeals->route:GET /api/deals',
     ]);
   });
 

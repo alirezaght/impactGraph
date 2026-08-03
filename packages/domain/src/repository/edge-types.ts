@@ -26,8 +26,9 @@ export const EDGE_TYPES = [
   // adapter fallback, so any rule attached to it was wrong for some producers.
   'INJECTS',
   'ROUTES_TO',
-  'MIDDLEWARE_FOR',
+  'USES_MIDDLEWARE',
   'REFERENCES_RESOURCE',
+  // Reserved (§12.2.1): no producer yet — every pub/sub adapter resolves direction already.
   'BINDS',
   /**
    * An unclassified relationship, named honestly rather than hidden inside USES. Traversable, may

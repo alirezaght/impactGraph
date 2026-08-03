@@ -43,5 +43,5 @@ EXPOSES|symbol:src/server.ts#healthCheck->route:GET /health|framework-convention
 IMPORTS|file:src/server.ts->file:src/deals-router.ts|static-analysis
 IMPORTS|file:src/server.ts->file:src/middleware.ts|static-analysis
 TRIGGERS|symbol:src/middleware.ts#logRequests->symbol:src/middleware.ts#authenticate|framework-convention
-USES|file:src/server.ts->symbol:src/middleware.ts#authenticate|framework-convention
-USES|file:src/server.ts->symbol:src/middleware.ts#logRequests|framework-convention
+USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#authenticate|framework-convention
+USES_MIDDLEWARE|file:src/server.ts->symbol:src/middleware.ts#logRequests|framework-convention

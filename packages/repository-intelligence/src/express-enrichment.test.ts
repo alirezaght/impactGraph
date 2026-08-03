@@ -85,11 +85,11 @@ describe('Express enrichment on the express-app fixture (Story 3.3)', () => {
     expect(summaries).toContain('file:src/deals-router.ts->route:POST /deals');
   });
 
-  it('application middleware becomes a USES edge to the resolved symbol', () => {
+  it('application middleware becomes a USES_MIDDLEWARE edge to the resolved symbol (§12.2.1)', () => {
     expect(
       graph.edges.some(
         (edge) =>
-          edge.type === 'USES' &&
+          edge.type === 'USES_MIDDLEWARE' &&
           edge.sourceId === 'file:src/server.ts' &&
           edge.targetId === 'symbol:src/middleware.ts#logRequests',
       ),

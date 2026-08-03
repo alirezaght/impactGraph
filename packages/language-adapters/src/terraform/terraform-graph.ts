@@ -149,7 +149,8 @@ const bindSecret = (
   state.builder.addEdge(
     {
       id: `terraform:uses-secret:${sourceNodeId}->${nodeId}`,
-      type: 'USES',
+      // §12.2.1: referencing resource → referenced infrastructure resource.
+      type: 'REFERENCES_RESOURCE',
       sourceId: sourceNodeId,
       targetId: nodeId,
       knowledge,

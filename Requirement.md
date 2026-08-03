@@ -634,16 +634,24 @@ stated way, whatever the producer, so a propagation rule can stay local and mean
 
 - INJECTS — consumer → injected dependency. The SOURCE receives the dependency; the TARGET is the
   thing supplied. Covers constructor injection and framework DI containers.
-- ROUTES_TO — caller → route or handler it dispatches to. Currently also carries Express middleware
-  wiring, which is a different relationship (see MIDDLEWARE_FOR) and is why this type must not yet
-  receive aggressive propagation rules.
-- MIDDLEWARE_FOR — middleware → the route or application it is attached to. Reserved for producers
-  that can distinguish attachment from dispatch without speculative parsing.
-- REFERENCES_RESOURCE — referring declaration → referenced infrastructure resource. Covers Terraform
-  resource and module references.
-- BINDS — component → messaging endpoint where the direction is known but no publish or subscribe
-  behaviour is established. Where behaviour IS established, PUBLISHES and SUBSCRIBES_TO are used
-  instead; BINDS is never a substitute for either.
+- ROUTES_TO — referrer → the route or page it addresses. Covers a template or client that names an
+  HTTP path matched against a declared route, and a page-to-page navigation reference. Note what it
+  is NOT: the template producer matches a path STRING against declared routes, so it is a route
+  correspondence and not a call. CALLS is reserved for expressions that identify a callable symbol.
+- USES_MIDDLEWARE — attaching application or router → the middleware it attaches. Named for its
+  direction: every dependency-shaped edge in this roster points consumer → dependency, as IMPORTS
+  and INJECTS do, so a propagation rule need not ask which way a given producer wired it.
+- REFERENCES_RESOURCE — referencing declaration → referenced infrastructure resource. Today the only
+  producer is the Terraform secret reference, which is narrower than the name suggests. Interpolation,
+  explicit depends_on, module output references and provider references are NOT currently conflated
+  into it — the scanner records those as facts rather than edges — so if they later become edges they
+  should be judged separately before reusing this type, because they may not share its propagation
+  semantics.
+- BINDS — component → messaging endpoint where the association is known but no publish or subscribe
+  behaviour is established. RESERVED, with no current producer: every pub/sub adapter already
+  resolves a topic handle to PUBLISHES and a subscription handle to SUBSCRIBES_TO, so nothing needs
+  the weaker form yet. Retained deliberately rather than removed, so an adapter that later reads a
+  registration without runtime direction has somewhere truthful to put it.
 - USES_UNKNOWN — the honest name for an unclassified relationship. An adapter that cannot determine
   what a binding means emits this rather than a generic USES, so uncertainty is visible instead of
   disguised as a relationship. Its semantics are fixed and deliberately weak: traversable, may

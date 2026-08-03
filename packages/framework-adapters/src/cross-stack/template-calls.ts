@@ -76,7 +76,10 @@ const linkRoute = (input: LinkInput, route: RouteEntry): void => {
   builder.addEdge(
     {
       id: `cross-stack:uses:${sourceId}->${route.nodeId}`,
-      type: 'USES',
+      // §12.2.1 ROUTES_TO, deliberately not CALLS: this matches a path STRING in a template against
+      // a declared route. Nothing here identifies a callable symbol, and naming it a call would
+      // assert a relationship the producer cannot see.
+      type: 'ROUTES_TO',
       sourceId,
       targetId: route.nodeId,
       // Both sides: the template attribute that names the path, and the declaration of the route

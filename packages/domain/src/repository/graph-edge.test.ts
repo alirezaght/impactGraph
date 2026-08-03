@@ -49,7 +49,7 @@ describe('edge vocabulary (PRD §12.2)', () => {
       // adapter fallback for unclassifiable bindings.
       'INJECTS',
       'ROUTES_TO',
-      'MIDDLEWARE_FOR',
+      'USES_MIDDLEWARE',
       'REFERENCES_RESOURCE',
       'BINDS',
       'USES_UNKNOWN',

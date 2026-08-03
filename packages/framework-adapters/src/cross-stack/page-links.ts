@@ -81,7 +81,8 @@ const link = (input: PageLinkInput, fact: CallFact, page: PageEntry, sourceId: s
   input.builder.addEdge(
     {
       id: `cross-stack:navigates:${sourceId}->${page.nodeId}`,
-      type: 'USES',
+      // §12.2.1: referrer → the page it addresses.
+      type: 'ROUTES_TO',
       sourceId,
       targetId: page.nodeId,
       knowledge: deterministicEnvelope(

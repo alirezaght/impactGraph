@@ -143,13 +143,13 @@ PUBLISHES|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#De
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishConfiguredEvent->topic:deal-events|framework-convention
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishDealCreated->topic:deal-events|framework-convention
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishLegacyEvent->topic:deal-event|framework-convention
+ROUTES_TO|symbol:web/src/lib/api.ts#createDeal->route:POST /api/deals|framework-convention
+ROUTES_TO|symbol:web/src/lib/api.ts#loadDeals->route:GET /api/deals|framework-convention
+ROUTES_TO|symbol:web/src/lib/api.ts#loadDeals->route:POST /api/deals|framework-convention
+ROUTES_TO|symbol:web/src/pages/index.astro#index->route:GET /api/deals|framework-convention
+ROUTES_TO|symbol:web/src/pages/index.astro#index->route:POST /api/deals|framework-convention
 SUBSCRIBES_TO|symbol:api/app/events.py#consume_deals->subscription:deal-events-worker|framework-convention
 SUBSCRIBES_TO|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter->subscription:deal-events-worker|framework-convention
 SUBSCRIBES_TO|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.onDealEvent->subscription:deal-events-worker|framework-convention
 SUBSCRIBES_TO|symbol:worker/src/deal-events.service.ts#DealEventsService.onDealEvent->topic:deal-events|framework-convention
 SUBSCRIBES_TO|terraform:infra/google_pubsub_subscription.deal_events_worker->terraform:infra/google_pubsub_topic.deal_events|configuration
-USES|symbol:web/src/lib/api.ts#createDeal->route:POST /api/deals|framework-convention
-USES|symbol:web/src/lib/api.ts#loadDeals->route:GET /api/deals|framework-convention
-USES|symbol:web/src/lib/api.ts#loadDeals->route:POST /api/deals|framework-convention
-USES|symbol:web/src/pages/index.astro#index->route:GET /api/deals|framework-convention
-USES|symbol:web/src/pages/index.astro#index->route:POST /api/deals|framework-convention
