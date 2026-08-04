@@ -1,4 +1,6 @@
 nodes:
+config:package.json|configuration-file|asset|package.json|configuration|-
+config:tsconfig.json|configuration-file|asset|tsconfig.json|configuration|-
 datamodel:prisma/schema.prisma#Deal|table|data|Deal|configuration|-
 datamodel:prisma/schema.prisma#User|table|data|User|configuration|-
 dependency:prisma|third-party-service|integration|prisma|configuration|-
@@ -51,6 +53,7 @@ CONFIGURES|file:Dockerfile->package:ts-basic|configuration|ev1
 CONFIGURES|file:tsconfig.json->package:ts-basic|configuration|ev1
 CONTAINS|file:.github/workflows/ci.yml->pipeline:.github/workflows/ci.yml|framework-convention|ev1
 CONTAINS|file:Dockerfile->docker:Dockerfile|framework-convention|ev1
+CONTAINS|file:package.json->config:package.json|configuration|ev1
 CONTAINS|file:prisma/migrations/20260801000000_init/migration.sql->migration:prisma/migrations/20260801000000_init/migration.sql|framework-convention|ev1
 CONTAINS|file:prisma/schema.prisma->datamodel:prisma/schema.prisma#Deal|configuration|ev1
 CONTAINS|file:prisma/schema.prisma->datamodel:prisma/schema.prisma#User|configuration|ev1
@@ -66,6 +69,7 @@ CONTAINS|file:src/services/deal-service.test.ts->symbol:src/services/deal-servic
 CONTAINS|file:src/services/deal-service.ts->symbol:src/services/deal-service.ts#DEFAULT_LIMIT|static-analysis|ev1
 CONTAINS|file:src/services/deal-service.ts->symbol:src/services/deal-service.ts#DealService|static-analysis|ev1
 CONTAINS|file:src/services/deal-service.ts->symbol:src/services/deal-service.ts#buildDealService|static-analysis|ev1
+CONTAINS|file:tsconfig.json->config:tsconfig.json|configuration|ev1
 CONTAINS|package:ts-basic->directory:src|static-analysis|ev1
 CONTAINS|package:ts-basic->file:.github/workflows/ci.yml|configuration|ev1
 CONTAINS|package:ts-basic->file:Dockerfile|configuration|ev1

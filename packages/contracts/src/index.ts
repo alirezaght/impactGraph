@@ -212,3 +212,21 @@ export { implementationContextSchema } from './export/implementation-context.js'
 export type { ImplementationContextDto } from './export/implementation-context.js';
 export { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from './tools/tools.js';
 export type { McpToolName } from './tools/tools.js';
+
+// The bounded analyze document and its paginated detail page (item 9 of the trial follow-up).
+export {
+  cliImpactSummarySchema,
+  cliImpactPageSchema,
+  impactFiltersSchema,
+  impactEvidenceTypeSchema,
+  indexFreshnessSchema,
+  indexWarningReportSchema,
+  extractionQualitySchema,
+  queryOutcomeSchema,
+} from './cli/impact-summary.js';
+export type { CliImpactSummary, CliImpactPage, ImpactFilters } from './cli/impact-summary.js';
+
+// Item 13: the review breakdown, and item 12: recorded outcomes with their measured accuracy.
+export { cliReviewBreakdownSchema } from './cli/review-breakdown.js';
+export type { CliReviewBreakdown } from './cli/review-breakdown.js';
+export { OUTCOME_TOOL_CONTRACTS, evaluationMetricsSchema } from './tools/outcome-tools.js';

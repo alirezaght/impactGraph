@@ -53,6 +53,66 @@ const baseAnalyze = {
   warnings: [],
 };
 
+/** The bounded `analyze_impact` document (item 9), minimally populated. */
+const boundedSummary = {
+  schemaVersion: 1 as const,
+  command: 'analyze' as const,
+  analysis: {
+    id: 'analysis-1',
+    snapshotId: 'snap-1',
+    status: 'draft',
+    provisional: false,
+    provisionalReasons: [],
+  },
+  specification: {
+    id: 'spec-1',
+    version: 1,
+    title: 'Deal visibility',
+    extractionMode: 'provider' as const,
+  },
+  freshness: { state: 'current' as const, stale: false, reasons: [] },
+  coverage: {
+    requirementCount: 1,
+    requirementsWithStructuralImpact: 1,
+    indexWarnings: {
+      totalCount: 0,
+      coverageLosingCount: 0,
+      affectsPredictedArea: false,
+      groups: [],
+    },
+  },
+  counts: { totalImpacts: 1, componentCount: 1, byLikelihood: {}, byEvidenceType: {} },
+  topImpacts: [
+    {
+      nodeId: 'svc:expiry',
+      name: 'DealExpiryService',
+      likelihood: 'required' as const,
+      evidenceType: 'direct-structural' as const,
+      impactType: 'event-contract',
+      confidence: 0.8,
+      hops: 0,
+      requirementIds: ['req-1'],
+      requirementLabels: ['R1'],
+      reason: "Concept 'DealExpiryService' matches it (exact). Basis: direct-structural.",
+    },
+  ],
+  unmatchedRequirements: [],
+  unresolvedConcepts: [],
+  blockingQuestions: [],
+  nonGoalContradictions: [],
+  predictedArtifacts: [],
+  warnings: [],
+  omittedWarningCount: 0,
+  pagination: { returned: 1, totalMatching: 1, appliedFilters: {} },
+  impactQuery: {
+    status: 'completed' as const,
+    scope: 'the indexed knowledge graph of this workspace',
+    limitations: [],
+    resultCount: 1,
+  },
+  followUp: ['list_impacts'],
+};
+
 describe('proposed structure contract (PRD §18.4)', () => {
   it('accepts a relationship between two existing graph nodes', () => {
     const parsed = proposedStructureSchema.safeParse({ nodes: [], relationships: [relationship] });
@@ -156,11 +216,32 @@ describe('proposed structure contract (PRD §18.4)', () => {
     expect(cliAnalyzeOutputSchema.safeParse(smuggled).success).toBe(false);
   });
 
-  it('reaches agents too: the analyze_impact MCP tool speaks the same document', () => {
-    const parsed = MCP_TOOL_CONTRACTS.analyze_impact.output.safeParse({
-      ...baseAnalyze,
-      proposedStructure: { nodes: [], relationships: [relationship] },
+  /**
+   * `analyze_impact` returns the BOUNDED summary now (item 9), so it reports the proposal's SIZE and
+   * names where to read it rather than embedding it. The assertion that matters is unchanged: the
+   * proposal never arrives merged into the impact list, and it is never silently dropped either.
+   */
+  it('reaches agents as a counted pointer, never merged into the impact list', () => {
+    const summary = MCP_TOOL_CONTRACTS.analyze_impact.output;
+    const withProposal = summary.safeParse({
+      ...boundedSummary,
+      proposedStructure: { nodeCount: 0, relationshipCount: 1 },
     });
-    expect(parsed.success).toBe(true);
+    expect(withProposal.success).toBe(true);
+    // the full document — with the proposal itself — stays reachable through the artifact tool
+    expect(
+      MCP_TOOL_CONTRACTS.get_impact_analysis.output.safeParse({
+        schemaVersion: 1,
+        id: 'analysis-1',
+        proposedStructure: { nodes: [], relationships: [relationship] },
+      }).success,
+    ).toBe(true);
+    // and the summary refuses a smuggled proposed node in topImpacts
+    expect(
+      summary.safeParse({
+        ...boundedSummary,
+        topImpacts: [{ ...boundedSummary.topImpacts[0], status: 'proposed' }],
+      }).success,
+    ).toBe(false);
   });
 });

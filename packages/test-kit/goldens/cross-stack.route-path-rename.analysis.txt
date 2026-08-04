@@ -1,16 +1,19 @@
 impacts:
-req-e0877e86|/|possible|read-model|indirect|0.05|NAVIGATES_TO|87865884|ambiguity+graph-distance+graph-distance+semantic-concept-match
-req-e0877e86|GET /api/deals|required|api-contract|direct|0.35|anchor|a383ec38|ambiguity+semantic-concept-match
-req-e0877e86|POST /api/deals|required|api-contract|direct|0.35|anchor|edbbae58|ambiguity+semantic-concept-match
-req-e0877e86|api.ts|possible|domain-model|indirect|0.05|CALLS_ENDPOINT|31115171|ambiguity+graph-distance+graph-distance+semantic-concept-match
-req-e0877e86|app|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|createDeal|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|b5836a3b|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|create_deal|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|index.astro|possible|domain-model|indirect|0.05|NAVIGATES_TO|45985358|ambiguity+graph-distance+graph-distance+semantic-concept-match
-req-e0877e86|index|possible|read-model|indirect|0.10|NAVIGATES_TO|a34896c2|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|list_deals|likely|domain-model|indirect|0.10|EXPOSES|d14b3ad2|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|loadDeals|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|b5836a3b|ambiguity+graph-distance+semantic-concept-match
-req-e0877e86|main.py|possible|domain-model|indirect|0.05|EXPOSES|025e5453|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|/|possible|read-model|indirect|0.05|NAVIGATES_TO|bc45de66|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|GET /api/deals|required|api-contract|direct|0.35|anchor|ffaa4d93|ambiguity+semantic-concept-match
+req-e0877e86|POST /api/deals|required|api-contract|direct|0.35|anchor|8772cf73|ambiguity+semantic-concept-match
+req-e0877e86|api.ts|possible|domain-model|indirect|0.05|CALLS_ENDPOINT|997d3d9b|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|app|likely|domain-model|indirect|0.10|EXPOSES|7836b134|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|createDeal|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|d656162d|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|create_deal|likely|domain-model|indirect|0.10|EXPOSES|7836b134|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|cross-stack|possible|domain-model|indirect|0.05|EXPOSES|bb73737f|ambiguity+graph-distance+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|index.astro|possible|domain-model|indirect|0.05|NAVIGATES_TO|df388509|ambiguity+graph-distance+graph-distance+semantic-concept-match
+req-e0877e86|index|possible|read-model|indirect|0.10|NAVIGATES_TO|2f888f31|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|list_deals|likely|domain-model|indirect|0.10|EXPOSES|7836b134|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|loadDeals|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|d656162d|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|loadExternal|possible|domain-model|indirect|0.10|CALLS_ENDPOINT|d656162d|ambiguity+graph-distance+semantic-concept-match
+req-e0877e86|main.py|possible|domain-model|indirect|0.05|EXPOSES|bacd19b5|ambiguity+graph-distance+graph-distance+semantic-concept-match
 
 warnings:
 unknown-concept
+unresolved-concept

@@ -1,0 +1,8 @@
+{
+  "name": "nullable-boundary",
+  "private": true,
+  "workspaces": [
+    "deal-api",
+    "search-service"
+  ]
+}

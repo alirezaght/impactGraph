@@ -62,6 +62,27 @@
           },
           "required": ["mode"],
           "additionalProperties": false
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "enabled": {
+                "type": "boolean"
+              }
+            },
+            "required": ["name", "path"],
+            "additionalProperties": false
+          }
         }
       },
       "required": ["schemaVersion"],

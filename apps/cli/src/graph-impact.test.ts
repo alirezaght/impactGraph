@@ -74,7 +74,7 @@ describe('impactgraph graph --analysis (impact export, PRD §18.4/§18.5/§33/§
         '',
       ].join('\n'),
     );
-    const analyzed = await cli('analyze', 'feature.md', '--format', 'json');
+    const analyzed = await cli('analyze', 'feature.md', '--full', '--format', 'json');
     // `warningsFound` is expected: the spec deliberately names a component that does not exist, so
     // the analysis raises `unknown-concept` — which is precisely what the export must surface.
     expect([EXIT_CODES.success, EXIT_CODES.warningsFound]).toContain(analyzed.code);

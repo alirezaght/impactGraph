@@ -15,6 +15,11 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
         'get_open_questions',
         'answer_open_question',
         'analyze_impact',
+        // Item 9 of the trial follow-up: analyze_impact returns a bounded summary, and this is
+        // the paginated detail page it points at.
+        'list_impacts',
+        // Item 12: record what an implementation actually touched and measure the prediction.
+        'record_actual_impact',
         'get_impact_analysis',
         'update_impact_decision',
         'approve_analysis',

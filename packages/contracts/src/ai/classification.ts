@@ -6,7 +6,14 @@ import { z } from 'zod';
 // There is deliberately no confidence field: confidence is computed from signals, never
 // model-authored (PRD §14).
 
-const likelihoodSchema = z.enum(['required', 'likely', 'possible', 'unlikely']);
+const likelihoodSchema = z.enum([
+  'required',
+  'likely',
+  'possible',
+  'lexical-only',
+  'unlikely',
+  'excluded',
+]);
 
 const impactTypeSchema = z.enum([
   'domain-model',

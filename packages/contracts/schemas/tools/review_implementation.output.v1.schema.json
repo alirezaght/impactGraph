@@ -196,6 +196,188 @@
         },
         "discrepanciesFound": {
           "type": "boolean"
+        },
+        "breakdown": {
+          "type": "object",
+          "properties": {
+            "correctlyPredictedStructural": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "missedChangedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "missedNewFiles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "lexicalOnlyThatChanged": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["path", "name"],
+                "additionalProperties": false
+              }
+            },
+            "falseStrongPredictions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "likelihood": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "basis": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["path", "name", "likelihood", "basis"],
+                "additionalProperties": false
+              }
+            },
+            "unexpectedChanges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "asyncOrBoundaryChanges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "configurationAndAssetChanges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "contractChanges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "migrationChanges": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "nonGoalContradictions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "statement": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "changedPaths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": ["statement", "changedPaths"],
+                "additionalProperties": false
+              }
+            },
+            "scope": {
+              "type": "object",
+              "properties": {
+                "approvedSnapshotId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reviewSnapshotId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "target": {
+                  "type": "string",
+                  "enum": ["working-tree", "commit"]
+                },
+                "changedFileCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "indexedComponentCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "limitations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "approvedSnapshotId",
+                "reviewSnapshotId",
+                "target",
+                "changedFileCount",
+                "indexedComponentCount",
+                "limitations"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "correctlyPredictedStructural",
+            "missedChangedFiles",
+            "missedNewFiles",
+            "lexicalOnlyThatChanged",
+            "falseStrongPredictions",
+            "unexpectedChanges",
+            "asyncOrBoundaryChanges",
+            "configurationAndAssetChanges",
+            "contractChanges",
+            "migrationChanges",
+            "nonGoalContradictions",
+            "scope"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { createRepositorySnapshot } from '@impactgraph/domain';
 import {
   createAstroFrameworkAdapter,
+  createAsyncChainAdapter,
   createCrossStackAdapter,
   createCustomDetectionAdapter,
   createExpressAdapter,
@@ -16,6 +17,7 @@ import {
 } from '@impactgraph/framework-adapters';
 import {
   createAdapterRegistry,
+  createAssetAdapter,
   createAstroAdapter,
   createHtmlAdapter,
   createJavaAdapter,
@@ -110,6 +112,8 @@ const builtInAdapters = (): FrameworkAdapter[] => [
   createAstroFrameworkAdapter(),
   createGenericDetectorsAdapter(),
   createTerraformFrameworkAdapter(),
+  // Item 5: the async chain runs before cross-stack, which reads the nodes it emits.
+  createAsyncChainAdapter(),
   createCrossStackAdapter(),
 ];
 
@@ -123,6 +127,12 @@ const FIXTURES: readonly { name: string; frameworkAdapters: () => FrameworkAdapt
   { name: 'html-site', frameworkAdapters: builtInAdapters },
   { name: 'terraform-gcp', frameworkAdapters: builtInAdapters },
   { name: 'cross-stack', frameworkAdapters: builtInAdapters },
+  // Item 5/8 (trial follow-up): the observed notification case end to end — outbox → relay →
+  // Pub/Sub topic → push subscription → push route → projection → renderer → locale keys → test.
+  { name: 'notification-chain', frameworkAdapters: builtInAdapters },
+  // Item 6/7 (trial follow-up): the first observed case — a nullable field crosses an HTTP boundary
+  // and is dropped, defaulted, then used to skip a row in another service.
+  { name: 'nullable-boundary', frameworkAdapters: builtInAdapters },
   // Monorepo (§42.2): pins that workspace-resolved imports (`@fixture/core`) become real edges.
   // A single-package analysis loses them entirely, so this golden is the regression net for
   // cross-package resolution.
@@ -154,6 +164,7 @@ const indexFixture = async (
         createTerraformAdapter(),
         createPrismaAdapter(),
         createSpringConfigAdapter(),
+        createAssetAdapter(),
       ]),
       'registry',
     );
@@ -207,12 +218,26 @@ const shouldUpdate = (name: string): boolean => {
  * the reviewable statement of what it did.
  */
 const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
-  unchanged: 459,
+  // 459 → 548. Two deliberate changes, in the same commit as this number:
+  //
+  // * Item 8: the asset adapter types every `.json` file (`config:`/`locale:`/`openapi:`/`events:`)
+  //   and links it to its file node with CONTAINS, so every fixture with a manifest gains a node and
+  //   an edge. Previously those files were anonymous `file` nodes with a "no adapter" warning.
+  // * The `notification-chain` fixture joins the roster with the full event chain plus locale keys.
+  //
+  // 548 → 613: item 7 — declared fields become `field` nodes with a CONTAINS edge to their shape, and
+  // DTO mapping emits FLOWS_TO/RENAMED_TO; plus the `nullable-boundary` fixture joins the roster.
+  //
+  // 613 → 616: item 6 — an outbound call to an ABSOLUTE url now matches a workspace route by path
+  // (`CALLS_ENDPOINT`), so the cross-service HTTP flow that was invisible becomes an edge.
+  unchanged: 616,
 };
 
 /** Expected NODE movement, summed over all fixtures. Steady state is everything unchanged. */
 const EXPECTED_NODE_MOVEMENT: Readonly<Record<string, number>> = {
-  unchanged: 352,
+  // 352 → 424 for the asset adapter and the notification-chain fixture; 424 → 479 for the `field`
+  // nodes of item 7 and the `nullable-boundary` fixture.
+  unchanged: 479,
 };
 
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {

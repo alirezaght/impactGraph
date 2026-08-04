@@ -60,6 +60,35 @@ export {
   isNodeCategory,
   isNodeTypeInCategory,
 } from './repository/node-types.js';
+export type { QueryStatus, QueryOutcome } from './query/query-outcome.js';
+export {
+  QUERY_STATUSES,
+  isQueryStatus,
+  queryOutcome,
+  queryOutcomeIssues,
+  notRunOutcome,
+  failedOutcome,
+  describeOutcome,
+} from './query/query-outcome.js';
+export type {
+  FreshnessState,
+  IndexFreshness,
+  FreshnessInput,
+} from './repository/index-freshness.js';
+export { FRESHNESS_STATES, assessFreshness } from './repository/index-freshness.js';
+export type {
+  IndexWarningCategory,
+  IndexWarningGroup,
+  IndexWarningReport,
+  RawIndexWarning,
+  BulkWarningCounts,
+} from './repository/warning-categories.js';
+export {
+  INDEX_WARNING_CATEGORIES,
+  COVERAGE_LOSING_CATEGORIES,
+  categorizeWarningMessage,
+  categorizeIndexWarnings,
+} from './repository/warning-categories.js';
 export type { EdgeType } from './repository/edge-types.js';
 export { EDGE_TYPES, isEdgeType } from './repository/edge-types.js';
 
@@ -126,6 +155,7 @@ export type {
   RequirementType,
   RequirementPriority,
   RequirementStatus,
+  RequirementOrigin,
   TextRange,
   Requirement,
 } from './specification/requirement.js';
@@ -133,9 +163,22 @@ export {
   REQUIREMENT_TYPES,
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_STATUSES,
+  REQUIREMENT_ORIGINS,
+  STRUCTURED_ORIGINS,
+  isStructuredOrigin,
+  originOf,
   stableContentId,
   stableRequirementId,
 } from './specification/requirement.js';
+export type { SpecNote, SpecNoteKind } from './specification/spec-notes.js';
+export { SPEC_NOTE_KINDS, nonGoalsOf, specNoteId } from './specification/spec-notes.js';
+export type { ExtractionQuality, ExtractionStrategy } from './specification/extraction-quality.js';
+export {
+  EXTRACTION_STRATEGIES,
+  PROSE_PROVISIONAL_THRESHOLD,
+  isProvisional,
+  strategyFor,
+} from './specification/extraction-quality.js';
 export type {
   SpecificationSourceType,
   OpenQuestionSeverity,
@@ -197,8 +240,20 @@ export {
   PROPOSED_ENDPOINT_KINDS,
   collectProposedStructureIssues,
 } from './impact/proposed-structure.js';
+export type { ImpactEvidenceType } from './impact/evidence-basis.js';
+export {
+  IMPACT_EVIDENCE_TYPES,
+  STRUCTURAL_EVIDENCE_TYPES,
+  isImpactEvidenceType,
+  primaryEvidenceType,
+  evidenceStrengthRank,
+  likelihoodRank,
+  capLikelihood,
+} from './impact/evidence-basis.js';
 export {
   IMPACT_LIKELIHOODS,
+  PREDICTIVE_LIKELIHOODS,
+  evidenceTypesOf,
   IMPACT_TYPES,
   IMPACT_DIRECTNESS,
   USER_DECISION_KINDS,
@@ -262,3 +317,17 @@ export {
   parseClarification,
   CLARIFICATION_SCHEMA_VERSION,
 } from './serialization/clarification-json.js';
+
+// Item 12: recorded outcomes and the accuracy they make measurable. Evidence, never training data —
+// append-only, never mutating an analysis, never promoting one result to a rule.
+export type {
+  ActualImpact,
+  ActualChangedSymbol,
+  ActualRelationshipChange,
+  ManualFinding,
+  ArtifactCategory,
+  EvaluationMetrics,
+} from './evaluation/actual-impact.js';
+export { ARTIFACT_CATEGORIES, createActualImpact } from './evaluation/actual-impact.js';
+export type { MeasureInput } from './evaluation/measure.js';
+export { DEFAULT_JUDGED_TIERS, measureAnalysis } from './evaluation/measure.js';

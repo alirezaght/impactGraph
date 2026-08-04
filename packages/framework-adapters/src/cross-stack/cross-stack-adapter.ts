@@ -6,6 +6,8 @@ import {
   CORRELATABLE_INFRA_TYPES,
   linkInfrastructure,
 } from './infrastructure-links.js';
+import { linkLocaleKeys, linkOpenApiOperations } from './locale-links.js';
+import { linkOutboundHttp } from './outbound-http.js';
 import { linkPageNavigation } from './page-links.js';
 import { linkTemplateReferences, referenceSourceId } from './template-calls.js';
 
@@ -106,20 +108,32 @@ class CrossStackAdapter implements FrameworkAdapter {
     const routes = countByType(graph, new Set(['api-endpoint']));
     const infrastructure = countByType(graph, CORRELATABLE_INFRA_TYPES);
     const code = countByType(graph, CORRELATABLE_CODE_TYPES);
-    const httpPair = routes > 0 && hasUrlReferences(graph);
-    const infrastructurePair = infrastructure > 0 && code > 0;
+    const assets = countByType(graph, new Set(['translation-key', 'openapi-operation']));
+    const pairs = {
+      // `hasUrlReferences` alone no longer decides: an outbound absolute-URL call is correlatable
+      // even with no route in this workspace, because the boundary itself is worth modelling.
+      http: hasUrlReferences(graph) && (routes > 0 || code > 0),
+      infrastructure: infrastructure > 0 && code > 0,
+      // Item 8: assets alongside code is a correlatable pair too — a locale key and the renderer
+      // that names it are two stacks in every sense that matters here.
+      asset: assets > 0 && (code > 0 || routes > 0),
+    };
     return Promise.resolve({
-      detected: httpPair || infrastructurePair,
+      detected: Object.values(pairs).some(Boolean),
       evidenceIds: [],
-      reason: this.reasonFor(httpPair, infrastructurePair),
+      reason: this.reasonFor(pairs),
     });
   }
 
-  private reasonFor(httpPair: boolean, infrastructurePair: boolean): string {
-    const found = [
-      httpPair ? 'URL references alongside declared HTTP routes' : undefined,
-      infrastructurePair ? 'infrastructure resources alongside application components' : undefined,
-    ].filter((entry): entry is string => entry !== undefined);
+  private reasonFor(pairs: Readonly<Record<string, boolean>>): string {
+    const labels: Readonly<Record<string, string>> = {
+      http: 'URL references alongside declared HTTP routes',
+      infrastructure: 'infrastructure resources alongside application components',
+      asset: 'locale keys or contract operations alongside application components',
+    };
+    const found = Object.entries(pairs)
+      .filter(([, present]) => present)
+      .map(([key]) => labels[key] ?? key);
     return found.length > 0
       ? `correlatable across stacks: ${found.join('; ')}`
       : 'no two stacks with correlatable facts found';
@@ -136,6 +150,13 @@ class CrossStackAdapter implements FrameworkAdapter {
     });
     const deployments = linkInfrastructure(builder, graph, context.indexing);
     linkCloudRunEnvironment(builder, graph, context.indexing, deployments);
+    // Item 8: the two asset correspondences. Both are literal-key joins on ids the asset adapter and
+    // the framework adapters independently agree on, so neither side knows about the other.
+    linkLocaleKeys(builder, graph, context.indexing);
+    linkOpenApiOperations(builder, graph, context.indexing);
+    // Item 6: an absolute-URL call to a sibling service. Matched by PATH when the route is in this
+    // workspace, recorded as an unresolved boundary when it is not — never silently dropped.
+    linkOutboundHttp(builder, graph, context.indexing);
     warnOnMissingClientFacts(builder, graph);
     return Promise.resolve(builder.build());
   }

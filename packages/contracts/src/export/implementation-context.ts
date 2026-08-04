@@ -20,7 +20,7 @@ const impactSummarySchema = z
     nodeId: z.string().min(1),
     name: z.string().min(1),
     path: z.string().min(1).optional(),
-    likelihood: z.enum(['required', 'likely', 'possible', 'unlikely']),
+    likelihood: z.enum(['required', 'likely', 'possible', 'lexical-only', 'unlikely', 'excluded']),
     impactType: z.string().min(1),
     directness: z.enum(['direct', 'indirect']),
     confidence: z.number().min(0).max(1),

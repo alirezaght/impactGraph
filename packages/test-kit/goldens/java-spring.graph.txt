@@ -71,6 +71,7 @@ symbol:src/main/java/com/example/deals/DealsConfiguration.java#DealsConfiguratio
 symbol:src/main/java/com/example/deals/DealsConfiguration.java#DealsConfiguration|class|application|DealsConfiguration|static-analysis|-
 topic:deal-audit-events|topic|integration|deal-audit-events|framework-convention|-
 topic:deal-events|topic|integration|deal-events|framework-convention|-
+unresolved:push:subscription:deal-events-worker|unresolved-external-boundary|integration|deal-events-worker → (0 candidate push routes in this repository)|framework-convention|-
 
 edges:
 CALLS|symbol:src/main/java/com/example/deals/DealController.java#DealController.createDeal->symbol:src/main/java/com/example/deals/DealService.java#DealService|static-analysis|ev1

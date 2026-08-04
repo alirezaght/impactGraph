@@ -1,7 +1,13 @@
 nodes:
+config:apps/worker/package.json|configuration-file|asset|package.json|configuration|-
+config:package.json|configuration-file|asset|package.json|configuration|-
+config:packages/api/package.json|configuration-file|asset|package.json|configuration|-
+config:packages/core/package.json|configuration-file|asset|package.json|configuration|-
 directory:apps/worker/src|directory|repository|src|static-analysis|-
 directory:packages/api/src|directory|repository|src|static-analysis|-
 directory:packages/core/src|directory|repository|src|static-analysis|-
+field:packages/core/src/index.ts#Deal.expiresAt|field|data|Deal.expiresAt|static-analysis|-
+field:packages/core/src/index.ts#Deal.id|field|data|Deal.id|static-analysis|-
 file:apps/worker/package.json|file|repository|package.json|static-analysis|-
 file:apps/worker/src/main.ts|file|repository|main.ts|static-analysis|-
 file:package.json|file|repository|package.json|static-analysis|-
@@ -23,8 +29,12 @@ workspace:monorepo-fixture|workspace|repository|monorepo-fixture|configuration|-
 edges:
 CALLS|symbol:apps/worker/src/main.ts#runSweep->symbol:packages/api/src/index.ts#visibleDeals|static-analysis|ev1
 CALLS|symbol:packages/api/src/index.ts#visibleDeals->symbol:packages/core/src/index.ts#isExpired|static-analysis|ev1
+CONTAINS|file:apps/worker/package.json->config:apps/worker/package.json|configuration|ev1
 CONTAINS|file:apps/worker/src/main.ts->symbol:apps/worker/src/main.ts#runSweep|static-analysis|ev1
+CONTAINS|file:package.json->config:package.json|configuration|ev1
+CONTAINS|file:packages/api/package.json->config:packages/api/package.json|configuration|ev1
 CONTAINS|file:packages/api/src/index.ts->symbol:packages/api/src/index.ts#visibleDeals|framework-convention|ev1
+CONTAINS|file:packages/core/package.json->config:packages/core/package.json|configuration|ev1
 CONTAINS|file:packages/core/src/index.ts->symbol:packages/core/src/index.ts#Deal|static-analysis|ev1
 CONTAINS|file:packages/core/src/index.ts->symbol:packages/core/src/index.ts#isExpired|static-analysis|ev1
 CONTAINS|package:@fixture/api->directory:packages/api/src|static-analysis|ev1
@@ -38,6 +48,8 @@ CONTAINS|package:@fixture/worker->file:apps/worker/package.json|configuration|ev
 CONTAINS|package:@fixture/worker->file:apps/worker/src/main.ts|configuration|ev1
 CONTAINS|package:monorepo-fixture->file:package.json|configuration|ev1
 CONTAINS|package:monorepo-fixture->file:pnpm-workspace.yaml|configuration|ev1
+CONTAINS|symbol:packages/core/src/index.ts#Deal->field:packages/core/src/index.ts#Deal.expiresAt|static-analysis|ev1
+CONTAINS|symbol:packages/core/src/index.ts#Deal->field:packages/core/src/index.ts#Deal.id|static-analysis|ev1
 CONTAINS|workspace:monorepo-fixture->package:@fixture/api|configuration|ev1
 CONTAINS|workspace:monorepo-fixture->package:@fixture/core|configuration|ev1
 CONTAINS|workspace:monorepo-fixture->package:@fixture/worker|configuration|ev1

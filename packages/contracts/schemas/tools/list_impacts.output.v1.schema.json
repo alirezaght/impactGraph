@@ -1,0 +1,249 @@
+{
+  "$ref": "#/definitions/Tool_list_impacts_OutputV1",
+  "definitions": {
+    "Tool_list_impacts_OutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "impacts"
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "impacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "likelihood": {
+                "type": "string",
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+              },
+              "evidenceType": {
+                "type": "string",
+                "enum": [
+                  "direct-structural",
+                  "transitive-structural",
+                  "async-event",
+                  "external-contract",
+                  "field-data-flow",
+                  "configuration-asset",
+                  "semantic-match",
+                  "lexical-only"
+                ]
+              },
+              "impactType": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "hops": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "requirementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "requirementLabels": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tierCappedBy": {
+                "$ref": "#/definitions/Tool_list_impacts_OutputV1/properties/impacts/items/properties/evidenceType"
+              },
+              "dependencyPath": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "evidenceTypes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Tool_list_impacts_OutputV1/properties/impacts/items/properties/evidenceType"
+                }
+              },
+              "evidenceFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidenceSignals": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "contribution": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["type", "contribution"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "nodeId",
+              "name",
+              "likelihood",
+              "evidenceType",
+              "impactType",
+              "confidence",
+              "hops",
+              "requirementIds",
+              "requirementLabels",
+              "reason",
+              "dependencyPath",
+              "evidenceTypes",
+              "confidenceSignals"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "properties": {
+            "returned": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalMatching": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextCursor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "appliedFilters": {
+              "type": "object",
+              "properties": {
+                "topN": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "minLikelihood": {
+                  "$ref": "#/definitions/Tool_list_impacts_OutputV1/properties/impacts/items/properties/likelihood"
+                },
+                "evidenceTypes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Tool_list_impacts_OutputV1/properties/impacts/items/properties/evidenceType"
+                  },
+                  "minItems": 1
+                },
+                "includeLexicalOnly": {
+                  "type": "boolean"
+                },
+                "includeExcluded": {
+                  "type": "boolean"
+                },
+                "includeFullPaths": {
+                  "type": "boolean"
+                },
+                "cursor": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirementId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["returned", "totalMatching", "appliedFilters"],
+          "additionalProperties": false
+        },
+        "impactQuery": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "not-run",
+                "completed",
+                "completed-empty",
+                "partial",
+                "failed",
+                "human-confirmed"
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "resultCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["status", "scope", "limitations", "resultCount"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "analysisId",
+        "impacts",
+        "pagination",
+        "impactQuery"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

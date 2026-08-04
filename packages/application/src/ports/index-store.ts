@@ -94,4 +94,10 @@ export interface IndexRunRecord {
   readonly warningCount: number;
   /** First warnings only (capped) — full detail lives in the run's own output. */
   readonly warnings: readonly string[];
+  /**
+   * Files the scanner excluded (ignore globs, .gitignore, secret exclusions). Additive and optional:
+   * a record written before this field existed reports nothing rather than 0, which would assert that
+   * nothing was excluded (item 10).
+   */
+  readonly ignoredCount?: number;
 }

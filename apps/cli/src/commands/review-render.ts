@@ -7,6 +7,7 @@ import type { CommandContext } from '../context.js';
 import type { RuleViolation } from '@impactgraph/application';
 import type { CliReviewOutput } from '@impactgraph/contracts';
 import type { ImpactAnalysis, ImplementationReview } from '@impactgraph/domain';
+import type { ReviewBreakdownContext } from '@impactgraph/workspace-engine';
 
 // §38.2 report renderers over the versioned review document. Coverage is always worded as an
 // estimate, never proof (§25).
@@ -31,13 +32,21 @@ const textLines = (report: CliReviewOutput): string[] => {
   return lines;
 };
 
-export const renderReview = (
-  context: CommandContext,
-  review: ImplementationReview,
-  analysis: ImpactAnalysis,
-  violations: readonly RuleViolation[],
-): void => {
-  const report = buildReviewOutput(review, analysis, violations);
+export interface RenderReviewInput {
+  readonly review: ImplementationReview;
+  readonly analysis: ImpactAnalysis;
+  readonly violations: readonly RuleViolation[];
+  /** Item 13: present when the caller ran the pipeline and can supply the breakdown inputs. */
+  readonly breakdownContext?: ReviewBreakdownContext;
+}
+
+export const renderReview = (context: CommandContext, input: RenderReviewInput): void => {
+  const report = buildReviewOutput(
+    input.review,
+    input.analysis,
+    input.violations,
+    input.breakdownContext,
+  );
   if (context.format === 'json') {
     writeJson(context, cliReviewOutputSchema, report);
     return;

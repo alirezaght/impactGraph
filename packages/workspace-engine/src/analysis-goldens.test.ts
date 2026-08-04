@@ -85,9 +85,15 @@ const reviewGolden = (review: ImplementationReview): string =>
     })),
   });
 
-/** Expected candidate movement against the committed analysis goldens. Steady state: unchanged. */
+/**
+ * Expected candidate movement against the committed analysis goldens. Steady state: unchanged.
+ *
+ * 70 → 72: adding `CONFIGURES` to the traversal roster (item 8 — configuration and assets are
+ * first-class) reaches `Dockerfile` and `tsconfig.json` from the packaging sample, both at the
+ * `possible` tier. That is the trial's "configuration was missed" complaint, fixed.
+ */
 const EXPECTED_CANDIDATE_MOVEMENT: Readonly<Record<string, number>> = {
-  unchanged: 70,
+  unchanged: 72,
 };
 
 describe('impact goldens on the ts-basic reference repository (§42.3)', () => {

@@ -449,6 +449,25 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
       directImpacts: ['prisma'],
       minSurprises: 1,
       allowedImpacts: ['prisma', 'ts-basic'],
+      possibleTier: [
+        {
+          // Reached once CONFIGURES joined the traversal roster (item 8). "The deployed bundle
+          // must contain the prisma client" is a packaging requirement, and the Dockerfile is
+          // where a bundle's contents are decided — this is the configuration artifact the trials
+          // said was being missed, arriving at the exploratory tier where it belongs.
+          nodeId: 'file:Dockerfile',
+          verdict: 'allowed',
+          rationale:
+            'declares what the deployed image contains; a requirement about the deployed bundle is implemented here or nowhere',
+        },
+        {
+          nodeId: 'file:tsconfig.json',
+          verdict: 'plausible',
+          rationale:
+            'a build config the package declares; it decides what is emitted, which can matter for bundling a native client — but a packaging fix usually lands in the Dockerfile or the manifest instead',
+          reviewNeeded: true,
+        },
+      ],
     },
   },
 ];

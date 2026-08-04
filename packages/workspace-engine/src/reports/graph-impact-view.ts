@@ -45,9 +45,27 @@ export interface ImpactViewInput {
 const categoryOf = (provenance: string): RenderCategory =>
   knowledgeCategoryForProvenance(provenance) ?? 'unknown';
 
+/**
+ * The DIAGRAM draws structural predictions only (item 9: "make its initial view focus on high-value
+ * structural results rather than noise").
+ *
+ * `lexical-only` and `excluded` impacts are not predictions — the first is a text overlap the engine
+ * explicitly declined to claim, the second is a component the specification ruled out. Drawing them
+ * spends the node budget on the two categories a reader least wants to see first. They are NOT
+ * dropped: both keep their rows in the tables below the diagram, where the tier is spelled out.
+ */
+const drawableAnalysis = (analysis: ImpactAnalysis): ImpactAnalysis => {
+  const drawable = analysis.requirementImpacts.filter(
+    (impact) => impact.likelihood !== 'lexical-only' && impact.likelihood !== 'excluded',
+  );
+  return drawable.length === analysis.requirementImpacts.length
+    ? analysis
+    : { ...analysis, requirementImpacts: drawable };
+};
+
 const cellInputOf = (input: ImpactViewInput): CellInput => ({
   grouping: input.grouping,
-  analysis: input.analysis,
+  analysis: drawableAnalysis(input.analysis),
   components: input.components,
   groupOf: input.groupOf,
   maxVisibleNodes: input.maxVisibleNodes ?? MAX_VISIBLE_NODES,
@@ -138,7 +156,7 @@ export const buildImpactView = (input: ImpactViewInput): GraphView => {
   const cellInput = cellInputOf(input);
   const plan = planImpactCells(cellInput);
   const edges = impactEdges({
-    impacts: input.analysis.requirementImpacts,
+    impacts: drawableAnalysis(input.analysis).requirementImpacts,
     proposed: input.analysis.proposedStructure,
     hopEdges: input.hopEdges,
     drawnGroups: plan.drawnGroupIds,

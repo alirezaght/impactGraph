@@ -1,0 +1,148 @@
+{
+  "$ref": "#/definitions/Tool_record_actual_impact_OutputV1",
+  "definitions": {
+    "Tool_record_actual_impact_OutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "record-actual-impact"
+        },
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recordedAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "analysisId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actualImpactId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "precision": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "recall": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "truePositives": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "falsePositives": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "falseNegatives": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "rankingQuality": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "missedArtifactCategories": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "missedRelationshipTypes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "judgedTiers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+              }
+            },
+            "falsePositiveBases": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "direct-structural",
+                  "transitive-structural",
+                  "async-event",
+                  "external-contract",
+                  "field-data-flow",
+                  "configuration-asset",
+                  "semantic-match",
+                  "lexical-only"
+                ]
+              }
+            }
+          },
+          "required": [
+            "analysisId",
+            "actualImpactId",
+            "truePositives",
+            "falsePositives",
+            "falseNegatives",
+            "missedArtifactCategories",
+            "missedRelationshipTypes",
+            "judgedTiers",
+            "falsePositiveBases"
+          ],
+          "additionalProperties": false
+        },
+        "historyCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "command",
+        "outcomeId",
+        "analysisId",
+        "recordedAt",
+        "metrics",
+        "historyCount",
+        "note"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

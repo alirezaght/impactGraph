@@ -55,6 +55,21 @@ describe('edge vocabulary (PRD §12.2)', () => {
       'REFERENCES_RESOURCE',
       'BINDS',
       'USES_UNKNOWN',
+      // Async / service-boundary chain (item 5): each hop of outbox → relay → topic → push
+      // endpoint → projection is its own fact with its own evidence.
+      'RECORDED_IN',
+      'RELAYS_TO',
+      'DELIVERS_TO',
+      'PROJECTS_TO',
+      // Contract and asset relationships (items 6, 8).
+      'SPECIFIED_BY',
+      'IMPLEMENTS_OPERATION',
+      'DEFINES_KEY',
+      'RENDERS_KEY',
+      // Field-level flow (item 7).
+      'FLOWS_TO',
+      'RENAMED_TO',
+      'SERIALIZED_AS',
       'DEPENDS_ON',
       'AFFECTS',
       'MAY_AFFECT',

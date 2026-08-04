@@ -4,8 +4,10 @@ import { deepFreeze } from '../freeze.js';
 import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
 import { isProvenance, knowledgeCategoryOf } from '../provenance/provenance.js';
 
+import { capLikelihood, isImpactEvidenceType, primaryEvidenceType } from './evidence-basis.js';
 import { collectProposedStructureIssues } from './proposed-structure.js';
 
+import type { ImpactEvidenceType } from './evidence-basis.js';
 import type { ProposedStructure } from './proposed-structure.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
@@ -15,8 +17,33 @@ import type { Provenance } from '../provenance/provenance.js';
 // PRD §13 — implemented as written, plus stored confidence signals (§14: every score must be
 // explainable from its contributing signals; a bare number is never enough).
 
-export const IMPACT_LIKELIHOODS = ['required', 'likely', 'possible', 'unlikely'] as const;
+/**
+ * PRD §13 tiers plus the two the trials showed were missing.
+ *
+ * `lexical-only` — surfaced because text overlapped and nothing else. It is a real result (an
+ * agent asking "anything else that mentions this?" wants it) but it is not a prediction, so it
+ * needs its own tier rather than being smuggled in at `possible`, where structural findings live.
+ *
+ * `excluded` — actively ruled out, e.g. by a specification non-goal. Distinct from `unlikely`,
+ * which is a weak positive: `excluded` says the specification told us not to go there. It stays in
+ * the analysis (append-only) so a reviewer can see what was ruled out and why.
+ */
+export const IMPACT_LIKELIHOODS = [
+  'required',
+  'likely',
+  'possible',
+  'lexical-only',
+  'unlikely',
+  'excluded',
+] as const;
 export type ImpactLikelihood = (typeof IMPACT_LIKELIHOODS)[number];
+
+/** Tiers a default view shows — `lexical-only`, `unlikely` and `excluded` are opt-in. */
+export const PREDICTIVE_LIKELIHOODS: readonly ImpactLikelihood[] = [
+  'required',
+  'likely',
+  'possible',
+];
 
 export const IMPACT_TYPES = [
   'domain-model',
@@ -54,7 +81,43 @@ export interface RequirementImpact {
   readonly evidenceIds: readonly string[];
   readonly dependencyPath: readonly string[];
   readonly provenance: Provenance;
+  /**
+   * Additive field: why this impact was selected, from the closed §evidence-basis vocabulary,
+   * strongest basis first. Absent on analyses stored before the taxonomy existed — read through
+   * `evidenceTypesOf`, which maps absence to `lexical-only`, the weakest reading.
+   */
+  readonly evidenceTypes?: readonly ImpactEvidenceType[];
+  /**
+   * Additive field: set when the tier was reduced, and by what. Makes the cap auditable — a reader
+   * can see that a candidate scored well but was held at `possible` because its only basis was a
+   * name resemblance.
+   */
+  readonly tierCappedBy?: ImpactEvidenceType;
 }
+
+/** Absence is read as the weakest basis, never as "unclassified but fine". */
+export const evidenceTypesOf = (impact: RequirementImpact): readonly ImpactEvidenceType[] =>
+  impact.evidenceTypes === undefined || impact.evidenceTypes.length === 0
+    ? ['lexical-only']
+    : impact.evidenceTypes;
+
+export const ANALYSIS_WARNING_CODES = [
+  'unknown-concept',
+  'ambiguous-concept',
+  'uncertain-eligibility',
+  'unmatched-requirement',
+  'traversal-cutoff',
+  'traversal-exhausted',
+  'unsupported-claim',
+  'invalid-reference',
+  'configured-exclusion',
+  'non-goal-exclusion',
+  'non-goal-contradiction',
+  'unresolved-concept',
+  'provisional-extraction',
+  'stale-index',
+  'coverage-gap',
+] as const;
 
 export interface AnalysisWarning {
   readonly code:
@@ -71,7 +134,22 @@ export interface AnalysisWarning {
     | 'unsupported-claim'
     | 'invalid-reference'
     /** An impact was suppressed by a §Z9 learned exclusion in committed configuration. */
-    | 'configured-exclusion';
+    | 'configured-exclusion'
+    /** A specification non-goal names this component, so its impact was downgraded. */
+    | 'non-goal-exclusion'
+    /** A non-goal excludes a component the graph says must change — a real contradiction. */
+    | 'non-goal-contradiction'
+    /**
+     * The specification names something that resolves to no indexed artifact. Reported as an
+     * unresolved concept instead of being invented as a node (item 2).
+     */
+    | 'unresolved-concept'
+    /** The requirement list was extractor prose, so the whole analysis is provisional (item 1). */
+    | 'provisional-extraction'
+    /** The index no longer matches the working tree or HEAD (item 10). */
+    | 'stale-index'
+    /** Indexing gaps overlap the predicted area, so absence of impact proves little (item 10). */
+    | 'coverage-gap';
   readonly message: string;
   readonly requirementId?: string;
 }
@@ -163,6 +241,47 @@ const impactTaxonomyIssues = (impact: RequirementImpact, path: string): Validati
   }
   if (!isProvenance(impact.provenance) || knowledgeCategoryOf(impact.provenance) === 'reserved') {
     issues.push(validationIssue('unknown-provenance', `${path}.provenance`, 'invalid provenance'));
+  }
+  issues.push(...evidenceBasisIssues(impact, path));
+  return issues;
+};
+
+/**
+ * The enforcement point for "a lexical match must never be labeled required" (item 3).
+ *
+ * A record claiming a strong tier on a weak basis is REJECTED, not quietly downgraded. A quiet
+ * downgrade hides the producer bug that created it, and this invariant is the whole promise the tier
+ * labels make to a reader.
+ */
+const evidenceBasisIssues = (impact: RequirementImpact, path: string): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
+  const types = impact.evidenceTypes ?? [];
+  for (const type of types) {
+    if (!isImpactEvidenceType(type)) {
+      issues.push(
+        validationIssue(
+          'invalid-type',
+          `${path}.evidenceTypes`,
+          `unknown evidence type '${String(type)}'`,
+        ),
+      );
+    }
+  }
+  if (impact.tierCappedBy !== undefined && !isImpactEvidenceType(impact.tierCappedBy)) {
+    issues.push(validationIssue('invalid-type', `${path}.tierCappedBy`, 'unknown evidence type'));
+  }
+  if (types.length === 0) {
+    return issues;
+  }
+  const capped = capLikelihood(impact.likelihood, types);
+  if (capped !== impact.likelihood) {
+    issues.push(
+      validationIssue(
+        'invalid-type',
+        `${path}.likelihood`,
+        `'${impact.likelihood}' is not available on '${primaryEvidenceType(types)}' evidence (max '${capped}')`,
+      ),
+    );
   }
   return issues;
 };

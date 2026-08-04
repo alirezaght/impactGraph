@@ -58,6 +58,8 @@ describe('impact export — likelihood reads without colour (PRD §13/§37)', ()
       ['LIKELY', 3],
       ['POSSIBLE', 2],
       ['UNLIKELY', 1],
+      ['LEXICAL', 1],
+      ['EXCLUDED', 0],
     ] as const) {
       expect(html).toContain(`${badge} ${String(filled)}/4`);
     }
@@ -73,7 +75,9 @@ describe('impact export — likelihood reads without colour (PRD §13/§37)', ()
     for (const cell of cells) {
       expect((cell.match(/meter-o(n|ff)/g) ?? []).length).toBe(4);
     }
-    expect(new Set(filledCounts)).toEqual(new Set([1, 2, 3, 4]));
+    // 0 is the `excluded` tier's fill level: a specification non-goal ruled the component out, so
+    // no segment is filled. The legend draws every tier, hence all six levels appear.
+    expect(new Set(filledCounts)).toEqual(new Set([0, 1, 2, 3, 4]));
   });
 
   it('prints confidence as text to two decimals, never as a colour or a bar alone', () => {

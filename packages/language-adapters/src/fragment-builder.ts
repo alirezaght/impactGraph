@@ -76,6 +76,18 @@ export class FragmentBuilder {
     return this.edges[this.edges.length - 1];
   }
 
+  /**
+   * Edge ids added so far.
+   *
+   * Exposed for the one case that genuinely needs it: an adapter whose later pass can produce an edge
+   * an earlier pass in the SAME run already emitted (cross-stack matches a path-relative URL and an
+   * absolute one to the same route). Edge ids are unique per graph, so the duplicate has to be
+   * detected before it reaches graph construction — and only the builder knows what it holds.
+   */
+  public addedEdgeIds(): ReadonlySet<string> {
+    return new Set(this.edges.map((edge) => edge.id));
+  }
+
   public addEvidence(input: CreateEvidenceRecordInput, filePath: string): string | undefined {
     const result = createEvidenceRecord(input);
     if (!result.ok) {

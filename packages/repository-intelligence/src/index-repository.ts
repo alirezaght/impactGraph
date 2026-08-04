@@ -277,6 +277,10 @@ const persistAndSummarize = async (
     nodeCount: graph.nodes.length,
     edgeCount: graph.edges.length,
     warningCount: scan.warnings.length + parseWarnings.length,
+    // Item 10: the scanner emits no per-file warning for an exclusion — on a real repository that is
+    // tens of thousands of lines. The COUNT still has to be visible, because an over-broad ignore
+    // pattern removes whole source directories from the analysis with nothing else to notice.
+    ignoredCount: scan.ignoredCount,
     warnings: [
       ...scan.warnings.map((warning) => `${warning.path}: ${warning.reason}`),
       ...parseWarnings.map((warning) => `${warning.filePath}: ${warning.message}`),

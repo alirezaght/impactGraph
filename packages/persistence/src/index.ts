@@ -30,3 +30,10 @@ export {
 } from './artifacts/specification-store.js';
 export { createImpactAnalysisArtifactStore } from './artifacts/impact-analysis-store.js';
 export { createClarificationArtifactStore } from './artifacts/clarification-store.js';
+
+// Item 12: recorded outcomes and their measured accuracy. Strictly append-only, no update path.
+export {
+  ACTUAL_IMPACT_SCHEMA_VERSION,
+  createActualImpactStore,
+} from './artifacts/actual-impact-store.js';
+export type { ActualImpactRecord, ActualImpactStore } from './artifacts/actual-impact-store.js';

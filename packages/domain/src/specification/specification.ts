@@ -3,9 +3,13 @@ import { validationError, validationIssue } from '../errors/validation.js';
 import { deepFreeze } from '../freeze.js';
 import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
 
+import { extractionQualityIssues } from './extraction-quality.js';
 import { requirementIssues } from './requirement.js';
+import { specNoteIssues } from './spec-notes.js';
 
+import type { ExtractionQuality } from './extraction-quality.js';
 import type { Requirement } from './requirement.js';
+import type { SpecNote } from './spec-notes.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
 
@@ -73,6 +77,14 @@ export interface Specification {
   readonly constraints: readonly Constraint[];
   readonly openQuestions: readonly OpenQuestion[];
   readonly decisions: readonly ArchitecturalDecision[];
+  /**
+   * Additive field: specification prose that is not a requirement — context, background,
+   * non-goals, implementation notes, and statements too vague to anchor a requirement. Absent on
+   * specifications stored before notes existed, which is different from "the author wrote none".
+   */
+  readonly notes?: readonly SpecNote[];
+  /** Additive field: how the requirement list above was obtained. Absent → unknown, not good. */
+  readonly extractionQuality?: ExtractionQuality;
 }
 
 const questionIssues = (
@@ -152,6 +164,18 @@ const specificationIssues = (input: Specification): ValidationIssue[] => {
   input.openQuestions.forEach((question, index) => {
     issues.push(...questionIssues(question, requirementIds, `openQuestions[${index}]`));
   });
+  (input.notes ?? []).forEach((note, index) => {
+    issues.push(...specNoteIssues(note, `notes[${index}]`));
+  });
+  issues.push(
+    ...duplicateIdIssues(
+      (input.notes ?? []).map((note) => note.id),
+      'notes',
+    ),
+  );
+  if (input.extractionQuality !== undefined) {
+    issues.push(...extractionQualityIssues(input.extractionQuality, 'extractionQuality'));
+  }
   return issues;
 };
 
@@ -175,6 +199,8 @@ export interface NextVersionChanges {
   readonly constraints?: readonly Constraint[];
   readonly openQuestions?: readonly OpenQuestion[];
   readonly decisions?: readonly ArchitecturalDecision[];
+  readonly notes?: readonly SpecNote[];
+  readonly extractionQuality?: ExtractionQuality;
 }
 
 /**

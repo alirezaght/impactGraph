@@ -10,7 +10,8 @@ import type { ImpactLikelihood } from '@impactgraph/domain';
 //
 //   * a 4-SEGMENT METER drawn inside the cell — filled segments are solid, the rest are hollow
 //     outlines, so the reading is a count of shapes, not a shade;
-//   * the SPELLED-OUT WORD (`REQUIRED`, `LIKELY`, `POSSIBLE`, `UNLIKELY`) beside it;
+//   * the SPELLED-OUT WORD (`REQUIRED`, `LIKELY`, `POSSIBLE`, `LEXICAL`, `UNLIKELY`, `EXCLUDED`)
+//     beside it;
 //   * the fraction in text (`4/4`), so a screen reader and a greyscale printout both land.
 //
 // Nothing here emits a colour. `currentColor` and `none` are the only fills in the file.
@@ -52,13 +53,33 @@ const STYLES: Readonly<Record<ImpactLikelihood, LikelihoodStyle>> = {
     description:
       'Two filled segments, two hollow. Reached by traversal — worth reading before implementing, not a prediction of change.',
   },
+  // A text-overlap finding, not a prediction. It gets its own row rather than sharing `possible`
+  // with structural findings, so the default view can hide it without hiding anything structural.
+  'lexical-only': {
+    likelihood: 'lexical-only',
+    badge: 'LEXICAL',
+    filled: 1,
+    rank: 3,
+    description:
+      'One filled segment. Surfaced because text overlaps and nothing else — no relationship to anything the specification named was established. Not a prediction of change.',
+  },
   unlikely: {
     likelihood: 'unlikely',
     badge: 'UNLIKELY',
     filled: 1,
-    rank: 3,
+    rank: 4,
     description:
       'One filled segment. Reported for completeness so the traversal is auditable; expect no change here.',
+  },
+  // Ruled out by the specification itself, not merely weak. Kept visible because a reviewer needs
+  // to see what was excluded and on whose authority (append-only, §40.3).
+  excluded: {
+    likelihood: 'excluded',
+    badge: 'EXCLUDED',
+    filled: 0,
+    rank: 5,
+    description:
+      'No filled segments. A specification non-goal names this component: the author ruled it out. Listed so the exclusion is auditable, never presented as a change to make.',
   },
 };
 

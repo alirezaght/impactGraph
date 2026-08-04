@@ -1,7 +1,9 @@
 nodes:
 collection:deals|collection|data|deals|framework-convention|-
+config:package.json|configuration-file|asset|package.json|configuration|-
 dependency:astro|third-party-service|integration|astro|configuration|-
 directory:src|directory|repository|src|static-analysis|-
+field:src/layouts/Base.astro#Props.title|field|data|Props.title|static-analysis|-
 file:astro.config.mjs|file|repository|astro.config.mjs|static-analysis|-
 file:package.json|file|repository|package.json|static-analysis|-
 file:src/content/config.ts|file|repository|config.ts|static-analysis|-
@@ -24,6 +26,7 @@ symbol:src/scripts/deal-filter.ts#filterDeals|symbol|repository|filterDeals|stat
 
 edges:
 CALLS|symbol:src/pages/index.astro#index->symbol:src/layouts/Base.astro#Base|static-analysis|ev1
+CONTAINS|file:package.json->config:package.json|configuration|ev1
 CONTAINS|file:src/content/config.ts->symbol:src/content/config.ts#collections|static-analysis|ev1
 CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Base|framework-convention|ev1
 CONTAINS|file:src/layouts/Base.astro->symbol:src/layouts/Base.astro#Props|static-analysis|ev1
@@ -40,6 +43,7 @@ CONTAINS|package:astro-site->file:src/layouts/Base.astro|configuration|ev1
 CONTAINS|package:astro-site->file:src/pages/api/deals.ts|configuration|ev1
 CONTAINS|package:astro-site->file:src/pages/index.astro|configuration|ev1
 CONTAINS|package:astro-site->file:src/scripts/deal-filter.ts|configuration|ev1
+CONTAINS|symbol:src/layouts/Base.astro#Props->field:src/layouts/Base.astro#Props.title|static-analysis|ev1
 DEPENDS_ON|package:astro-site->dependency:astro|configuration|ev1
 EXPOSES|symbol:src/pages/api/deals.ts#GET->route:GET /api/deals|framework-convention|ev1
 EXPOSES|symbol:src/pages/api/deals.ts#POST->route:POST /api/deals|framework-convention|ev1

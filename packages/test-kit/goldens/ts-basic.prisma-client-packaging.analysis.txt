@@ -1,5 +1,7 @@
 impacts:
-req-afd3ecfd|prisma|required|integration|direct|0.90|anchor|4218a0de|exact-concept-to-symbol-match
-req-afd3ecfd|ts-basic|likely|domain-model|indirect|0.65|DEPENDS_ON|70194753|exact-concept-to-symbol-match+graph-distance
+req-afd3ecfd|Dockerfile|possible|domain-model|indirect|0.40|DEPENDS_ON|f52646ad|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-afd3ecfd|prisma|required|integration|direct|0.90|anchor|41d02b5d|exact-concept-to-symbol-match
+req-afd3ecfd|ts-basic|likely|domain-model|indirect|0.65|DEPENDS_ON|5489e9cc|exact-concept-to-symbol-match+graph-distance
+req-afd3ecfd|tsconfig.json|possible|domain-model|indirect|0.40|DEPENDS_ON|f52646ad|exact-concept-to-symbol-match+graph-distance+graph-distance
 
 warnings:

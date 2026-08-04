@@ -15,7 +15,7 @@ import { failed } from './context.js';
 import { writeJson } from './output.js';
 
 import type { CliFailure, CommandContext, CommandResult, OutputFormat } from './context.js';
-import type { ExitCode, GraphGroupingDto } from '@impactgraph/contracts';
+import type { ExitCode, GraphGroupingDto, ImpactFilters } from '@impactgraph/contracts';
 
 const USAGE = [
   'Usage: impactgraph <command> [--format text|json|markdown] [--root <dir>]',
@@ -30,6 +30,9 @@ const USAGE = [
   '                  [--analysis <analysisId>]  render an impact analysis instead of the',
   '                  current architecture: what a specification is predicted to touch',
   '  analyze <spec>  analyze a specification against the indexed graph (§46)',
+  '                  bounded summary by default; --full for every impact',
+  '                  [--top <n>] [--min-likelihood required|likely|possible]',
+  '                  [--include-lexical] [--include-excluded]',
   '  approve <id>    approve an impact analysis as the frozen review baseline',
   '  select-option <analysisId> <optionId> [description]  record a §26/§C8 option selection',
   '  export [id]     export the §22 implementation context for coding agents',
@@ -46,6 +49,8 @@ interface ParsedArgs {
   readonly outPath?: string | undefined;
   readonly grouping?: GraphGroupingDto | undefined;
   readonly analysisId?: string | undefined;
+  readonly full?: boolean | undefined;
+  readonly impactFilters?: ImpactFilters | undefined;
   readonly invalid?: string;
 }
 
@@ -57,7 +62,27 @@ interface ParseState {
   outPath?: string | undefined;
   grouping?: GraphGroupingDto | undefined;
   analysisId?: string | undefined;
+  /** `--full` — emit the complete analyze document instead of the bounded summary (item 9). */
+  full?: boolean | undefined;
+  impactFilters?: ImpactFilters | undefined;
 }
+
+/**
+ * Boolean flags consume no value. Kept in their own table because the value-taking parsers below
+ * advance the argument index, and treating `--full` as one of those would silently eat the next
+ * argument — the exact class of bug `missingValue` was added to stop.
+ */
+const BOOLEAN_FLAG_PARSERS: Record<string, (state: ParseState) => void> = {
+  '--full': (state) => {
+    state.full = true;
+  },
+  '--include-lexical': (state) => {
+    state.impactFilters = { ...state.impactFilters, includeLexicalOnly: true };
+  },
+  '--include-excluded': (state) => {
+    state.impactFilters = { ...state.impactFilters, includeExcluded: true };
+  },
+};
 
 /**
  * A value-taking flag must be followed by a value, not by the next flag. Without this, `--analysis`
@@ -115,7 +140,34 @@ const FLAG_PARSERS: Record<
     state.analysisId = value;
     return undefined;
   },
+  '--top': (value, state) => {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 500) {
+      return '--top expects an integer between 1 and 500';
+    }
+    state.impactFilters = { ...state.impactFilters, topN: parsed };
+    return undefined;
+  },
+  '--min-likelihood': (value, state) => {
+    if (value === undefined || !LIKELIHOOD_TIERS.includes(value)) {
+      return `--min-likelihood expects ${LIKELIHOOD_TIERS.join(', ')}`;
+    }
+    state.impactFilters = {
+      ...state.impactFilters,
+      minLikelihood: value as NonNullable<ImpactFilters['minLikelihood']>,
+    };
+    return undefined;
+  },
 };
+
+const LIKELIHOOD_TIERS: readonly string[] = [
+  'required',
+  'likely',
+  'possible',
+  'lexical-only',
+  'unlikely',
+  'excluded',
+];
 
 export const parseArgs = (argv: readonly string[], defaultRoot: string): ParsedArgs => {
   const state: ParseState = {
@@ -127,6 +179,11 @@ export const parseArgs = (argv: readonly string[], defaultRoot: string): ParsedA
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === undefined) {
+      continue;
+    }
+    const parseBoolean = BOOLEAN_FLAG_PARSERS[arg];
+    if (parseBoolean !== undefined) {
+      parseBoolean(state);
       continue;
     }
     const parseFlag = FLAG_PARSERS[arg];
@@ -197,6 +254,8 @@ export const runCli = async (
     outPath: parsed.outPath,
     grouping: parsed.grouping,
     analysisId: parsed.analysisId,
+    full: parsed.full,
+    impactFilters: parsed.impactFilters,
     write: options.write,
   };
   if (parsed.invalid !== undefined || parsed.command === undefined) {

@@ -1,4 +1,5 @@
 nodes:
+config:package.json|configuration-file|asset|package.json|configuration|-
 custom:internal-pubsub-consumer:deal-events|subscription|integration|deal-events|configuration|-
 custom:internal-pubsub-publisher:deal-notifications|topic|integration|deal-notifications|configuration|-
 directory:src|directory|repository|src|static-analysis|-
@@ -16,6 +17,7 @@ symbol:src/unrelated.ts#NotAMessagingConsumer.handle|method|application|NotAMess
 symbol:src/unrelated.ts#NotAMessagingConsumer|class|application|NotAMessagingConsumer|static-analysis|-
 
 edges:
+CONTAINS|file:package.json->config:package.json|configuration|ev1
 CONTAINS|file:src/deal-consumer.ts->symbol:src/deal-consumer.ts#DealEventsConsumer|static-analysis|ev1
 CONTAINS|file:src/local-decorators.ts->symbol:src/local-decorators.ts#Subscribe|static-analysis|ev1
 CONTAINS|file:src/notifier.ts->symbol:src/notifier.ts#notifierReady|static-analysis|ev1

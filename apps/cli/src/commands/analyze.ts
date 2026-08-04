@@ -4,15 +4,20 @@ import { resolve } from 'node:path';
 import { isWorkspaceInitialized } from '@impactgraph/persistence';
 import {
   applicationsForGraph,
+  assessWorkspaceFreshness,
   buildAnalysisForSpecification,
+  buildImpactSummary,
   contextsForGraph,
   createWorkspaceAiServices,
+  lastRunIgnoredCount,
+  lastRunWarningRecords,
   submitSpecification,
 } from '@impactgraph/workspace-engine';
 
 import { failed, succeeded } from '../context.js';
 
 import { buildAnalyzeOutput, renderAnalyze } from './analyze-render.js';
+import { renderImpactSummary } from './summary-render.js';
 
 import type { CommandContext, CommandResult } from '../context.js';
 
@@ -66,17 +71,54 @@ export const runAnalyze = async (context: CommandContext): Promise<CommandResult
   if (!built.ok) {
     return failed(built.error);
   }
-  renderAnalyze(
+  await render(context, submitted.value, built.value);
+  return succeeded(built.value.analysis.warnings.length > 0);
+};
+
+type Submitted = Awaited<ReturnType<typeof submitSpecification>> & { ok: true };
+type Built = Awaited<ReturnType<typeof buildAnalysisForSpecification>> & { ok: true };
+
+/**
+ * The DEFAULT is the bounded summary (item 9). The full document stays one flag away, but it is no
+ * longer what a caller gets by accident — on a real repository it exceeded agent context limits.
+ */
+const render = async (
+  context: CommandContext,
+  submitted: Submitted['value'],
+  built: Built['value'],
+): Promise<void> => {
+  if (context.full === true) {
+    renderAnalyze(
+      context,
+      buildAnalyzeOutput({
+        specification: submitted.specification,
+        analysis: built.analysis,
+        graph: built.graph,
+        evidenceFileById: built.evidenceFileById,
+        extractionMode: submitted.extractionMode,
+        contextByNodeId: contextsForGraph(context.rootDir, built.graph),
+        applicationByNodeId: applicationsForGraph(built.graph),
+      }),
+    );
+    return;
+  }
+  const ignoredFileCount = await lastRunIgnoredCount(context.rootDir);
+  renderImpactSummary(
     context,
-    buildAnalyzeOutput({
-      specification: submitted.value.specification,
-      analysis: built.value.analysis,
-      graph: built.value.graph,
-      evidenceFileById: built.value.evidenceFileById,
-      extractionMode: submitted.value.extractionMode,
-      contextByNodeId: contextsForGraph(context.rootDir, built.value.graph),
-      applicationByNodeId: applicationsForGraph(built.value.graph),
+    buildImpactSummary({
+      specification: submitted.specification,
+      analysis: built.analysis,
+      graph: built.graph,
+      freshness: await assessWorkspaceFreshness({
+        rootDir: context.rootDir,
+        snapshotId: built.snapshotId,
+        specificationId: submitted.specification.id,
+        specificationVersion: submitted.specification.version,
+      }),
+      extractionMode: submitted.extractionMode,
+      indexWarnings: await lastRunWarningRecords(context.rootDir),
+      ...(ignoredFileCount === undefined ? {} : { ignoredFileCount }),
+      ...(context.impactFilters === undefined ? {} : { filters: context.impactFilters }),
     }),
   );
-  return succeeded(built.value.analysis.warnings.length > 0);
 };

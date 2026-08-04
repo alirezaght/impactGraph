@@ -35,6 +35,8 @@ terraform:secret:db-password|secret|infrastructure|db-password|configuration|-
 terraform:var.enable_audit|terraform-resource|infrastructure|var.enable_audit|configuration|-
 terraform:var.project_id|terraform-resource|infrastructure|var.project_id|configuration|-
 terraform:var.region|terraform-resource|infrastructure|var.region|configuration|-
+unresolved:push:terraform:google_pubsub_subscription.deal_events_worker|unresolved-external-boundary|integration|deal-events-worker → (0 candidate push routes in this repository)|framework-convention|-
+unresolved:push:terraform:modules/json-syntax/google_pubsub_subscription.json_events_worker|unresolved-external-boundary|integration|json-events-worker → (0 candidate push routes in this repository)|framework-convention|-
 
 edges:
 CONFIGURES|file:dev.auto.tfvars.json->terraform:var.enable_audit|configuration|ev1

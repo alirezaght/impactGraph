@@ -24,7 +24,10 @@ const validNode = {
 };
 
 describe('node vocabulary (PRD §12.1)', () => {
-  it('covers all seven categories with the PRD rosters', () => {
+  // The seven PRD categories, plus `asset` — non-code artifacts that are part of an
+  // implementation (item 8 of the trial follow-up). They were previously typed as plain files,
+  // which made a locale entry indistinguishable from a README.
+  it('covers the PRD categories plus assets', () => {
     expect(Object.keys(NODE_TYPES_BY_CATEGORY)).toEqual([
       'intent',
       'domain',
@@ -33,14 +36,18 @@ describe('node vocabulary (PRD §12.1)', () => {
       'integration',
       'infrastructure',
       'repository',
+      'asset',
     ]);
     expect(NODE_TYPES_BY_CATEGORY.intent).toHaveLength(7);
     expect(NODE_TYPES_BY_CATEGORY.domain).toHaveLength(10);
     expect(NODE_TYPES_BY_CATEGORY.application).toHaveLength(17);
-    expect(NODE_TYPES_BY_CATEGORY.data).toHaveLength(9);
-    expect(NODE_TYPES_BY_CATEGORY.integration).toHaveLength(8);
+    // +field: a named payload attribute, for field-level flow (item 7).
+    expect(NODE_TYPES_BY_CATEGORY.data).toHaveLength(10);
+    // +outbox-record, push-endpoint, projection, unresolved-external-boundary (items 5, 11).
+    expect(NODE_TYPES_BY_CATEGORY.integration).toHaveLength(12);
     expect(NODE_TYPES_BY_CATEGORY.infrastructure).toHaveLength(13);
     expect(NODE_TYPES_BY_CATEGORY.repository).toHaveLength(6);
+    expect(NODE_TYPES_BY_CATEGORY.asset).toHaveLength(9);
   });
 
   it('keeps package legal in both application and repository categories', () => {

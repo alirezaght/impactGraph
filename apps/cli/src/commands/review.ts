@@ -46,7 +46,12 @@ export const runReview = async (context: CommandContext): Promise<CommandResult>
   if (!bundle.ok) {
     return failed(bundle.error);
   }
-  renderReview(context, bundle.value.review, bundle.value.analysis, bundle.value.violations);
+  renderReview(context, {
+    review: bundle.value.review,
+    analysis: bundle.value.analysis,
+    violations: bundle.value.violations,
+    breakdownContext: bundle.value.breakdownContext,
+  });
   return {
     ok: true,
     warningsFound: false,

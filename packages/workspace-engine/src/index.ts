@@ -4,9 +4,9 @@ export { captureSnapshot, snapshotSummary, GIT_FAILURES } from './snapshot.js';
 export { performIndexRun, indexWarnings } from './indexing.js';
 export type { IndexRunOutcome, IndexRunResult } from './indexing.js';
 export type { IndexSummary } from '@impactgraph/repository-intelligence';
-export { loadApprovedAnalysis, loadAnalysis, listAnalyses } from './analyses.js';
+export { loadApprovedAnalysis, loadAnalysis, latestAnalysis, listAnalyses } from './analyses.js';
 export type { AnalysisListing } from './analyses.js';
-export { loadGraphAt, loadCurrentGraph, withIndexStore } from './graphs.js';
+export { loadGraphAt, loadGraphForSnapshot, loadCurrentGraph, withIndexStore } from './graphs.js';
 export type { CurrentGraph } from './graphs.js';
 export {
   initializeWorkspace,
@@ -85,8 +85,35 @@ export {
 export type { WorkspaceAiServices } from './model-provider.js';
 export type { WorkspaceExtractorOptions } from './model-provider.js';
 export { buildAnalyzeOutput } from './reports/analyze-output.js';
+export { searchComponents } from './component-search.js';
+export type { ComponentSearchOptions } from './component-search.js';
+export type {
+  ComponentSearchHit,
+  ComponentSearchResult,
+  MatchKind,
+} from './component-search-scoring.js';
+export { MATCH_KINDS, scoreNode, candidatesFor, stem } from './component-search-scoring.js';
+export { buildImpactSummary } from './reports/impact-summary.js';
+export type { ImpactSummaryInput } from './reports/impact-summary.js';
+export { buildImpactPage } from './reports/impact-page.js';
+export type { ImpactPageInput } from './reports/impact-page.js';
+export {
+  selectImpacts,
+  groupByNode,
+  predictedPathsOf,
+  DEFAULT_TOP_N,
+} from './reports/impact-selection.js';
+export { predictArtifacts } from './reports/predicted-artifacts.js';
+export {
+  assessWorkspaceFreshness,
+  lastRunIgnoredCount,
+  lastRunWarningRecords,
+  parseWarningLine,
+} from './freshness.js';
 export type { AnalyzeOutputInput } from './reports/analyze-output.js';
 export { buildReviewOutput, applyAcceptedDeviations } from './reports/review-output.js';
+export type { ReviewBreakdownContext } from './reports/review-output.js';
+export { buildReviewBreakdown } from './reports/review-breakdown.js';
 export { buildReviewMarkdown, reviewSummaryLine } from './reports/review-markdown.js';
 export { buildExportOutput } from './reports/export-output.js';
 export {
@@ -219,3 +246,21 @@ export type {
 } from './config-maintenance.js';
 export { testDetectionRule } from './detection-testing.js';
 export type { DetectionRuleTestRequest, DetectionRuleTestResult } from './detection-testing.js';
+
+// Item 12: record what an implementation actually touched, and measure the prediction against it.
+export { recordActualImpact, listActualImpacts } from './outcomes.js';
+export type { RecordActualImpactRequest, RecordActualImpactOutcome } from './outcomes.js';
+
+// Item 7: field-level flow queries and the transformations acting on a value.
+export { queryFieldFlow } from './field-flow.js';
+export type { FieldFlowResult, FlowHop } from './field-flow.js';
+export {
+  TRANSFORMATION_KINDS,
+  detectTransformations,
+  transformationsForPaths,
+} from './field-transformations.js';
+export type { DetectedTransformation, TransformationKind } from './field-transformations.js';
+
+// Item 6: related repositories registered as one workspace, with separate identities.
+export { readRepositoryRoster, indexableRoots } from './registered-repositories.js';
+export type { RegisteredRepository, RepositoryRoster } from './registered-repositories.js';

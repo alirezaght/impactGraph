@@ -21,45 +21,51 @@ import type { Failable } from '@impactgraph/workspace-engine';
 // process — never in the extension host (PRD §32/§33). One job per process; the parent kills
 // the child to cancel (index writes are transactional, so a kill never corrupts state).
 
+type AnalyzeJob = Extract<EngineJobRequest, { op: 'analyze' }>;
+
+const runAnalyzeJob = async (request: AnalyzeJob): Promise<Failable<unknown>> => {
+  const ai = createWorkspaceAiServices(request.rootDir, { apiKey: request.apiKey });
+  if (!ai.ok) {
+    return ai;
+  }
+  const submitted = await submitSpecification({
+    rootDir: request.rootDir,
+    specName: request.specName,
+    rawText: request.rawText,
+    extractor: ai.value.extractor,
+  });
+  if (!submitted.ok) {
+    return submitted;
+  }
+  const built = await buildAnalysisForSpecification(
+    request.rootDir,
+    submitted.value.specification,
+    { classifier: ai.value.classifier, interpreter: ai.value.interpreter },
+  );
+  if (!built.ok) {
+    return built;
+  }
+  return {
+    ok: true,
+    value: buildAnalyzeOutput({
+      specification: submitted.value.specification,
+      analysis: built.value.analysis,
+      graph: built.value.graph,
+      evidenceFileById: built.value.evidenceFileById,
+      extractionMode: submitted.value.extractionMode,
+      contextByNodeId: contextsForGraph(request.rootDir, built.value.graph),
+      applicationByNodeId: applicationsForGraph(built.value.graph),
+    }),
+  };
+};
+
 const runJob = async (request: EngineJobRequest): Promise<Failable<unknown>> => {
   const webviewJob = await runWebviewJob(request);
   if (webviewJob !== undefined) {
     return webviewJob;
   }
   if (request.op === 'analyze') {
-    const ai = createWorkspaceAiServices(request.rootDir, { apiKey: request.apiKey });
-    if (!ai.ok) {
-      return ai;
-    }
-    const submitted = await submitSpecification({
-      rootDir: request.rootDir,
-      specName: request.specName,
-      rawText: request.rawText,
-      extractor: ai.value.extractor,
-    });
-    if (!submitted.ok) {
-      return submitted;
-    }
-    const built = await buildAnalysisForSpecification(
-      request.rootDir,
-      submitted.value.specification,
-      { classifier: ai.value.classifier, interpreter: ai.value.interpreter },
-    );
-    if (!built.ok) {
-      return built;
-    }
-    return {
-      ok: true,
-      value: buildAnalyzeOutput({
-        specification: submitted.value.specification,
-        analysis: built.value.analysis,
-        graph: built.value.graph,
-        evidenceFileById: built.value.evidenceFileById,
-        extractionMode: submitted.value.extractionMode,
-        contextByNodeId: contextsForGraph(request.rootDir, built.value.graph),
-        applicationByNodeId: applicationsForGraph(built.value.graph),
-      }),
-    };
+    return runAnalyzeJob(request);
   }
   if (request.op === 'review') {
     const bundle = await runReviewPipeline(request.rootDir, request.target);
@@ -68,7 +74,12 @@ const runJob = async (request: EngineJobRequest): Promise<Failable<unknown>> => 
     }
     return {
       ok: true,
-      value: buildReviewOutput(bundle.value.review, bundle.value.analysis, bundle.value.violations),
+      value: buildReviewOutput(
+        bundle.value.review,
+        bundle.value.analysis,
+        bundle.value.violations,
+        bundle.value.breakdownContext,
+      ),
     };
   }
   if (request.op !== 'export') {

@@ -12,6 +12,9 @@ import {
   expectConfirmationProtectsFromRemoval,
   expectDeviationFlow,
   expectOwnershipOverlay,
+  expectActualImpactRecording,
+  expectBoundedSummary,
+  expectImpactPaging,
   expectQueryAndExplain,
   expectRuleDryRun,
   expectStructureAndConfigReads,
@@ -105,13 +108,12 @@ describe('MCP tool workflow (§21.1) on a fixture repository', () => {
     expect(spec['id']).toBe('spec-feature');
   });
 
-  it('step 7: analyze_impact builds an evidence-backed analysis', async () => {
+  it('step 7: analyze_impact returns a bounded, self-describing summary', async () => {
     const analyzed = await tool('analyze_impact', { specificationId: 'spec-feature' });
     const analysis = asRecord(analyzed['analysis']);
     analysisId = analysis['id'] as string;
     expect(analysis['status']).toBe('draft');
-    const requirements = analyzed['requirements'] as { impacts: { name: string }[] }[];
-    expect(requirements[0]?.impacts.map((impact) => impact.name)).toContain('DealService');
+    expectBoundedSummary(analyzed);
   });
 
   it('step 8–9: decisions append; approval requires explicit human confirmation (§35)', async () => {
@@ -195,6 +197,8 @@ describe('MCP tool workflow (§21.1) on a fixture repository', () => {
 
   it('query/explain tools mirror the evidence panel (§18.5, §3)', async () => {
     await expectQueryAndExplain(tool);
+    await expectImpactPaging(tool, analysisId);
+    await expectActualImpactRecording(tool, toolError, analysisId);
   });
 
   it('apply → rollback → restore_configuration_version round-trips a §Z9 exclusion (§Z14)', async () => {

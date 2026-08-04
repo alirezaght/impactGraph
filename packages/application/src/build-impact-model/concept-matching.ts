@@ -6,7 +6,18 @@ import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
 // match-strength signal for the confidence engine); unknown concepts become warnings, never
 // invented nodes.
 
-export type MatchMechanism = 'exact' | 'alias' | 'name-similarity';
+/**
+ * How a concept reached a node.
+ *
+ * `exact` / `alias` / `name-similarity` are identifier-grade: the specification named the thing, or
+ * named it closely enough that token alignment and character coverage both hold.
+ *
+ * `semantic` and `lexical` are the two weaker mechanisms the conceptual search contributes (item 4).
+ * They exist so conceptual queries can find anything at all, and they are labelled so the impact
+ * engine can cap what they are allowed to claim: `lexical` never rises above the `lexical-only`
+ * tier, whatever else corroborates it.
+ */
+export type MatchMechanism = 'exact' | 'alias' | 'name-similarity' | 'semantic' | 'lexical';
 
 export interface ConceptMatch {
   readonly concept: string;

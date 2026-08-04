@@ -6,6 +6,7 @@ import { traverseCandidates } from './candidate-traversal.js';
 import { inferChange } from './change-kind.js';
 import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
+import { applyNonGoalExclusions, resolveNonGoals } from './non-goal-exclusions.js';
 import { gateProposedStructure } from './proposed-structure-gate.js';
 
 import type { ImpactCandidate, TraversalOptions } from './candidate-traversal.js';
@@ -166,9 +167,17 @@ const recordMatchWarnings = (
   requirementId: string,
 ): void => {
   for (const unknown of matched.unknownConcepts) {
+    // Two warnings, deliberately. `unknown-concept` is the historical code consumers already
+    // filter on; `unresolved-concept` is the item-2 promise — the specification named something
+    // that does not exist in the graph, and ImpactGraph says so instead of inventing a node for it.
     warnings.push({
       code: 'unknown-concept',
       message: `no repository node matches concept '${unknown}'`,
+      requirementId,
+    });
+    warnings.push({
+      code: 'unresolved-concept',
+      message: `'${unknown}' is named in the specification but matches no indexed repository artifact — it may be new, external, or outside the indexed scope. No node was created for it.`,
       requirementId,
     });
   }
@@ -260,6 +269,25 @@ const classifyRequirementCandidates = (
   }
 };
 
+/**
+ * A provisional extraction taints everything derived from it (item 1). The warning rides on the
+ * analysis so no consumer can present impacts over invented requirements as though they were over
+ * the author's.
+ */
+const extractionWarnings = (specification: Specification): AnalysisWarning[] => {
+  const quality = specification.extractionQuality;
+  if (quality === undefined || !quality.provisional) {
+    return [];
+  }
+  return [
+    {
+      code: 'provisional-extraction',
+      message: `PROVISIONAL ANALYSIS: the specification declared no requirement list, so all ${String(quality.proseRequirementCount)} requirement(s) were cut out of prose by the extractor. Treat impacts and coverage below as indicative only.`,
+    },
+    ...quality.warnings.map((message) => ({ code: 'provisional-extraction' as const, message })),
+  ];
+};
+
 export const buildImpactModel = (
   request: BuildImpactModelRequest,
 ): Result<ImpactAnalysis, ValidationError> => {
@@ -277,7 +305,16 @@ export const buildImpactModel = (
     }
   }
 
-  const finalImpacts = dedupeStrongest(pipeline.impacts);
+  const exclusions = resolveNonGoals(request.specification, request.graph, request.aliases ?? {});
+  const excluded = applyNonGoalExclusions(dedupeStrongest(pipeline.impacts), exclusions);
+  pipeline.warnings.push(...excluded.warnings, ...extractionWarnings(request.specification));
+  for (const { concept, statement } of exclusions.unresolved) {
+    pipeline.warnings.push({
+      code: 'unresolved-concept',
+      message: `'${concept}' is named in the non-goal "${statement}" but matches no indexed artifact, so nothing was excluded on its behalf. No node was created for it.`,
+    });
+  }
+  const finalImpacts = excluded.impacts;
   const referenceIssues = validateImpactReferences(finalImpacts, request.graph);
   if (referenceIssues.length > 0) {
     return err(validationError(referenceIssues));

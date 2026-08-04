@@ -32,6 +32,21 @@ export { createAdapterRegistry } from './registry.js';
 export { createFallbackAdapter, addFileFact, fileNodeId } from './fallback/fallback-adapter.js';
 export { createTypeScriptAdapter } from './typescript/typescript-adapter.js';
 export { createPrismaAdapter } from './prisma/prisma-adapter.js';
+// Item 8: non-code artifacts as first-class nodes — locale bundles and their keys, OpenAPI
+// documents and their operations, JSON Schema, event definitions, configuration, migrations.
+export {
+  createAssetAdapter,
+  translationKeyNodeId,
+  openApiOperationNodeId,
+} from './assets/asset-adapter.js';
+export type { AssetKind } from './assets/asset-classification.js';
+export {
+  classifyAsset,
+  flattenLocaleKeys,
+  isMigrationPath,
+  looksLikeLocaleBundle,
+  openApiOperations,
+} from './assets/asset-classification.js';
 export { createPythonAdapter } from './python/python-adapter.js';
 export { createPythonModuleResolver, pythonModuleStems } from './python/python-modules.js';
 export { createJavaAdapter } from './java/java-adapter.js';

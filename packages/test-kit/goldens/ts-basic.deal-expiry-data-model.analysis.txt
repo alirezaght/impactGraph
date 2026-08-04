@@ -1,6 +1,6 @@
 impacts:
-req-6033a8a3|Deal|required|data-model|direct|0.90|anchor|f09eddde|exact-concept-to-symbol-match
-req-6033a8a3|schema.prisma|likely|domain-model|indirect|0.65|CONTAINS|85f5ac65|exact-concept-to-symbol-match+graph-distance
-req-6033a8a3|ts-basic|possible|domain-model|indirect|0.40|CONTAINS|8217ee44|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-6033a8a3|Deal|required|data-model|direct|0.90|anchor|2de0105d|exact-concept-to-symbol-match
+req-6033a8a3|schema.prisma|likely|domain-model|indirect|0.65|CONTAINS|4a72b842|exact-concept-to-symbol-match+graph-distance
+req-6033a8a3|ts-basic|possible|domain-model|indirect|0.40|CONTAINS|d0f1a805|exact-concept-to-symbol-match+graph-distance+graph-distance
 
 warnings:

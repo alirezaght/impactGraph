@@ -1,16 +1,34 @@
 import { hasDiscrepancies } from '@impactgraph/domain';
 
+import { buildReviewBreakdown } from './review-breakdown.js';
+
 import type { RuleViolation } from '@impactgraph/application';
 import type { AcceptedDeviationDto, CliReviewOutput } from '@impactgraph/contracts';
-import type { ImpactAnalysis, ImplementationReview } from '@impactgraph/domain';
+import type {
+  ImpactAnalysis,
+  ImplementationReview,
+  KnowledgeGraph,
+  Specification,
+} from '@impactgraph/domain';
 
 // The §38.2 review document builder — shared by `impactgraph review` and the MCP
 // review_implementation / get_review_report tools (identical contract, ADR-0009).
+
+/**
+ * The item-13 breakdown rides alongside the concise summary rather than replacing it: the trials
+ * called that summary useful, so it keeps its exact shape and the breakdown is additive.
+ */
+export interface ReviewBreakdownContext {
+  readonly specification: Specification;
+  readonly currentGraph: KnowledgeGraph;
+  readonly addedPaths?: readonly string[];
+}
 
 export const buildReviewOutput = (
   review: ImplementationReview,
   analysis: ImpactAnalysis,
   violations: readonly RuleViolation[],
+  breakdownContext?: ReviewBreakdownContext,
 ): CliReviewOutput => ({
   schemaVersion: 1,
   command: 'review',
@@ -49,6 +67,19 @@ export const buildReviewOutput = (
     ...(violation.evidence.edgeId === undefined ? {} : { edgeId: violation.evidence.edgeId }),
   })),
   discrepanciesFound: hasDiscrepancies(review) || violations.length > 0,
+  ...(breakdownContext === undefined
+    ? {}
+    : {
+        breakdown: buildReviewBreakdown({
+          review,
+          analysis,
+          specification: breakdownContext.specification,
+          currentGraph: breakdownContext.currentGraph,
+          ...(breakdownContext.addedPaths === undefined
+            ? {}
+            : { addedPaths: breakdownContext.addedPaths }),
+        }),
+      }),
 });
 
 /**

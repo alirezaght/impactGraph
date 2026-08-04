@@ -39,6 +39,24 @@ const IMPACT_EDGE_TYPES = new Set([
   'BINDS',
   'USES_UNKNOWN',
   'CONTAINS',
+  // Async / service-boundary chain (item 5). Without these the walk stops at the first async hop,
+  // which is exactly why outbox → Pub/Sub → push route → projection was invisible: every link in
+  // that chain is a relationship the traversal roster did not contain.
+  'RECORDED_IN',
+  'RELAYS_TO',
+  'DELIVERS_TO',
+  'PROJECTS_TO',
+  'TRIGGERS',
+  // Contract and asset relationships (items 6, 8).
+  'SPECIFIED_BY',
+  'IMPLEMENTS_OPERATION',
+  'DEFINES_KEY',
+  'RENDERS_KEY',
+  'CONFIGURES',
+  // Field-level flow (item 7).
+  'FLOWS_TO',
+  'RENAMED_TO',
+  'SERIALIZED_AS',
 ]);
 
 /**
@@ -76,6 +94,25 @@ const EDGE_ROLES: Readonly<Record<string, TraversalRole>> = {
   REFERENCES_RESOURCE: 'supporting',
   BINDS: 'supporting',
   USES_UNKNOWN: 'supporting',
+  // Every hop of an event chain is genuine propagation: a change to what a producer records reaches
+  // the relay, the topic, the endpoint it is delivered to, and the projection built from it. That is
+  // the same kind of obligation a contract change carries, not a weaker "related to" association.
+  RECORDED_IN: 'propagating',
+  RELAYS_TO: 'propagating',
+  DELIVERS_TO: 'propagating',
+  PROJECTS_TO: 'propagating',
+  TRIGGERS: 'propagating',
+  // A declared contract is the other side of an implementation: changing one obliges the other.
+  SPECIFIED_BY: 'propagating',
+  IMPLEMENTS_OPERATION: 'propagating',
+  RENDERS_KEY: 'propagating',
+  FLOWS_TO: 'propagating',
+  RENAMED_TO: 'propagating',
+  SERIALIZED_AS: 'propagating',
+  // A bundle DECLARING a key is ownership, like a file containing a symbol: reaching the bundle
+  // from the key is useful, reaching the bundle's other 400 keys is not.
+  DEFINES_KEY: 'ownership',
+  CONFIGURES: 'supporting',
 };
 
 export const roleOf = (edgeType: string): TraversalRole => EDGE_ROLES[edgeType] ?? 'supporting';
@@ -113,6 +150,40 @@ const WEAK_WHEN_REVERSED = new Set([
  */
 const NEVER_STRONG = 'USES_UNKNOWN';
 
+/**
+ * Relationships that do not consume the ordinary depth budget (item 5).
+ *
+ * An event chain is long by construction — producer → outbox row → relay → topic → subscription →
+ * push endpoint → projection → renderer → locale key is eight hops — and every one of those hops is a
+ * contract obligation, not a coincidence of proximity. With `maxDepth: 2` the walk stopped at the
+ * second hop, which is exactly why "outbox → Pub/Sub → push route → projection was invisible".
+ *
+ * Raising `maxDepth` for everything is not the fix: two hops of ordinary imports and calls already
+ * reaches most of a package, and three reaches most of a repository. So these edge types get their
+ * OWN budget instead: crossing one costs a chain hop, not a depth hop, and `maxChainHops` bounds the
+ * chain. The tier still falls with total distance, so a component eight hops away is `possible`, not
+ * `required` — the chain is made VISIBLE, not made confident.
+ */
+const CHAIN_EDGE_TYPES = new Set([
+  'RECORDED_IN',
+  'RELAYS_TO',
+  'DELIVERS_TO',
+  'PROJECTS_TO',
+  'PUBLISHES',
+  'SUBSCRIBES_TO',
+  'TRIGGERS',
+  'DEPLOYED_AS',
+  'EXPOSES',
+  'SPECIFIED_BY',
+  'IMPLEMENTS_OPERATION',
+  'RENDERS_KEY',
+  'FLOWS_TO',
+  'RENAMED_TO',
+  'SERIALIZED_AS',
+]);
+
+export const isChainEdge = (edgeType: string): boolean => CHAIN_EDGE_TYPES.has(edgeType);
+
 export interface ImpactCandidate {
   readonly nodeId: string;
   readonly distance: number;
@@ -140,11 +211,24 @@ export interface ImpactCandidate {
    */
   readonly weakLinkOnly: boolean;
   readonly edgeEvidenceIds: readonly string[];
+  /**
+   * Hops taken over ordinary structural edges. This — not `distance` — is what the depth budget
+   * bounds, so an event chain can be followed to its end without also widening every import walk.
+   */
+  readonly structuralDepth: number;
+  /** Hops taken over chain edges (async, contract, field-flow). Bounded by `maxChainHops`. */
+  readonly chainHops: number;
   readonly match: ConceptMatch;
 }
 
 export interface TraversalOptions {
   readonly maxDepth?: number;
+  /**
+   * How many chain edges a route may cross. 8 covers the longest real chain observed — producer →
+   * outbox record → relay → topic → Terraform topic → subscription → push endpoint → route →
+   * projection → renderer → locale key — with a hop to spare.
+   */
+  readonly maxChainHops?: number;
   /** Runaway guard on expansion work. Distinct from the output cap below. */
   readonly maxExpansions?: number;
   /**
@@ -201,34 +285,46 @@ interface Step {
  * declaring it are affected — but naming a package must not make an impact out of every library
  * it declares, nor out of its dependencies' dependencies.
  */
-const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
-  const steps: Step[] = [];
-  const edgeIds = [...(graph.outgoing.get(nodeId) ?? []), ...(graph.incoming.get(nodeId) ?? [])];
-  for (const edgeId of edgeIds) {
-    const edge = graph.edges.get(edgeId);
-    if (edge === undefined || !IMPACT_EDGE_TYPES.has(edge.type)) {
-      continue;
-    }
-    if (edge.type === 'CONTAINS' || edge.type === 'DEPENDS_ON') {
-      if (edge.sourceId !== nodeId) {
-        // upward: to the container, or to the node that declares this dependency
-        steps.push({ edge, neighborId: edge.sourceId, towardDependents: true });
-      }
-      continue;
-    }
-    steps.push({
-      edge,
-      neighborId: edge.sourceId === nodeId ? edge.targetId : edge.sourceId,
-      towardDependents: edge.targetId === nodeId,
-    });
+/**
+ * Declaration edges: walked UPWARD only, from the declared thing to whatever declares it. A locale
+ * bundle DEFINES_KEY joins the family for the same reason CONTAINS is in it — reaching the bundle
+ * from one key is useful; reaching the bundle's other 400 keys is sibling explosion.
+ */
+const UPWARD_ONLY = new Set(['CONTAINS', 'DEPENDS_ON', 'DEFINES_KEY']);
+
+const stepFor = (edge: GraphEdge, nodeId: NodeId): Step | undefined => {
+  if (!IMPACT_EDGE_TYPES.has(edge.type)) {
+    return undefined;
   }
-  return steps;
+  if (UPWARD_ONLY.has(edge.type)) {
+    return edge.sourceId === nodeId
+      ? undefined
+      : { edge, neighborId: edge.sourceId, towardDependents: true };
+  }
+  return {
+    edge,
+    neighborId: edge.sourceId === nodeId ? edge.targetId : edge.sourceId,
+    towardDependents: edge.targetId === nodeId,
+  };
+};
+
+const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
+  const edgeIds = [...(graph.outgoing.get(nodeId) ?? []), ...(graph.incoming.get(nodeId) ?? [])];
+  return edgeIds
+    .map((edgeId) => graph.edges.get(edgeId))
+    .filter((edge): edge is GraphEdge => edge !== undefined)
+    .map((edge) => stepFor(edge, nodeId))
+    .filter((step): step is Step => step !== undefined);
 };
 
 const MECHANISM_STRENGTH: Readonly<Record<MatchMechanism, number>> = {
   exact: 2,
   alias: 2,
   'name-similarity': 1,
+  // Conceptual mechanisms rank below identifier matching: when two routes reach the same component
+  // and one is anchored by a name the specification wrote, that route explains the component.
+  semantic: 1,
+  lexical: 0,
 };
 
 /**
@@ -299,9 +395,10 @@ const mergeCandidate = (state: TraversalState, incoming: ImpactCandidate): void 
 const traverseFromMatch = (
   graph: KnowledgeGraph,
   match: ConceptMatch,
-  maxDepth: number,
+  budgets: { maxDepth: number; maxChainHops: number },
   state: TraversalState,
 ): void => {
+  const { maxDepth, maxChainHops } = budgets;
   const seed: ImpactCandidate = {
     nodeId: match.nodeId,
     distance: 0,
@@ -311,6 +408,8 @@ const traverseFromMatch = (
     admissible: true,
     weakLinkOnly: false,
     edgeEvidenceIds: [],
+    structuralDepth: 0,
+    chainHops: 0,
     match,
   };
   mergeCandidate(state, seed);
@@ -318,14 +417,20 @@ const traverseFromMatch = (
   // the closest, and every later arrival still merges its evidence without re-expanding.
   const walk: AnchorWalk = { graph, state, expanded: new Set([match.nodeId]), next: [] };
   let frontier: ImpactCandidate[] = [seed];
-  for (let depth = 0; depth < maxDepth; depth += 1) {
+  // The loop bound is the SUM of both budgets: a level may spend either, and a chain-only route needs
+  // as many levels as it has hops. Each candidate still refuses the step that would exceed its own
+  // budget, so the extra levels can only be spent on chain edges.
+  for (let level = 0; level < maxDepth + maxChainHops; level += 1) {
     walk.next = [];
     for (const current of frontier) {
-      if (!expandOne(walk, current, match)) {
+      if (!expandOne(walk, current, match, { maxDepth, maxChainHops })) {
         return;
       }
     }
     frontier = walk.next;
+    if (frontier.length === 0) {
+      return;
+    }
   }
 };
 
@@ -335,6 +440,7 @@ const stepCandidate = (
   match: ConceptMatch,
 ): ImpactCandidate => {
   const edgeTypes = [...current.edgeTypes, step.edge.type];
+  const chain = isChainEdge(step.edge.type);
   return {
     nodeId: step.neighborId,
     distance: current.distance + 1,
@@ -347,6 +453,13 @@ const stepCandidate = (
       (step.edge.type === NEVER_STRONG ||
         (step.towardDependents && WEAK_WHEN_REVERSED.has(step.edge.type))),
     edgeEvidenceIds: [...current.edgeEvidenceIds, ...step.edge.knowledge.evidenceIds],
+    // Crossing a chain edge RESETS the structural budget. Rationale: the budget answers "how far
+    // through a local neighbourhood may a walk wander", and a service boundary starts a new
+    // neighbourhood. Two structural hops on the far side of a topic is the same rule as two on this
+    // side — not an extension of it. Growth stays bounded because chain hops are capped, and each one
+    // opens at most `maxDepth` structural hops rather than an unbounded walk.
+    structuralDepth: chain ? 0 : current.structuralDepth + 1,
+    chainHops: current.chainHops + (chain ? 1 : 0),
     match,
   };
 };
@@ -361,7 +474,12 @@ interface AnchorWalk {
 }
 
 /** Returns false when the safety budget is spent and the walk must stop. */
-const expandOne = (walk: AnchorWalk, current: ImpactCandidate, match: ConceptMatch): boolean => {
+const expandOne = (
+  walk: AnchorWalk,
+  current: ImpactCandidate,
+  match: ConceptMatch,
+  budgets: { maxDepth: number; maxChainHops: number },
+): boolean => {
   for (const step of stepsFrom(walk.graph, current.nodeId as NodeId)) {
     walk.state.expansions += 1;
     if (walk.state.expansions > walk.state.maxExpansions) {
@@ -369,6 +487,12 @@ const expandOne = (walk: AnchorWalk, current: ImpactCandidate, match: ConceptMat
       return false;
     }
     const candidate = stepCandidate(current, step, match);
+    if (
+      candidate.structuralDepth > budgets.maxDepth ||
+      candidate.chainHops > budgets.maxChainHops
+    ) {
+      continue;
+    }
     mergeCandidate(walk.state, candidate);
     if (!walk.expanded.has(step.neighborId)) {
       walk.expanded.add(step.neighborId);
@@ -394,9 +518,13 @@ export const traverseCandidates = (
     expansions: 0,
     exhausted: false,
   };
+  const budgets = {
+    maxDepth: options.maxDepth ?? 2,
+    maxChainHops: options.maxChainHops ?? 8,
+  };
   for (const match of matches) {
     if (graph.nodes.has(match.nodeId as NodeId)) {
-      traverseFromMatch(graph, match, options.maxDepth ?? 2, state);
+      traverseFromMatch(graph, match, budgets, state);
     }
   }
   const discovered = [...state.best.values()].sort(

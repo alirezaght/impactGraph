@@ -16,6 +16,7 @@ import { readProposedStructure } from './proposed-structure-json.js';
 import type { RawObject } from './parse-helpers.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
+import type { ImpactEvidenceType } from '../impact/evidence-basis.js';
 import type {
   AnalysisWarning,
   ArchitecturalOption,
@@ -66,6 +67,7 @@ const readSignal: Reader<ConfidenceSignal> = (raw, path, issues) => {
 
 const readImpact: Reader<RequirementImpact> = (raw, path, issues) => {
   const obj = expectObject(raw, path, issues);
+  const cappedBy = readOptionalString(obj, 'tierCappedBy', `${path}.tierCappedBy`, issues);
   return {
     requirementId: readString(obj, 'requirementId', `${path}.requirementId`, issues),
     nodeId: readString(obj, 'nodeId', `${path}.nodeId`, issues),
@@ -104,6 +106,19 @@ const readImpact: Reader<RequirementImpact> = (raw, path, issues) => {
       `${path}.provenance`,
       issues,
     ) as RequirementImpact['provenance'],
+    // Additive: absent on analyses stored before the evidence-basis taxonomy. Left absent rather
+    // than defaulted here so `evidenceTypesOf` owns the one place that decides what absence means.
+    ...(obj['evidenceTypes'] === undefined
+      ? {}
+      : {
+          evidenceTypes: readStringArray(
+            obj,
+            'evidenceTypes',
+            `${path}.evidenceTypes`,
+            issues,
+          ) as readonly ImpactEvidenceType[],
+        }),
+    ...(cappedBy === undefined ? {} : { tierCappedBy: cappedBy as ImpactEvidenceType }),
   };
 };
 

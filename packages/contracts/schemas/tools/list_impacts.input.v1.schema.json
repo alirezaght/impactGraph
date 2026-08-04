@@ -1,0 +1,59 @@
+{
+  "$ref": "#/definitions/Tool_list_impacts_InputV1",
+  "definitions": {
+    "Tool_list_impacts_InputV1": {
+      "type": "object",
+      "properties": {
+        "topN": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "minLikelihood": {
+          "type": "string",
+          "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+        },
+        "evidenceTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "direct-structural",
+              "transitive-structural",
+              "async-event",
+              "external-contract",
+              "field-data-flow",
+              "configuration-asset",
+              "semantic-match",
+              "lexical-only"
+            ]
+          },
+          "minItems": 1
+        },
+        "includeLexicalOnly": {
+          "type": "boolean"
+        },
+        "includeExcluded": {
+          "type": "boolean"
+        },
+        "includeFullPaths": {
+          "type": "boolean"
+        },
+        "cursor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirementId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

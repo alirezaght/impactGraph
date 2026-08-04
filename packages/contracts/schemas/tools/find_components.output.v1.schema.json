@@ -32,11 +32,71 @@
               "provenance": {
                 "type": "string",
                 "minLength": 1
+              },
+              "matchKind": {
+                "type": "string",
+                "enum": ["exact", "normalized-name", "conceptual", "related", "lexical"]
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "matchedOn": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
               }
             },
             "required": ["nodeId", "name", "category", "type", "provenance"],
             "additionalProperties": false
           }
+        },
+        "matchKinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "outcome": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "not-run",
+                "completed",
+                "completed-empty",
+                "partial",
+                "failed",
+                "human-confirmed"
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "resultCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["status", "scope", "limitations", "resultCount"],
+          "additionalProperties": false
         }
       },
       "required": ["components"],

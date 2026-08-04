@@ -1,0 +1,8 @@
+{
+  "nda": {
+    "signature_request": {
+      "subject": "Eine NDA-Unterschrift wurde angefordert",
+      "body": "{sellerName} bittet Sie, eine NDA zu unterzeichnen."
+    }
+  }
+}

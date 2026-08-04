@@ -37,6 +37,33 @@ export const EDGE_TYPES = [
    * contribute at most a `possible` tier, never corroborates, and carries no positive confidence.
    */
   'USES_UNKNOWN',
+  // Async and service-boundary relationships (item 5). Each names ONE hop of a chain that used to
+  // be invisible, because "publishes a topic" and "an outbox row is relayed to a topic" are
+  // different facts with different evidence and only one of them is a direct call.
+  /** producer → outbox-record: the durable write that will later be relayed. */
+  'RECORDED_IN',
+  /** outbox-record/publisher → topic: the relay that turns a record into a published message. */
+  'RELAYS_TO',
+  /** topic/subscription → push-endpoint: the delivery target of a push subscription. */
+  'DELIVERS_TO',
+  /** consumer/handler → projection: the read model a consumed message maintains. */
+  'PROJECTS_TO',
+  // Contract relationships (items 6, 8).
+  /** route/operation → contract document: this endpoint is declared by that document. */
+  'SPECIFIED_BY',
+  /** handler → openapi-operation: this code implements that declared operation. */
+  'IMPLEMENTS_OPERATION',
+  /** locale-bundle → translation-key: the bundle declares the key. */
+  'DEFINES_KEY',
+  /** code → translation-key: this code renders that key. */
+  'RENDERS_KEY',
+  // Field-level flow (item 7). Direction is always along the data's travel.
+  /** field → field: the value reaches the target field. */
+  'FLOWS_TO',
+  /** field → field: same value, different name. */
+  'RENAMED_TO',
+  /** field → payload/contract: the field appears in that serialized form. */
+  'SERIALIZED_AS',
   'DEPENDS_ON',
   'AFFECTS',
   'MAY_AFFECT',

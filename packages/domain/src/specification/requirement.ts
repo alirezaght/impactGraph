@@ -27,6 +27,43 @@ export type RequirementPriority = (typeof REQUIREMENT_PRIORITIES)[number];
 export const REQUIREMENT_STATUSES = ['draft', 'confirmed', 'rejected'] as const;
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number];
 
+/**
+ * Where a requirement came from in the specification text.
+ *
+ * This is the honesty field. `explicit-label` means the author wrote "R3:" and the statement is
+ * theirs verbatim; `prose-fallback` means no list existed and the extractor cut a sentence out of
+ * running prose. Presenting those two as the same kind of object is how a specification with seven
+ * numbered requirements turns into forty, and every count downstream inherits the error.
+ */
+export const REQUIREMENT_ORIGINS = [
+  /** An author-assigned identifier: `R1`, `FR-3`, `REQ-12`. */
+  'explicit-label',
+  /** An item of a numbered list under a requirements-like heading. */
+  'numbered-item',
+  /** An item under Acceptance Criteria / Definition of Done. */
+  'acceptance-criterion',
+  /** A `- [ ]` task-list item. */
+  'task-item',
+  /** A plain bullet under a requirements-like heading. */
+  'bullet-item',
+  /** Cut out of running prose because the specification declared no requirements at all. */
+  'prose-fallback',
+] as const;
+
+export type RequirementOrigin = (typeof REQUIREMENT_ORIGINS)[number];
+
+/** Origins whose statement text is the author's own requirement list, not an extractor guess. */
+export const STRUCTURED_ORIGINS: readonly RequirementOrigin[] = [
+  'explicit-label',
+  'numbered-item',
+  'acceptance-criterion',
+  'task-item',
+  'bullet-item',
+];
+
+export const isStructuredOrigin = (origin: RequirementOrigin): boolean =>
+  STRUCTURED_ORIGINS.includes(origin);
+
 /** Character-offset range into the specification's rawText (PRD §11.1 sourceRange). */
 export interface TextRange {
   readonly startOffset: number;
@@ -42,7 +79,20 @@ export interface Requirement {
   readonly priority?: RequirementPriority;
   readonly sourceRange?: TextRange;
   readonly status: RequirementStatus;
+  /**
+   * Additive field. Absent on specifications extracted before origins existed — read it through
+   * `originOf` so the missing case is handled once, as `prose-fallback`, the weakest reading.
+   */
+  readonly origin?: RequirementOrigin;
+  /** The author's own identifier when they gave one: `R3`, `AC2`, `FR-7`. */
+  readonly label?: string;
+  /** Heading the requirement was found under, verbatim. */
+  readonly heading?: string;
 }
+
+/** The weakest reading is the default: an unlabeled requirement is treated as extractor prose. */
+export const originOf = (requirement: Requirement): RequirementOrigin =>
+  requirement.origin ?? 'prose-fallback';
 
 /** Deterministic content-derived id: FNV-1a over normalized text, with a kind prefix. */
 export const stableContentId = (prefix: string, text: string): string => {
@@ -95,6 +145,14 @@ export const requirementIssues = (requirement: Requirement, path: string): Valid
   if (!(REQUIREMENT_STATUSES as readonly string[]).includes(requirement.status)) {
     issues.push(
       validationIssue('invalid-type', `${path}.status`, `unknown status '${requirement.status}'`),
+    );
+  }
+  if (
+    requirement.origin !== undefined &&
+    !(REQUIREMENT_ORIGINS as readonly string[]).includes(requirement.origin)
+  ) {
+    issues.push(
+      validationIssue('invalid-type', `${path}.origin`, `unknown origin '${requirement.origin}'`),
     );
   }
   if (

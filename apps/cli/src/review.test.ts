@@ -43,7 +43,7 @@ describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () =
     git('add', '.');
     git('commit', '-m', 'init impactgraph + spec');
     await cli('index');
-    const analyzed = await cli('analyze', 'feature.md', '--format', 'json');
+    const analyzed = await cli('analyze', 'feature.md', '--full', '--format', 'json');
     return cliAnalyzeOutputSchema.parse(analyzed.json()).analysis.id;
   };
 
@@ -208,7 +208,7 @@ describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () =
     git('add', '.');
     git('commit', '-m', 'aliases + spec');
     await cli('index');
-    const result = await cli('analyze', 'alias-feature.md', '--format', 'json');
+    const result = await cli('analyze', 'alias-feature.md', '--full', '--format', 'json');
     expect(result.code).toBe(EXIT_CODES.success);
     const output = cliAnalyzeOutputSchema.parse(result.json());
     const names = output.requirements[0]?.impacts.map((impact) => impact.name) ?? [];

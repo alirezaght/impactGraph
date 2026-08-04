@@ -13,10 +13,7 @@ import {
   previewOperation,
   restoreConfigVersion,
   rollbackConfigChange,
-  applicationsForGraph,
-  buildAnalyzeOutput,
-  contextsForGraph,
-  buildAnalysisForSpecification,
+  searchComponents,
   buildExportBundle,
   buildExportOutput,
   buildReviewOutput,
@@ -24,11 +21,9 @@ import {
   createWorkspaceAiServices,
   explainEdge,
   explainNode,
-  findComponents,
   indexWarnings,
   initializeWorkspace,
   loadReviewArtifact,
-  loadSpecification,
   performIndexRun,
   recordImpactDecision,
   requireInitialized,
@@ -41,6 +36,7 @@ import {
 import { CONFIG_MAINTENANCE_HANDLERS } from './registry-config.js';
 import { DECISION_HANDLERS } from './registry-decisions.js';
 import { GRAPH_HANDLERS } from './registry-graph.js';
+import { IMPACT_HANDLERS } from './registry-impacts.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';
 
@@ -134,37 +130,6 @@ const HANDLERS: ToolHandlerMap = {
         extractionMode,
         requirementCount: specification.requirements.length,
       },
-    };
-  },
-  analyze_impact: async (rootDir, input) => {
-    const spec = await loadSpecification(rootDir, input.specificationId);
-    if (!spec.ok) {
-      return spec;
-    }
-    const ai = createWorkspaceAiServices(rootDir, {
-      apiKey: process.env['IMPACTGRAPH_API_KEY'],
-    });
-    if (!ai.ok) {
-      return ai;
-    }
-    const built = await buildAnalysisForSpecification(rootDir, spec.value, {
-      classifier: ai.value.classifier,
-      interpreter: ai.value.interpreter,
-    });
-    if (!built.ok) {
-      return built;
-    }
-    return {
-      ok: true,
-      value: buildAnalyzeOutput({
-        specification: spec.value,
-        analysis: built.value.analysis,
-        graph: built.value.graph,
-        evidenceFileById: built.value.evidenceFileById,
-        extractionMode: 'unchanged',
-        contextByNodeId: contextsForGraph(rootDir, built.value.graph),
-        applicationByNodeId: applicationsForGraph(built.value.graph),
-      }),
     };
   },
   update_impact_decision: async (rootDir, input) => {
@@ -386,12 +351,37 @@ const HANDLERS: ToolHandlerMap = {
   explain_node: (rootDir, input) => explainNode(rootDir, input.nodeId),
   explain_edge: (rootDir, input) => explainEdge(rootDir, input.edgeId),
   find_components: async (rootDir, input) => {
-    const hits = await findComponents(rootDir, input.query, input.limit ?? 25);
-    if (!hits.ok) {
-      return hits;
+    const found = await searchComponents(rootDir, input.query, {
+      limit: input.limit ?? 25,
+      ...(input.nodeTypes === undefined ? {} : { nodeTypes: input.nodeTypes }),
+      ...(input.includeLexical === undefined ? {} : { includeLexical: input.includeLexical }),
+    });
+    if (!found.ok) {
+      return found;
     }
-    return { ok: true, value: { components: hits.value } };
+    return {
+      ok: true,
+      value: {
+        components: found.value.components.map((hit) => ({
+          nodeId: hit.nodeId,
+          name: hit.name,
+          category: hit.category,
+          type: hit.type,
+          ...(hit.path === undefined ? {} : { path: hit.path }),
+          provenance: hit.provenance,
+          matchKind: hit.matchKind,
+          score: hit.score,
+          matchedOn: [...hit.matchedOn],
+        })),
+        matchKinds: [...found.value.matchKinds],
+        outcome: {
+          ...found.value.outcome,
+          limitations: [...found.value.outcome.limitations],
+        },
+      },
+    };
   },
+  ...IMPACT_HANDLERS,
   ...HANDLER_EXTENSIONS,
   ...DECISION_HANDLERS,
   ...STRUCTURE_HANDLERS,
@@ -413,7 +403,12 @@ const reviewDocument = async (
   }
   return {
     ok: true,
-    value: buildReviewOutput(bundle.value.review, bundle.value.analysis, bundle.value.violations),
+    value: buildReviewOutput(
+      bundle.value.review,
+      bundle.value.analysis,
+      bundle.value.violations,
+      bundle.value.breakdownContext,
+    ),
   };
 };
 

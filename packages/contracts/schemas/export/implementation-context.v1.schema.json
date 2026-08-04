@@ -74,7 +74,7 @@
               },
               "likelihood": {
                 "type": "string",
-                "enum": ["required", "likely", "possible", "unlikely"]
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
               },
               "impactType": {
                 "type": "string",

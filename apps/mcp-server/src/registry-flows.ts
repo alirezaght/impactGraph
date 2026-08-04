@@ -188,6 +188,94 @@ export const expectQueryAndExplain = async (tool: CallTool): Promise<void> => {
   expect(asRecord(edge['knowledge'])['knowledgeCategory']).toBe('deterministic');
 };
 
+/**
+ * Item 9: the bounded summary IS the answer — status, caveats, counts, and the strongest structural
+ * findings — and it must fit in an agent's context without a temp file.
+ */
+export const expectBoundedSummary = (analyzed: Record<string, unknown>): void => {
+  // The strongest structural findings are IN the answer; an agent should not have to page for them.
+  const top = analyzed['topImpacts'] as { name: string; evidenceType: string }[];
+  expect(top.map((impact) => impact.name)).toContain('DealService');
+  // Every finding states WHY it was selected (item 3).
+  expect(top.every((impact) => impact.evidenceType.length > 0)).toBe(true);
+  // The caveats a reader needs in order to trust the result at all (items 1, 10, 11).
+  expect(asRecord(analyzed['freshness'])['state']).toEqual(expect.any(String));
+  expect(asRecord(asRecord(analyzed['coverage'])['indexWarnings'])['groups']).toEqual(
+    expect.any(Array),
+  );
+  expect(asRecord(analyzed['impactQuery'])['scope']).toEqual(expect.any(String));
+  expect(analyzed['followUp']).toEqual(expect.arrayContaining([expect.any(String)]));
+  expect(JSON.stringify(analyzed).length).toBeLessThan(24_000);
+};
+
+/**
+ * Item 9: the bounded summary withholds detail on purpose, and `list_impacts` is where it lives.
+ * The assertion that matters is that the detail is genuinely there — dependency paths and the
+ * evidence bases — because a summary that points at an empty page is worse than no summary.
+ */
+export const expectImpactPaging = async (tool: CallTool, analysisId: string): Promise<void> => {
+  const page = await tool('list_impacts', { analysisId, topN: 2 });
+  const impacts = page['impacts'] as { dependencyPath: string[]; evidenceTypes: string[] }[];
+  expect(impacts.length).toBeLessThanOrEqual(2);
+  expect(impacts[0]?.dependencyPath.length).toBeGreaterThan(0);
+  expect(impacts[0]?.evidenceTypes.length).toBeGreaterThan(0);
+  expect(asRecord(page['pagination'])['totalMatching']).toEqual(expect.any(Number));
+
+  // Lexical-only findings are hidden by default and available on request (item 3).
+  const withLexical = await tool('list_impacts', { analysisId, includeLexicalOnly: true });
+  expect(
+    asRecord(asRecord(withLexical['pagination'])['appliedFilters'])['includeLexicalOnly'],
+  ).toBe(true);
+  // An empty or short page still states what it covered and what it left out (item 11).
+  expect(asRecord(page['impactQuery'])['scope']).toEqual(expect.any(String));
+};
+
+/**
+ * Item 12: record what an implementation actually touched, and measure the prediction against it.
+ * The assertions that matter are the honest ones — precision is stated WITH the tiers it judged, a
+ * figure that cannot be computed is absent rather than zero, and the response says outright that
+ * nothing was learned from the result.
+ */
+export const expectActualImpactRecording = async (
+  tool: CallTool,
+  toolError: CallToolError,
+  analysisId: string,
+): Promise<void> => {
+  const recorded = await tool('record_actual_impact', {
+    analysisId,
+    changedFiles: ['src/services/deal-service.ts'],
+    addedFiles: ['src/locales/de.json'],
+    relationshipChanges: [{ type: 'PUBLISHES', sourceId: 'a', targetId: 'topic:x', kind: 'added' }],
+    manualFindings: [{ note: 'a null expiry crashed the renderer', kind: 'risk' }],
+    note: 'recorded by the §21 workflow suite',
+  });
+  const metrics = asRecord(recorded['metrics']);
+  // Precision is meaningless without the tiers it judged, so both are always present.
+  expect(metrics['judgedTiers']).toEqual(['required', 'likely']);
+  expect(metrics['truePositives']).toContain('src/services/deal-service.ts');
+  // The locale file was ADDED, and the analysis did not predict that category.
+  expect(metrics['missedArtifactCategories']).toContain('new-locale-entry');
+  // A relationship type the prediction never crossed.
+  expect(metrics['missedRelationshipTypes']).toContain('PUBLISHES');
+  expect(recorded['historyCount']).toBe(1);
+  expect(String(recorded['note'])).toContain('no ranking rule was learned');
+
+  // Append-only: the same outcome id cannot be recorded twice.
+  const outcomeId = recorded['outcomeId'] as string;
+  expect(
+    await toolError('record_actual_impact', {
+      analysisId,
+      outcomeId,
+      changedFiles: ['src/services/deal-service.ts'],
+    }),
+  ).toContain('append-only');
+
+  // An outcome that names nothing measures nothing, and is refused.
+  expect(await toolError('record_actual_impact', { analysisId })).toContain(
+    'must name at least one',
+  );
+};
+
 interface CorrectionTarget {
   readonly nodeId: string;
   readonly graphName: string;

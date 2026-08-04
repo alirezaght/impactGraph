@@ -13,6 +13,7 @@ import { GIT_FAILURES } from './snapshot.js';
 import { loadSpecification } from './specifications.js';
 
 import type { Failable } from './failure.js';
+import type { ReviewBreakdownContext } from './reports/review-output.js';
 import type { GitDiffResult, RuleViolation } from '@impactgraph/application';
 import type {
   ImpactAnalysis,
@@ -29,6 +30,8 @@ export interface ReviewBundle {
   readonly review: ImplementationReview;
   readonly analysis: ImpactAnalysis;
   readonly violations: readonly RuleViolation[];
+  /** Item 13: what the review document needs to split its findings by kind and state its scope. */
+  readonly breakdownContext: ReviewBreakdownContext;
 }
 
 const readDiff = async (
@@ -128,9 +131,16 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
     }
     // Story 11.2: persist the review so accepted-deviation decisions have an artifact to
     // append to (§24.1). A later re-run is a NEW artifact — acceptance never carries over.
+    const breakdownContext: ReviewBreakdownContext = {
+      specification,
+      currentGraph: currentGraph.value,
+      addedPaths: diff.changes
+        .filter((change) => change.changeType === 'added')
+        .map((change) => change.path),
+    };
     const persisted = persistReviewDocument(
       rootDir,
-      buildReviewOutput(review.value, analysis, violations.value),
+      buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
     );
     if (!persisted.ok) {
       return persisted;
@@ -138,7 +148,7 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
     recordReviewLearning(rootDir, review.value.changedFiles);
     return {
       ok: true,
-      value: { review: review.value, analysis, violations: violations.value },
+      value: { review: review.value, analysis, violations: violations.value, breakdownContext },
     };
   });
 };

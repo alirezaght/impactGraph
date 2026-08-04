@@ -148,7 +148,7 @@ describe('impactgraph CLI (Stories 4.1 + 4.2)', () => {
       join(repoDir, 'feature.md'),
       '# Deal filtering\nDealService must filter expired deals from search results.\n',
     );
-    const result = await cli('analyze', 'feature.md', '--format', 'json');
+    const result = await cli('analyze', 'feature.md', '--full', '--format', 'json');
     expect(result.code).toBe(EXIT_CODES.success);
     const output = cliAnalyzeOutputSchema.parse(result.json());
 
@@ -172,7 +172,7 @@ describe('impactgraph CLI (Stories 4.1 + 4.2)', () => {
       expect(impact.dependencyPath.length).toBeGreaterThan(0);
     }
 
-    const text = await cli('analyze', 'feature.md');
+    const text = await cli('analyze', 'feature.md', '--full');
     expect(text.lines).toContain('Requirement R1');
     expect(text.lines.some((line) => line.startsWith('Required:'))).toBe(true);
     expect(text.lines.some((line) => line.startsWith('Evidence:'))).toBe(true);
@@ -182,8 +182,8 @@ describe('impactgraph CLI (Stories 4.1 + 4.2)', () => {
     await cli('init');
     await cli('index');
     writeFileSync(join(repoDir, 'feature.md'), 'DealRepository must expose a count method.\n');
-    const first = await cli('analyze', 'feature.md', '--format', 'json');
-    const second = await cli('analyze', 'feature.md', '--format', 'json');
+    const first = await cli('analyze', 'feature.md', '--full', '--format', 'json');
+    const second = await cli('analyze', 'feature.md', '--full', '--format', 'json');
     const firstOut = cliAnalyzeOutputSchema.parse(first.json());
     const secondOut = cliAnalyzeOutputSchema.parse(second.json());
     expect(secondOut.specification.extractionMode).toBe('unchanged');

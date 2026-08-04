@@ -1,4 +1,5 @@
 import {
+  createAsyncChainAdapter,
   createAstroFrameworkAdapter,
   createCrossStackAdapter,
   createCustomDetectionAdapter,
@@ -11,6 +12,7 @@ import {
 } from '@impactgraph/framework-adapters';
 import {
   createAdapterRegistry,
+  createAssetAdapter,
   createAstroAdapter,
   createHtmlAdapter,
   createJavaAdapter,
@@ -75,6 +77,9 @@ const buildFrameworkAdapters = (rootDir: string) => {
     createGenericDetectorsAdapter(),
     createTerraformFrameworkAdapter(),
     createCustomDetectionAdapter(rules.ok ? (rules.value?.detections ?? []) : []),
+    // Item 5: the async chain runs before `cross-stack` because the push endpoints and projections
+    // it emits are nodes the cross-stack correlation then reads.
+    createAsyncChainAdapter(),
     createCrossStackAdapter(),
   ];
 };
@@ -143,6 +148,9 @@ export const performIndexRun = async (
     createTerraformAdapter(),
     createPrismaAdapter(),
     createSpringConfigAdapter(),
+    // §item 8: `.json` assets — locale bundles, OpenAPI, JSON Schema, event definitions,
+    // configuration. `.tf.json` still routes to Terraform (longest matching suffix wins).
+    createAssetAdapter(),
   ]);
   if (!registry.ok) {
     return {

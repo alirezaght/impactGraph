@@ -51,6 +51,12 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     'migration',
     'cache',
     'search-index',
+    /**
+     * A named payload/DTO field, tracked for field-level flow (item 7). In `data` because a field
+     * is a data-shape fact: it is the same kind of thing as a column, observed in code instead of
+     * in a schema, and the flow queries treat the two interchangeably.
+     */
+    'field',
   ],
   integration: [
     'topic',
@@ -61,6 +67,23 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     'webhook',
     'external-api',
     'third-party-service',
+    /**
+     * A durable record written inside the producer's transaction and relayed later — the first hop
+     * of an outbox chain (item 5). Distinct from `publisher`: the write is committed with the
+     * business change, and the publish happens elsewhere, which is exactly why the chain was
+     * invisible when only direct publish calls were modelled.
+     */
+    'outbox-record',
+    /** A subscriber-side HTTP endpoint a push subscription delivers to (item 5). */
+    'push-endpoint',
+    /** A read model or materialized view maintained from consumed events (item 5). */
+    'projection',
+    /**
+     * A boundary the analysis KNOWS it cannot resolve: an outbound call, topic, or event whose
+     * consumer lives outside the indexed scope. Modelled explicitly so "no consumers" is never
+     * reported when the truth is "not analyzed" (items 5, 6, 11).
+     */
+    'unresolved-external-boundary',
   ],
   infrastructure: [
     'terraform-module',
@@ -78,6 +101,26 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     'deployment-pipeline',
   ],
   repository: ['repository', 'workspace', 'package', 'directory', 'file', 'symbol'],
+  /**
+   * Non-code artifacts that are part of an implementation (item 8). They were previously indexed as
+   * plain files, which made a locale entry indistinguishable from a README and meant a change that
+   * was largely translation work looked like it touched nothing relevant.
+   */
+  asset: [
+    'configuration-file',
+    /** One locale/translation file. */
+    'locale-bundle',
+    /** One dotted key inside a locale bundle, e.g. `nda.signature_request.subject`. */
+    'translation-key',
+    'json-schema',
+    'openapi-document',
+    /** One `path + method` operation declared by an OpenAPI document. */
+    'openapi-operation',
+    'template',
+    /** A declared event/message contract document (AsyncAPI, JSON event schema, proto). */
+    'event-definition',
+    'generated-contract',
+  ],
 } as const);
 
 export type NodeCategory = keyof typeof NODE_TYPES_BY_CATEGORY;

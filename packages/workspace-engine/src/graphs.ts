@@ -43,6 +43,31 @@ export const loadCurrentGraph = async (store: IndexStorePort): Promise<Failable<
   return { ok: true, value: { graph: graph.value, snapshotId: current.value } };
 };
 
+/**
+ * The graph of one specific snapshot, opening and closing the store itself.
+ *
+ * A stored analysis is bound to the snapshot it was built at, and rendering it against the CURRENT
+ * graph would silently mix two states — node ids that no longer exist would go missing without
+ * explanation. Callers that hold an analysis therefore ask for its own snapshot by id.
+ */
+export const loadGraphForSnapshot = async (
+  rootDir: string,
+  snapshotId: string,
+): Promise<Failable<KnowledgeGraph>> =>
+  withIndexStore(rootDir, async (store) => {
+    const graph = await loadGraphAt(store, snapshotId, 'analysis');
+    if (!graph.ok) {
+      return graph;
+    }
+    if (graph.value.nodes.size === 0) {
+      return failWith(
+        'indexingFailure',
+        `snapshot ${snapshotId} is no longer in the local index — the cache was rebuilt since the analysis was created. Re-run the analysis.`,
+      );
+    }
+    return graph;
+  });
+
 /** Open the disposable SQLite index, run `work`, and always close the store. */
 export const withIndexStore = async <T>(
   rootDir: string,

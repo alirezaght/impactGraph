@@ -1,0 +1,22 @@
+{
+  "asyncapi": "2.6.0",
+  "info": { "title": "Notification events", "version": "1.0.0" },
+  "channels": {
+    "notification-events": {
+      "publish": {
+        "message": {
+          "name": "notification.nda_signature_request",
+          "payload": {
+            "type": "object",
+            "properties": {
+              "dealId": { "type": "string" },
+              "buyerId": { "type": "string" },
+              "sellerName": { "type": "string" },
+              "deadline": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

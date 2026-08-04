@@ -1,5 +1,10 @@
 import type { ModelProviderError } from '../ports/model-provider.js';
-import type { Result } from '@impactgraph/domain';
+import type {
+  ExtractionQuality,
+  RequirementOrigin,
+  Result,
+  SpecNoteKind,
+} from '@impactgraph/domain';
 
 // Neutral extraction draft shapes — the port contract between this use case and the
 // AI-inference adapter (which owns prompts, DTO validation, and mapping). Values are strings
@@ -13,6 +18,19 @@ export interface ExtractedRequirementDraft {
   readonly priority?: string | undefined;
   /** Verbatim excerpt of rawText backing this requirement — mapped to offsets by the use case. */
   readonly sourceExcerpt?: string | undefined;
+  /** Where the statement came from. Absent → treated as `prose-fallback`, the weakest reading. */
+  readonly origin?: RequirementOrigin | undefined;
+  /** Author-assigned identifier, when the specification declared one. */
+  readonly label?: string | undefined;
+  /** Heading the statement was found under, verbatim. */
+  readonly heading?: string | undefined;
+}
+
+/** Specification prose that is explicitly NOT a requirement (context, non-goal, ambiguous, …). */
+export interface ExtractedNoteDraft {
+  readonly statement: string;
+  readonly kind: SpecNoteKind;
+  readonly heading?: string | undefined;
 }
 
 export interface ExtractedQuestionDraft {
@@ -27,6 +45,17 @@ export interface SpecificationExtraction {
   readonly actors: readonly string[];
   readonly constraints: readonly string[];
   readonly openQuestions: readonly ExtractedQuestionDraft[];
+  /**
+   * Non-requirement statements. Optional so a provider that does not yet produce them is not
+   * forced to claim the specification had none — the use case then records no notes rather than
+   * asserting an empty set.
+   */
+  readonly notes?: readonly ExtractedNoteDraft[] | undefined;
+  /**
+   * How the requirements were obtained. Optional for the same reason; when a provider omits it,
+   * the use case derives a conservative quality report from the drafts' origins instead.
+   */
+  readonly quality?: ExtractionQuality | undefined;
 }
 
 /** Implemented by packages/ai-inference over ModelProviderPort; absent in deterministic mode. */

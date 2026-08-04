@@ -12,6 +12,35 @@
           "type": "string",
           "const": "analyze"
         },
+        "analysis": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "snapshotId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "status": {
+              "type": "string",
+              "minLength": 1
+            },
+            "provisional": {
+              "type": "boolean"
+            },
+            "provisionalReasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": ["id", "snapshotId", "status", "provisional", "provisionalReasons"],
+          "additionalProperties": false
+        },
         "specification": {
           "type": "object",
           "properties": {
@@ -30,6 +59,49 @@
             "extractionMode": {
               "type": "string",
               "enum": ["provider", "deterministic-fallback", "unchanged"]
+            },
+            "extractionQuality": {
+              "type": "object",
+              "properties": {
+                "strategy": {
+                  "type": "string",
+                  "enum": ["structured", "partially-structured", "prose-fallback"]
+                },
+                "structuredRequirementCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "proseRequirementCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "recognizedSections": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "provisional": {
+                  "type": "boolean"
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "strategy",
+                "structuredRequirementCount",
+                "proseRequirementCount",
+                "recognizedSections",
+                "provisional",
+                "warnings"
+              ],
+              "additionalProperties": false
             },
             "readiness": {
               "type": "object",
@@ -68,40 +140,258 @@
                 "recommendedAction"
               ],
               "additionalProperties": false
+            },
+            "readinessWithheldReason": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": ["id", "version", "title", "extractionMode"],
           "additionalProperties": false
         },
-        "analysis": {
+        "freshness": {
           "type": "object",
           "properties": {
-            "id": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "current",
+                "working-tree-modified",
+                "behind-head",
+                "specification-moved",
+                "aged",
+                "not-indexed"
+              ]
+            },
+            "stale": {
+              "type": "boolean"
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "indexedSnapshotId": {
               "type": "string",
               "minLength": 1
             },
-            "snapshotId": {
+            "indexedAt": {
               "type": "string",
               "minLength": 1
             },
-            "status": {
+            "currentCommitSha": {
               "type": "string",
               "minLength": 1
             },
-            "impactCount": {
-              "type": "integer",
-              "minimum": 0
+            "recommendedAction": {
+              "type": "string",
+              "minLength": 1
             }
           },
-          "required": ["id", "snapshotId", "status", "impactCount"],
+          "required": ["state", "stale", "reasons"],
           "additionalProperties": false
         },
-        "requirements": {
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "requirementCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "requirementsWithStructuralImpact": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "indexWarnings": {
+              "type": "object",
+              "properties": {
+                "totalCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "coverageLosingCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "affectsPredictedArea": {
+                  "type": "boolean"
+                },
+                "groups": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "parse-failure",
+                          "unsupported-syntax",
+                          "unresolved-import",
+                          "unresolved-symbol",
+                          "ignored-file",
+                          "missing-generated-file",
+                          "external-dependency",
+                          "stale-index",
+                          "no-adapter",
+                          "other"
+                        ]
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "examplePaths": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "exampleMessage": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "affectsPredictedArea": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": ["category", "count", "examplePaths", "affectsPredictedArea"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["totalCount", "coverageLosingCount", "affectsPredictedArea", "groups"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["requirementCount", "requirementsWithStructuralImpact", "indexWarnings"],
+          "additionalProperties": false
+        },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "totalImpacts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "componentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byLikelihood": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "byEvidenceType": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
+          "additionalProperties": false
+        },
+        "topImpacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "likelihood": {
+                "type": "string",
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+              },
+              "evidenceType": {
+                "type": "string",
+                "enum": [
+                  "direct-structural",
+                  "transitive-structural",
+                  "async-event",
+                  "external-contract",
+                  "field-data-flow",
+                  "configuration-asset",
+                  "semantic-match",
+                  "lexical-only"
+                ]
+              },
+              "impactType": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "hops": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "requirementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "requirementLabels": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tierCappedBy": {
+                "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/topImpacts/items/properties/evidenceType"
+              }
+            },
+            "required": [
+              "nodeId",
+              "name",
+              "likelihood",
+              "evidenceType",
+              "impactType",
+              "confidence",
+              "hops",
+              "requirementIds",
+              "requirementLabels",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "unmatchedRequirements": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
               "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
                 "type": "string",
                 "minLength": 1
               },
@@ -109,105 +399,38 @@
                 "type": "string",
                 "minLength": 1
               },
-              "impacts": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "nodeId": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "likelihood": {
-                      "type": "string",
-                      "enum": ["required", "likely", "possible", "unlikely"]
-                    },
-                    "impactType": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "directness": {
-                      "type": "string",
-                      "enum": ["direct", "indirect"]
-                    },
-                    "confidence": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1
-                    },
-                    "dependencyPath": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "minLength": 1
-                      }
-                    },
-                    "evidenceFiles": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "provenance": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "context": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "application": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "required": [
-                    "nodeId",
-                    "name",
-                    "likelihood",
-                    "impactType",
-                    "directness",
-                    "confidence",
-                    "dependencyPath",
-                    "evidenceFiles"
-                  ],
-                  "additionalProperties": false
-                }
-              },
-              "openQuestions": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "question": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "severity": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "required": ["question", "severity"],
-                  "additionalProperties": false
-                }
+              "origin": {
+                "type": "string",
+                "minLength": 1
               }
             },
-            "required": ["id", "statement", "impacts", "openQuestions"],
+            "required": ["id", "statement", "origin"],
             "additionalProperties": false
           }
         },
-        "warnings": {
+        "unresolvedConcepts": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "concept": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requirementId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["concept", "note"],
+            "additionalProperties": false
           }
         },
-        "architecturalOptions": {
+        "blockingQuestions": {
           "type": "array",
           "items": {
             "type": "object",
@@ -216,255 +439,216 @@
                 "type": "string",
                 "minLength": 1
               },
-              "title": {
+              "question": {
                 "type": "string",
                 "minLength": 1
               },
-              "description": {
+              "severity": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["id", "question", "severity"],
+            "additionalProperties": false
+          }
+        },
+        "nonGoalContradictions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "predictedArtifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "category": {
+                "type": "string",
+                "enum": [
+                  "new-locale-entry",
+                  "new-test",
+                  "new-event-handler",
+                  "new-migration",
+                  "new-contract-definition",
+                  "new-configuration-entry"
+                ]
+              },
+              "reason": {
                 "type": "string",
                 "minLength": 1
               },
-              "affectedNodeIds": {
+              "examplePaths": {
                 "type": "array",
                 "items": {
                   "type": "string",
                   "minLength": 1
                 }
-              },
-              "linkedQuestionId": {
-                "type": "string",
-                "minLength": 1
-              },
-              "implications": {
-                "type": "object",
-                "properties": {
-                  "affectedComponentCount": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "dataChanges": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "contractChanges": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "infrastructureChanges": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "testingImpact": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "complexity": {
-                    "type": "string",
-                    "enum": ["low", "medium", "high"]
-                  },
-                  "risks": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  }
-                },
-                "required": [
-                  "affectedComponentCount",
-                  "dataChanges",
-                  "contractChanges",
-                  "infrastructureChanges",
-                  "testingImpact",
-                  "complexity",
-                  "risks"
-                ],
-                "additionalProperties": false
               }
             },
-            "required": ["id", "title", "description", "affectedNodeIds"],
+            "required": ["category", "reason", "examplePaths"],
             "additionalProperties": false
           }
         },
         "proposedStructure": {
           "type": "object",
           "properties": {
-            "nodes": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "category": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "type": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "originOptionId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "rationale": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "provenance": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "evidenceIds": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "confidence": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1
-                  },
-                  "confidenceSignals": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "type": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "contribution": {
-                          "type": "number"
-                        },
-                        "description": {
-                          "type": "string",
-                          "minLength": 1
-                        }
-                      },
-                      "required": ["type", "contribution"],
-                      "additionalProperties": false
-                    }
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "category",
-                  "type",
-                  "originOptionId",
-                  "rationale",
-                  "provenance",
-                  "evidenceIds",
-                  "confidence",
-                  "confidenceSignals"
-                ],
-                "additionalProperties": false
-              }
+            "nodeCount": {
+              "type": "integer",
+              "minimum": 0
             },
-            "relationships": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "sourceId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "targetId": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "sourceKind": {
-                    "type": "string",
-                    "enum": ["existing", "proposed"]
-                  },
-                  "targetKind": {
-                    "type": "string",
-                    "enum": ["existing", "proposed"]
-                  },
-                  "type": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "status": {
-                    "type": "string",
-                    "const": "proposed"
-                  },
-                  "originOptionId": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/originOptionId"
-                  },
-                  "rationale": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/rationale"
-                  },
-                  "provenance": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/provenance"
-                  },
-                  "evidenceIds": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/evidenceIds"
-                  },
-                  "confidence": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/confidence"
-                  },
-                  "confidenceSignals": {
-                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/proposedStructure/properties/nodes/items/properties/confidenceSignals"
-                  }
-                },
-                "required": [
-                  "id",
-                  "sourceId",
-                  "targetId",
-                  "sourceKind",
-                  "targetKind",
-                  "type",
-                  "status",
-                  "originOptionId",
-                  "rationale",
-                  "provenance",
-                  "evidenceIds",
-                  "confidence",
-                  "confidenceSignals"
-                ],
-                "additionalProperties": false
-              }
+            "relationshipCount": {
+              "type": "integer",
+              "minimum": 0
             }
           },
-          "required": ["nodes", "relationships"],
+          "required": ["nodeCount", "relationshipCount"],
           "additionalProperties": false
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["code", "message"],
+            "additionalProperties": false
+          }
+        },
+        "omittedWarningCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pagination": {
+          "type": "object",
+          "properties": {
+            "returned": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalMatching": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextCursor": {
+              "type": "string",
+              "minLength": 1
+            },
+            "appliedFilters": {
+              "type": "object",
+              "properties": {
+                "topN": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 500
+                },
+                "minLikelihood": {
+                  "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/topImpacts/items/properties/likelihood"
+                },
+                "evidenceTypes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/topImpacts/items/properties/evidenceType"
+                  },
+                  "minItems": 1
+                },
+                "includeLexicalOnly": {
+                  "type": "boolean"
+                },
+                "includeExcluded": {
+                  "type": "boolean"
+                },
+                "includeFullPaths": {
+                  "type": "boolean"
+                },
+                "cursor": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirementId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["returned", "totalMatching", "appliedFilters"],
+          "additionalProperties": false
+        },
+        "impactQuery": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "not-run",
+                "completed",
+                "completed-empty",
+                "partial",
+                "failed",
+                "human-confirmed"
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "resultCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["status", "scope", "limitations", "resultCount"],
+          "additionalProperties": false
+        },
+        "followUp": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       },
       "required": [
         "schemaVersion",
         "command",
-        "specification",
         "analysis",
-        "requirements",
-        "warnings"
+        "specification",
+        "freshness",
+        "coverage",
+        "counts",
+        "topImpacts",
+        "unmatchedRequirements",
+        "unresolvedConcepts",
+        "blockingQuestions",
+        "nonGoalContradictions",
+        "predictedArtifacts",
+        "warnings",
+        "omittedWarningCount",
+        "pagination",
+        "impactQuery",
+        "followUp"
       ],
       "additionalProperties": false
     }

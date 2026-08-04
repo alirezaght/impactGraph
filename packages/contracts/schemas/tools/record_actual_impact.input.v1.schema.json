@@ -1,0 +1,130 @@
+{
+  "$ref": "#/definitions/Tool_record_actual_impact_InputV1",
+  "definitions": {
+    "Tool_record_actual_impact_InputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcomeId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "changedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "addedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "removedFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "changedSymbols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "filePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "symbolName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["added", "removed", "changed"]
+              }
+            },
+            "required": ["filePath", "symbolName", "kind"],
+            "additionalProperties": false
+          }
+        },
+        "relationshipChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "targetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["added", "removed"]
+              }
+            },
+            "required": ["type", "sourceId", "targetId", "kind"],
+            "additionalProperties": false
+          }
+        },
+        "contractsChanged": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "migrationsChanged": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "manualFindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "note": {
+                "type": "string",
+                "minLength": 1
+              },
+              "filePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": ["risk", "correction"]
+              }
+            },
+            "required": ["note", "kind"],
+            "additionalProperties": false
+          }
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["analysisId"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

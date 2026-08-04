@@ -1,4 +1,7 @@
 nodes:
+config:package.json|configuration-file|asset|package.json|configuration|-
+config:web/package.json|configuration-file|asset|package.json|configuration|-
+config:worker/package.json|configuration-file|asset|package.json|configuration|-
 dependency:@google-cloud/pubsub|third-party-service|integration|@google-cloud/pubsub|configuration|-
 dependency:@nestjs/common|third-party-service|integration|@nestjs/common|configuration|-
 dependency:@nestjs/event-emitter|third-party-service|integration|@nestjs/event-emitter|configuration|-
@@ -65,12 +68,16 @@ terraform:infra/google_pubsub_subscription.deal_events_worker|pubsub-subscriptio
 terraform:infra/google_pubsub_topic.deal_events|pubsub-topic|infrastructure|deal-events|configuration|-
 topic:deal-events|topic|integration|deal-events|framework-convention|-
 topic:deal-event|topic|integration|deal-event|framework-convention|-
+unresolved:push:subscription:deal-events-worker|unresolved-external-boundary|integration|deal-events-worker → (0 candidate push routes in this repository)|framework-convention|-
+unresolved:push:terraform:infra/google_pubsub_subscription.deal_events_worker|unresolved-external-boundary|integration|deal-events-worker → (0 candidate push routes in this repository)|framework-convention|-
 workspace:cross-stack|workspace|repository|cross-stack|configuration|-
 
 edges:
 CALLS_ENDPOINT|symbol:web/src/lib/api.ts#createDeal->route:POST /api/deals|framework-convention|ev3
 CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:GET /api/deals|framework-convention|ev3
 CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadDeals->route:POST /api/deals|framework-convention|ev3
+CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadExternal->route:GET /api/deals|framework-convention|ev2
+CALLS_ENDPOINT|symbol:web/src/lib/api.ts#loadExternal->route:POST /api/deals|framework-convention|ev2
 CALLS|symbol:worker/src/deal-events.service.ts#DealEventsService.onDealEvent->symbol:worker/src/deal-publisher.ts#publishDealCreated|static-analysis|ev1
 CONFIGURES|env:DEAL_EVENTS_TOPIC->file:worker/src/deal-publisher.ts|static-analysis|ev1
 CONFIGURES|env:LEGACY_TOPIC->file:worker/src/deal-publisher.ts|static-analysis|ev1
@@ -90,12 +97,15 @@ CONTAINS|file:infra/main.tf->terraform:infra/google_cloud_run_v2_service.unmatch
 CONTAINS|file:infra/main.tf->terraform:infra/google_cloud_run_v2_service.web|configuration|ev1
 CONTAINS|file:infra/main.tf->terraform:infra/google_pubsub_subscription.deal_events_worker|configuration|ev1
 CONTAINS|file:infra/main.tf->terraform:infra/google_pubsub_topic.deal_events|configuration|ev1
+CONTAINS|file:package.json->config:package.json|configuration|ev1
 CONTAINS|file:service/src/main/java/com/example/deals/DealEventBridge.java->symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge|static-analysis|ev1
+CONTAINS|file:web/package.json->config:web/package.json|configuration|ev1
 CONTAINS|file:web/src/lib/api.ts->symbol:web/src/lib/api.ts#createDeal|static-analysis|ev1
 CONTAINS|file:web/src/lib/api.ts->symbol:web/src/lib/api.ts#loadDeals|static-analysis|ev1
 CONTAINS|file:web/src/lib/api.ts->symbol:web/src/lib/api.ts#loadExternal|static-analysis|ev1
 CONTAINS|file:web/src/lib/api.ts->symbol:web/src/lib/api.ts#loadOne|static-analysis|ev1
 CONTAINS|file:web/src/pages/index.astro->symbol:web/src/pages/index.astro#index|framework-convention|ev1
+CONTAINS|file:worker/package.json->config:worker/package.json|configuration|ev1
 CONTAINS|file:worker/src/deal-events.service.ts->symbol:worker/src/deal-events.service.ts#DealEventsService|static-analysis|ev1
 CONTAINS|file:worker/src/deal-publisher.ts->symbol:worker/src/deal-publisher.ts#publishConfiguredEvent|static-analysis|ev1
 CONTAINS|file:worker/src/deal-publisher.ts->symbol:worker/src/deal-publisher.ts#publishDealCreated|static-analysis|ev1

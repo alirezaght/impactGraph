@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Deal API", "version": "1.0.0" },
+  "paths": {
+    "/api/deals": {
+      "get": {
+        "operationId": "listDeals",
+        "responses": {
+          "200": {
+            "description": "deals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "title": { "type": "string" },
+                      "expiry": { "type": ["string", "null"] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

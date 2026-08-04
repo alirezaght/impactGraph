@@ -1,6 +1,7 @@
-import { computeImpactConfidence } from '@impactgraph/domain';
+import { capLikelihood, computeImpactConfidence } from '@impactgraph/domain';
 
 import { obligationFor } from './change-kind.js';
+import { basisFor } from './evidence-basis.js';
 
 import type { ImpactCandidate } from './candidate-traversal.js';
 import type { PredictedChange } from './change-kind.js';
@@ -138,7 +139,12 @@ const likelihoodFor = (
   corroborated: boolean,
 ): ImpactLikelihood => {
   if (candidate.distance === 0) {
-    return 'required';
+    // An anchor is `required` only when the specification named it by identifier. A `semantic` or
+    // `lexical` anchor means the engine GUESSED which component was meant, and guessing is not an
+    // obligation — the tier ceiling for those bases holds it lower (item 3).
+    return candidate.match.mechanism === 'semantic' || candidate.match.mechanism === 'lexical'
+      ? 'possible'
+      : 'required';
   }
   if (candidate.distance > 1) {
     return 'possible';
@@ -189,21 +195,26 @@ export const classifyCandidate = (
       ...(node.knowledge.evidenceIds as readonly string[]),
     ]),
   ];
+  const basis = basisFor(candidate, node);
+  const proposed = likelihoodFor(candidate, context, (context.coChangeCount ?? 0) >= 2);
+  const likelihood = capLikelihood(proposed, basis.evidenceTypes);
   return {
     ok: true,
     value: {
       requirementId,
       nodeId: candidate.nodeId,
-      likelihood: likelihoodFor(candidate, context, (context.coChangeCount ?? 0) >= 2),
+      likelihood,
       impactType: impactTypeFor(node),
       directness,
       confidence: confidence.value.value,
       confidenceSignals: confidence.value.signals,
-      explanation: explanationFor(candidate, node, context),
+      explanation: `${explanationFor(candidate, node, context)} Basis: ${basis.primary}.`,
       expectedChanges: [`Review ${node.name} against requirement ${requirementId}`],
       evidenceIds,
       dependencyPath: candidate.dependencyPath,
       provenance: 'static-analysis',
+      evidenceTypes: basis.evidenceTypes,
+      ...(likelihood === proposed ? {} : { tierCappedBy: basis.primary }),
     },
   };
 };

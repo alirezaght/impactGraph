@@ -83,7 +83,9 @@ export const impactGraphNodeSchema = z
     /** `impact` = a predicted impact; `dependency` = a hop on the dependency path (§18.4). */
     kind: z.enum(['impact', 'dependency']),
     requirementIds: z.array(z.string().min(1)),
-    likelihood: z.enum(['required', 'likely', 'possible', 'unlikely']).optional(),
+    likelihood: z
+      .enum(['required', 'likely', 'possible', 'lexical-only', 'unlikely', 'excluded'])
+      .optional(),
     impactType: z.string().min(1).optional(),
     directness: z.enum(['direct', 'indirect']).optional(),
     confidence: z.number().min(0).max(1).optional(),

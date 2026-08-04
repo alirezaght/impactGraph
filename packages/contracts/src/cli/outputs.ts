@@ -4,6 +4,8 @@ import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
+import { cliReviewBreakdownSchema } from './review-breakdown.js';
+
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
 // validated by the CLI before printing; consumers validate again before trusting.
 
@@ -131,7 +133,7 @@ const analyzeImpactSchema = z
   .object({
     nodeId: z.string().min(1),
     name: z.string().min(1),
-    likelihood: z.enum(['required', 'likely', 'possible', 'unlikely']),
+    likelihood: z.enum(['required', 'likely', 'possible', 'lexical-only', 'unlikely', 'excluded']),
     impactType: z.string().min(1),
     directness: z.enum(['direct', 'indirect']),
     confidence: z.number().min(0).max(1),
@@ -372,6 +374,13 @@ export const cliReviewOutputSchema = z
     ruleViolations: z.array(ruleViolationSchema),
     /** True when findings contain missing/unexpected/divergent OR any rule is violated. */
     discrepanciesFound: z.boolean(),
+    /**
+     * Additive v1 field (item 13): the same review, split by the distinction that decides what a
+     * reader does about each finding — missed existing vs missed new, false strong predictions with
+     * their basis, lexical-only predictions that changed, async/contract/asset/migration changes,
+     * non-goal contradictions, and the analyzed scope. Absent on producers that predate it.
+     */
+    breakdown: cliReviewBreakdownSchema.optional(),
   })
   .strict();
 

@@ -1,0 +1,8 @@
+{
+  "name": "notification-chain",
+  "private": true,
+  "workspaces": [
+    "deal-management",
+    "notification-service"
+  ]
+}

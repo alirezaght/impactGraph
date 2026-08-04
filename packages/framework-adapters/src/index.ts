@@ -15,3 +15,11 @@ export { routeIdentity } from './route-contract.js';
 export type { RouteNodeIdentity } from './route-contract.js';
 export { pathParametersOf } from './route-parameters.js';
 export type { PathSyntax } from './route-parameters.js';
+
+export { linkLocaleKeys, linkOpenApiOperations } from './cross-stack/locale-links.js';
+
+// Item 5: the event-driven chain — outbox → relay → topic → push endpoint → projection.
+export { createAsyncChainAdapter } from './async-chain/async-chain-adapter.js';
+export { linkOutbox, outboxRecordNodeId } from './async-chain/outbox-links.js';
+export { linkPushEndpoints, linkProjections } from './async-chain/delivery-links.js';
+export { linkOutboundHttp, pathOfAbsoluteUrl } from './cross-stack/outbound-http.js';

@@ -10,7 +10,16 @@ import { graphCategoryCountsSchema, graphRenderCategorySchema } from './graph-ca
 // evidence payload is the point: likelihood, impact type, directness, hop counts, confidence WITH
 // its §14 contributing signals, requirement attribution, and proposed structure kept separate.
 
-export const impactLikelihoodSchema = z.enum(['required', 'likely', 'possible', 'unlikely']);
+export const impactLikelihoodSchema = z.enum([
+  'required',
+  'likely',
+  'possible',
+  // Two tiers added by the trial follow-up (item 3): a text-overlap finding is not a prediction,
+  // and a component a specification non-goal rules out is excluded, not merely unlikely.
+  'lexical-only',
+  'unlikely',
+  'excluded',
+]);
 
 export const impactDirectnessSchema = z.enum(['direct', 'indirect']);
 
@@ -102,7 +111,11 @@ const impactTotalsSchema = z
         required: z.number().int().min(0),
         likely: z.number().int().min(0),
         possible: z.number().int().min(0),
+        // Item 3: text-overlap findings and specification exclusions are counted apart from the
+        // predictive tiers so a reader can see how much of the result is noise.
+        'lexical-only': z.number().int().min(0),
         unlikely: z.number().int().min(0),
+        excluded: z.number().int().min(0),
       })
       .strict(),
     byImpactType: z.array(

@@ -15,12 +15,14 @@ import {
 import type { RawObject } from './parse-helpers.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
+import type { ExtractionQuality, ExtractionStrategy } from '../specification/extraction-quality.js';
 import type {
   Requirement,
   RequirementPriority,
   RequirementType,
   TextRange,
 } from '../specification/requirement.js';
+import type { SpecNote, SpecNoteKind } from '../specification/spec-notes.js';
 import type {
   Actor,
   ArchitecturalDecision,
@@ -81,6 +83,76 @@ const readRequirement: Reader<Requirement> = (raw, path, issues) => {
     ...(priority === undefined ? {} : { priority: priority as RequirementPriority }),
     ...(sourceRange === undefined ? {} : { sourceRange }),
     status: readString(obj, 'status', `${path}.status`, issues) as Requirement['status'],
+    // Additive fields: absent on specifications stored before structure-aware extraction.
+    ...optionalStrings(obj, path, issues, ['origin', 'label', 'heading']),
+  };
+};
+
+/** Reads a set of optional string fields into a spread-ready object, skipping the absent ones. */
+const optionalStrings = (
+  obj: RawObject,
+  path: string,
+  issues: ValidationIssue[],
+  fields: readonly string[],
+): Record<string, string> => {
+  const read: Record<string, string> = {};
+  for (const field of fields) {
+    const value = readOptionalString(obj, field, `${path}.${field}`, issues);
+    if (value !== undefined) {
+      read[field] = value;
+    }
+  }
+  return read;
+};
+
+const readNote: Reader<SpecNote> = (raw, path, issues) => {
+  const obj = expectObject(raw, path, issues);
+  const rangeRaw = obj['sourceRange'];
+  let sourceRange: TextRange | undefined;
+  if (rangeRaw !== undefined) {
+    const range = expectObject(rangeRaw, `${path}.sourceRange`, issues);
+    sourceRange = {
+      startOffset: readNumber(range, 'startOffset', `${path}.sourceRange.startOffset`, issues),
+      endOffset: readNumber(range, 'endOffset', `${path}.sourceRange.endOffset`, issues),
+    };
+  }
+  return {
+    id: readString(obj, 'id', `${path}.id`, issues),
+    kind: readString(obj, 'kind', `${path}.kind`, issues) as SpecNoteKind,
+    statement: readString(obj, 'statement', `${path}.statement`, issues),
+    ...optionalStrings(obj, path, issues, ['heading']),
+    ...(sourceRange === undefined ? {} : { sourceRange }),
+  };
+};
+
+const readExtractionQuality = (
+  raw: unknown,
+  path: string,
+  issues: ValidationIssue[],
+): ExtractionQuality => {
+  const obj = expectObject(raw, path, issues);
+  return {
+    strategy: readString(obj, 'strategy', `${path}.strategy`, issues) as ExtractionStrategy,
+    structuredRequirementCount: readNumber(
+      obj,
+      'structuredRequirementCount',
+      `${path}.structuredRequirementCount`,
+      issues,
+    ),
+    proseRequirementCount: readNumber(
+      obj,
+      'proseRequirementCount',
+      `${path}.proseRequirementCount`,
+      issues,
+    ),
+    recognizedSections: readStringArray(
+      obj,
+      'recognizedSections',
+      `${path}.recognizedSections`,
+      issues,
+    ),
+    provisional: obj['provisional'] === true,
+    warnings: readStringArray(obj, 'warnings', `${path}.warnings`, issues),
   };
 };
 
@@ -132,6 +204,29 @@ const readDecision: Reader<ArchitecturalDecision> = (raw, path, issues) => {
   };
 };
 
+/**
+ * Fields added by structure-aware extraction. Absent means the stored version predates them, which
+ * is NOT the same claim as "the author wrote none" — so each field stays absent rather than becoming
+ * an empty array that would read as a measured zero.
+ */
+const readAdditive = (
+  value: RawObject,
+  issues: ValidationIssue[],
+): Pick<Specification, 'notes' | 'extractionQuality'> => ({
+  ...(value['notes'] === undefined
+    ? {}
+    : { notes: readEach(readArray(value, 'notes', 'notes', issues), 'notes', issues, readNote) }),
+  ...(value['extractionQuality'] === undefined
+    ? {}
+    : {
+        extractionQuality: readExtractionQuality(
+          value['extractionQuality'],
+          'extractionQuality',
+          issues,
+        ),
+      }),
+});
+
 export const parseSpecification = (value: unknown): Result<Specification, ValidationError> => {
   if (!isRawObject(value)) {
     return err(
@@ -177,6 +272,7 @@ export const parseSpecification = (value: unknown): Result<Specification, Valida
       issues,
       readDecision,
     ),
+    ...readAdditive(value, issues),
   };
   if (issues.length > 0) {
     return err(validationError(issues));

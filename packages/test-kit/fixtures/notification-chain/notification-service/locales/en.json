@@ -1,0 +1,8 @@
+{
+  "nda": {
+    "signature_request": {
+      "subject": "An NDA signature was requested",
+      "body": "{sellerName} asked you to sign an NDA."
+    }
+  }
+}

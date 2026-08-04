@@ -151,7 +151,11 @@ describe('cross-stack adapter — what it refuses to correlate (PRD §C13)', () 
         [
           fetchFact('/api/deals', 'symbol:src/lib/api.ts#loadDeals'),
           fetchFact('/api/deal', 'symbol:src/lib/api.ts#loadDeals'), // near miss
-          fetchFact('https://example.com/api/deals'), // another origin
+          // An ABSOLUTE url now matches by PATH (item 6): a call to a sibling service is the
+          // commonest cross-repository shape, and refusing it because the host is unrecognized drops
+          // every such call. Here it resolves to the same (file → route) pair the last fact does, so
+          // the duplicate edge is dropped rather than emitted twice.
+          fetchFact('https://example.com/api/deals'),
           // An enclosing id the graph does not know must never become a dangling edge source.
           fetchFact('/api/deals', 'symbol:src/lib/api.ts#neverDeclared'),
         ],

@@ -1,4 +1,4 @@
-import type { ExitCodeName, GraphGroupingDto } from '@impactgraph/contracts';
+import type { ExitCodeName, GraphGroupingDto, ImpactFilters } from '@impactgraph/contracts';
 
 export type OutputFormat = 'text' | 'json' | 'markdown';
 
@@ -13,6 +13,13 @@ export interface CommandContext {
   readonly grouping?: GraphGroupingDto | undefined;
   /** `--analysis` — render that stored analysis's blast radius instead of the architecture. */
   readonly analysisId?: string | undefined;
+  /**
+   * `--full` — emit the complete analyze document. The default is the BOUNDED summary (item 9):
+   * the previous default was hundreds of kilobytes on a real repository, which no agent could read.
+   */
+  readonly full?: boolean | undefined;
+  /** `--top`, `--min-likelihood`, `--include-lexical`, `--include-excluded`. */
+  readonly impactFilters?: ImpactFilters | undefined;
   /** Output sink — stdout in production, captured in tests. Never console.* (lint). */
   readonly write: (line: string) => void;
 }

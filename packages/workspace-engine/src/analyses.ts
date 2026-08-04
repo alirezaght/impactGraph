@@ -65,6 +65,31 @@ export const listAnalyses = async (rootDir: string): Promise<Failable<AnalysisLi
   };
 };
 
+/**
+ * The most recently created analysis, whatever its status — the default subject of a follow-up
+ * query such as `list_impacts` immediately after `analyze_impact`. Deliberately NOT the approved
+ * one: paging through the impacts of a draft is the common case, and requiring approval first
+ * would make the bounded summary's follow-up path unusable.
+ */
+export const latestAnalysis = async (rootDir: string): Promise<Failable<ImpactAnalysis>> => {
+  const store = createImpactAnalysisArtifactStore(artifactsPath(rootDir));
+  const all = await store.listAll();
+  if (!all.ok) {
+    return { ok: false, error: { category: 'configurationError', message: all.error.message } };
+  }
+  const latest = [...all.value].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop();
+  if (latest === undefined) {
+    return {
+      ok: false,
+      error: {
+        category: 'configurationError',
+        message: 'no impact analysis has been built yet — run analyze_impact first',
+      },
+    };
+  }
+  return { ok: true, value: latest };
+};
+
 /** Load a stored analysis regardless of status (read-only access). */
 export const loadAnalysis = async (
   rootDir: string,

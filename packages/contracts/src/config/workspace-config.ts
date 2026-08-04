@@ -40,6 +40,31 @@ export const workspaceConfigSchema = z
       })
       .strict()
       .optional(),
+    /**
+     * Related repositories analyzed as ONE workspace while keeping separate identities (item 6).
+     *
+     * Each entry is indexed under its own repository identity and its own snapshot — the point is not
+     * to merge them into one repository but to let deterministic correspondences (HTTP routes and
+     * clients, OpenAPI operations, event type names, Pub/Sub topics and subscriptions, shared schemas,
+     * Terraform resources, Cloud Run service names) join across them.
+     *
+     * A repository listed here but not present on disk is NOT an error: the outbound boundary is still
+     * modelled and its consumer is reported as unresolved, which is the honest answer (item 11).
+     */
+    repositories: z
+      .array(
+        z
+          .object({
+            /** Stable name used in node ids and in every report. */
+            name: z.string().min(1),
+            /** Path relative to this workspace root, or absolute. */
+            path: z.string().min(1),
+            /** Set false to keep the registration but skip indexing it this run. */
+            enabled: z.boolean().optional(),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict();
 

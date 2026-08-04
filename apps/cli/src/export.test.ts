@@ -54,7 +54,7 @@ describe('impactgraph export (Stories 10.1/10.2/4.4, PRD §22/§38.1)', () => {
     git('add', '.');
     git('commit', '-m', 'init impactgraph + spec');
     await cli('index');
-    const analyzed = await cli('analyze', 'feature.md', '--format', 'json');
+    const analyzed = await cli('analyze', 'feature.md', '--full', '--format', 'json');
     return cliAnalyzeOutputSchema.parse(analyzed.json()).analysis.id;
   };
 

@@ -1,16 +1,23 @@
 import {
   createNextSpecificationVersion,
   createSpecification,
+  isProvisional,
+  isStructuredOrigin,
   ok,
+  originOf,
+  REQUIREMENT_ORIGINS,
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_TYPES,
+  specNoteId,
   stableContentId,
   stableRequirementId,
+  strategyFor,
 } from '@impactgraph/domain';
 
 import { fallbackExtraction } from './fallback-extractor.js';
 
 import type {
+  ExtractedNoteDraft,
   ExtractedQuestionDraft,
   ExtractedRequirementDraft,
   SpecificationExtraction,
@@ -19,14 +26,17 @@ import type {
 import type { ClockPort } from '../ports/clock.js';
 import type { ModelProviderError } from '../ports/model-provider.js';
 import type {
+  ExtractionQuality,
   OpenQuestion,
   OpenQuestionSeverity,
   Requirement,
+  RequirementOrigin,
   RequirementPriority,
   RequirementType,
   Result,
   Specification,
   SpecificationSourceType,
+  SpecNote,
   ValidationError,
 } from '@impactgraph/domain';
 
@@ -53,15 +63,27 @@ export interface ExtractSpecificationOutcome {
   readonly providerError?: ModelProviderError;
 }
 
-const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requirement => {
-  const type = (REQUIREMENT_TYPES as readonly string[]).includes(draft.type)
+/**
+ * Vocabulary coercion for provider-supplied drafts. Anything outside a closed vocabulary falls back
+ * to the WEAKEST legal value — never a strong one — so a provider typo cannot inflate a claim.
+ */
+const coerce = (draft: ExtractedRequirementDraft) => ({
+  type: (REQUIREMENT_TYPES as readonly string[]).includes(draft.type)
     ? (draft.type as RequirementType)
-    : 'functional';
-  const priority =
+    : ('functional' as const),
+  priority:
     draft.priority !== undefined &&
     (REQUIREMENT_PRIORITIES as readonly string[]).includes(draft.priority)
       ? (draft.priority as RequirementPriority)
-      : undefined;
+      : undefined,
+  origin:
+    draft.origin !== undefined && (REQUIREMENT_ORIGINS as readonly string[]).includes(draft.origin)
+      ? draft.origin
+      : ('prose-fallback' as RequirementOrigin),
+});
+
+const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requirement => {
+  const { type, priority, origin } = coerce(draft);
   const offset = draft.sourceExcerpt === undefined ? -1 : rawText.indexOf(draft.sourceExcerpt);
   return {
     id: stableRequirementId(draft.statement),
@@ -74,6 +96,54 @@ const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requi
       ? {}
       : { sourceRange: { startOffset: offset, endOffset: offset + draft.sourceExcerpt.length } }),
     status: 'draft',
+    origin,
+    ...(draft.label === undefined ? {} : { label: draft.label }),
+    ...(draft.heading === undefined ? {} : { heading: draft.heading }),
+  };
+};
+
+const toNote = (draft: ExtractedNoteDraft, rawText: string): SpecNote => {
+  const offset = rawText.indexOf(draft.statement);
+  return {
+    id: specNoteId(draft.kind, draft.statement),
+    kind: draft.kind,
+    statement: draft.statement,
+    ...(draft.heading === undefined ? {} : { heading: draft.heading }),
+    ...(offset < 0
+      ? {}
+      : { sourceRange: { startOffset: offset, endOffset: offset + draft.statement.length } }),
+  };
+};
+
+/**
+ * A provider that returns no quality report still gets one, derived from what its drafts say about
+ * themselves. Absent is never read as "good": drafts with no origin count as prose, which makes
+ * the extraction provisional — the same treatment the deterministic fallback gets.
+ */
+const qualityOf = (
+  extraction: SpecificationExtraction,
+  requirements: readonly Requirement[],
+): ExtractionQuality => {
+  if (extraction.quality !== undefined) {
+    return extraction.quality;
+  }
+  const structured = requirements.filter((requirement) =>
+    isStructuredOrigin(originOf(requirement)),
+  ).length;
+  const prose = requirements.length - structured;
+  return {
+    strategy: strategyFor(structured, prose),
+    structuredRequirementCount: structured,
+    proseRequirementCount: prose,
+    recognizedSections: [],
+    provisional: isProvisional(structured, prose),
+    warnings:
+      structured === 0 && requirements.length > 0
+        ? [
+            'The extraction provider reported no requirement origins, so no requirement can be ' +
+              'traced to an explicit statement in the specification — the analysis is provisional.',
+          ]
+        : [],
   };
 };
 
@@ -134,6 +204,10 @@ const buildSpecification = (
       extraction.openQuestions.map((draft) => toQuestion(draft, requirementIds)),
     ),
     decisions: request.previousVersion?.decisions ?? [],
+    ...(extraction.notes === undefined
+      ? {}
+      : { notes: dedupeById(extraction.notes.map((draft) => toNote(draft, request.rawText))) }),
+    extractionQuality: qualityOf(extraction, requirements),
   };
   if (request.previousVersion !== undefined) {
     return createNextSpecificationVersion(request.previousVersion, content, now);

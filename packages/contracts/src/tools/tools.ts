@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 import { edgeExplanationSchema, nodeExplanationSchema } from '../artifacts/explanation.js';
 import {
-  cliAnalyzeOutputSchema,
+  cliImpactPageSchema,
+  cliImpactSummarySchema,
+  impactFiltersSchema,
+  queryOutcomeSchema,
+} from '../cli/impact-summary.js';
+import {
   readinessSchema,
   cliArchitectureOutputSchema,
   cliExportOutputSchema,
@@ -16,6 +21,7 @@ import { CONFIG_MAINTENANCE_TOOL_CONTRACTS } from './config-maintenance-tools.js
 import { CONFIG_TOOL_CONTRACTS } from './config-tools.js';
 import { DECISION_TOOL_CONTRACTS } from './decision-tools.js';
 import { GRAPH_EXPORT_TOOL_CONTRACTS } from './graph-export-tools.js';
+import { OUTCOME_TOOL_CONTRACTS } from './outcome-tools.js';
 import { STRUCTURE_TOOL_CONTRACTS } from './structure-tools.js';
 
 // PRD §21 — the MCP tool boundary. One Zod source of truth per tool, validated on BOTH ends
@@ -57,6 +63,11 @@ const requirementSummarySchema = z
   })
   .strict();
 
+/**
+ * `matchKind` and `score` are additive v1 fields (item 4). They are what makes a conceptual search
+ * safe to build on: an `exact` hit is the component the query named; a `lexical` hit is a lead. A
+ * caller that cannot tell them apart will treat a coincidence as an answer.
+ */
 const componentHitSchema = z
   .object({
     nodeId: z.string().min(1),
@@ -65,6 +76,9 @@ const componentHitSchema = z
     type: z.string().min(1),
     path: z.string().min(1).optional(),
     provenance: z.string().min(1),
+    matchKind: z.enum(['exact', 'normalized-name', 'conceptual', 'related', 'lexical']).optional(),
+    score: z.number().min(0).max(1).optional(),
+    matchedOn: z.array(z.string().min(1)).optional(),
   })
   .strict();
 
@@ -162,9 +176,15 @@ export const MCP_TOOL_CONTRACTS = {
   },
   analyze_impact: {
     description:
-      'Build an evidence-backed impact analysis for a submitted specification against the current graph. Persists a new draft analysis.',
-    input: z.object({ specificationId: z.string().min(1) }).strict(),
-    output: cliAnalyzeOutputSchema,
+      'Build an evidence-backed impact analysis for a submitted specification and return a BOUNDED summary: status, extraction quality, index freshness, coverage, counts, the top structural impacts, unmatched requirements, unresolved concepts, blocking questions and important warnings. Lexical-only matches are excluded by default. Use list_impacts for the full paginated detail. Persists a new draft analysis.',
+    input: impactFiltersSchema.extend({ specificationId: z.string().min(1) }).strict(),
+    output: cliImpactSummarySchema,
+  },
+  list_impacts: {
+    description:
+      'Page through the impacts of a stored analysis with dependency paths, evidence bases and §14 confidence signals. Supports topN, minLikelihood, evidenceTypes, includeLexicalOnly, includeExcluded, requirementId and a pagination cursor.',
+    input: impactFiltersSchema.extend({ analysisId: z.string().min(1).optional() }).strict(),
+    output: cliImpactPageSchema,
   },
   get_impact_analysis: {
     description: 'Fetch a stored impact analysis document by id.',
@@ -250,15 +270,29 @@ export const MCP_TOOL_CONTRACTS = {
   ...STRUCTURE_TOOL_CONTRACTS,
   ...DECISION_TOOL_CONTRACTS,
   ...GRAPH_EXPORT_TOOL_CONTRACTS,
+  ...OUTCOME_TOOL_CONTRACTS,
   find_components: {
-    description: 'Find graph nodes by name or path substring in the current graph.',
+    description:
+      'Find components by identifier OR by concept. A conceptual query ("NDA signature request notification message rendering") is matched against names, normalized naming, paths, node kinds and graph neighbourhoods; each hit states its matchKind so an identifier match is distinguishable from a lead. The result carries an explicit query outcome: an empty result says whether the query ran, what scope it covered, and what was not searched.',
     input: z
       .object({
         query: z.string().min(1),
         limit: z.number().int().min(1).max(200).optional(),
+        /** Restrict to these §12.1 node types. */
+        nodeTypes: z.array(z.string().min(1)).min(1).optional(),
+        /** Drop token-overlap-only hits. Default: keep them — discovery wants leads. */
+        includeLexical: z.boolean().optional(),
       })
       .strict(),
-    output: z.object({ components: z.array(componentHitSchema) }).strict(),
+    output: z
+      .object({
+        components: z.array(componentHitSchema),
+        /** Grades of answer present, so a caller sees at a glance what it got. */
+        matchKinds: z.array(z.string().min(1)).optional(),
+        /** Item 11: the difference between "nothing indexed matches" and "no query ran". */
+        outcome: queryOutcomeSchema.optional(),
+      })
+      .strict(),
   },
 } as const;
 
