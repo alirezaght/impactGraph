@@ -35,6 +35,23 @@ export const priorityOf = (statement: string): string | undefined => {
   return undefined;
 };
 
+// Prose abbreviations the dotted pattern would otherwise capture ("e.g." reads as e[.g]).
+const ABBREVIATION_NOISE = new Set(['e.g', 'i.e', 'a.k.a', 'p.s']);
+const VERSION_LIKE = /^v?\d+(?:\.\d+)+$/;
+const MAX_CONCEPT_LENGTH = 80;
+const MAX_CONCEPT_WORDS = 4;
+
+/**
+ * A concept must plausibly map to an architectural element. A backticked span of five or more
+ * words is a quoted sentence, not a component name; an abbreviation or version number maps to
+ * nothing. The length bound still admits deep monorepo file paths (which carry no spaces).
+ */
+const isNoiseTerm = (term: string): boolean =>
+  ABBREVIATION_NOISE.has(term.toLowerCase()) ||
+  VERSION_LIKE.test(term) ||
+  term.length > MAX_CONCEPT_LENGTH ||
+  term.split(/\s+/).length > MAX_CONCEPT_WORDS;
+
 /**
  * Concept candidates: backticked terms, multi-humped CamelCase, dotted event names, and
  * snake_case identifiers.
@@ -52,7 +69,13 @@ export const conceptsOf = (statement: string): string[] => {
   const dotted = [...statement.matchAll(/\b([a-z][a-z0-9]*(?:[._][a-z0-9]+){1,4})\b/g)].map(
     (match) => match[1] ?? '',
   );
-  return [...new Set([...backticked, ...camelCase, ...dotted].filter((term) => term.length > 1))];
+  return [
+    ...new Set(
+      [...backticked, ...camelCase, ...dotted].filter(
+        (term) => term.length > 1 && !isNoiseTerm(term),
+      ),
+    ),
+  ];
 };
 
 const BULLET = /^([-*+]|\d+[.)])\s+/;
