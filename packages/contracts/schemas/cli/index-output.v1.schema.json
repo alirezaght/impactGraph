@@ -90,6 +90,10 @@
               "reason": {
                 "type": "string",
                 "minLength": 1
+              },
+              "reasonCode": {
+                "type": "string",
+                "enum": ["not-indexed", "disabled", "path-missing", "path-outside-root"]
               }
             },
             "required": ["name", "indexed", "fileCount"],

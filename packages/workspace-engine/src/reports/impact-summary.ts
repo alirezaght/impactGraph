@@ -14,6 +14,7 @@ import {
   selectImpacts,
 } from './impact-selection.js';
 import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impact-summary-facts.js';
+import { toIndexWarningReportDto } from './index-health-dto.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
 import { buildRequiredActions } from './required-actions.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
@@ -47,6 +48,12 @@ export interface ImpactSummaryInput {
   readonly indexWarnings: readonly RawIndexWarning[];
   /** Item 10: the scanner's ignored-file count, which has no per-file warning. */
   readonly ignoredFileCount?: number;
+  /**
+   * The run's TRUE warning count. `indexWarnings` is the persisted, capped sample; without the
+   * true count the report's total silently maxes out near the cap while status reports the real
+   * number — two tools disagreeing about the same fact.
+   */
+  readonly totalWarningCount?: number;
   /** Repository roster + discovery state; absent when the caller has no workspace on disk. */
   readonly workspace?: WorkspaceRepositoryContext;
   readonly filters?: ImpactFilters;
@@ -186,19 +193,19 @@ const coverageBlock = (
   const report = categorizeIndexWarnings(
     input.indexWarnings,
     predictedPathsOf(input.analysis, input.graph),
-    ...(input.ignoredFileCount === undefined
-      ? []
-      : [{ ignoredFileCount: input.ignoredFileCount }]),
+    {
+      ...(input.ignoredFileCount === undefined
+        ? {}
+        : { ignoredFileCount: input.ignoredFileCount }),
+      ...(input.totalWarningCount === undefined
+        ? {}
+        : { totalWarningCount: input.totalWarningCount }),
+    },
   );
   return {
     requirementCount: input.specification.requirements.length,
     requirementsWithStructuralImpact: input.specification.requirements.length - unmatchedCount,
-    indexWarnings: {
-      totalCount: report.totalCount,
-      coverageLosingCount: report.coverageLosingCount,
-      affectsPredictedArea: report.affectsPredictedArea,
-      groups: report.groups.map((group) => ({ ...group, examplePaths: [...group.examplePaths] })),
-    },
+    indexWarnings: toIndexWarningReportDto(report),
   };
 };
 

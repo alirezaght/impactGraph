@@ -1,0 +1,29 @@
+{
+  "$ref": "#/definitions/CliVersionOutputV1",
+  "definitions": {
+    "CliVersionOutputV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "command": {
+          "type": "string",
+          "const": "version"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["schemaVersion", "command", "name", "version"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

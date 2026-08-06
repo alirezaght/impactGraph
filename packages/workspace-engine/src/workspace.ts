@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 
+import { categorizeIndexWarnings } from '@impactgraph/domain';
 import {
   ensureWorkspaceScaffold,
   indexDatabasePath,
@@ -9,10 +10,13 @@ import {
 } from '@impactgraph/persistence';
 
 import { failWith } from './failure.js';
+import { assessWorkspaceFreshness, parseWarningLine } from './freshness.js';
+import { toIndexFreshnessDto, toIndexWarningReportDto } from './reports/index-health-dto.js';
 import { snapshotSummary } from './snapshot.js';
 
 import type { Failable } from './failure.js';
-import type { IndexStorePort } from '@impactgraph/application';
+import type { IndexRunRecord, IndexStorePort } from '@impactgraph/application';
+import type { IndexFreshnessDto, IndexWarningReportDto } from '@impactgraph/contracts';
 
 export interface WorkspaceScaffoldOutcome {
   readonly created: readonly string[];
@@ -49,17 +53,68 @@ export interface WorkspaceStatus {
   readonly snapshot?: ReturnType<typeof snapshotSummary> | undefined;
   readonly counts?: { files: number; nodes: number; edges: number } | undefined;
   readonly lastRun?: { finishedAt: string; durationMs: number; warningCount: number } | undefined;
+  /** Read-time index freshness (item 9): the status surface states staleness itself. */
+  readonly freshness?: IndexFreshnessDto | undefined;
+  /** The last run's warnings, categorized — the same report shape analyze uses. */
+  readonly indexWarnings?: IndexWarningReportDto | undefined;
+  /** Files the last run deliberately excluded; absent when the run predates the counter. */
+  readonly ignoredCount?: number | undefined;
 }
 
-const readLastRun = async (store: IndexStorePort): Promise<WorkspaceStatus['lastRun']> => {
-  const run = await store.getRunRecord();
-  if (!run.ok || run.value === undefined) {
-    return undefined;
+/**
+ * The last run's operational blocks: the run summary line, the categorized warning report built
+ * over the TRUE warning count (the persisted lines are a capped sample and say so), and the
+ * ignored-file count. No predicted area here — status describes the repository, not an analysis.
+ */
+const runBlocks = (
+  run: IndexRunRecord | undefined,
+): Pick<WorkspaceStatus, 'lastRun' | 'indexWarnings' | 'ignoredCount'> => {
+  if (run === undefined) {
+    return {};
   }
+  const report = categorizeIndexWarnings(run.warnings.map(parseWarningLine), new Set(), {
+    totalWarningCount: run.warningCount,
+    ...(run.ignoredCount === undefined ? {} : { ignoredFileCount: run.ignoredCount }),
+  });
   return {
-    finishedAt: run.value.finishedAt,
-    durationMs: run.value.durationMs,
-    warningCount: run.value.warningCount,
+    lastRun: {
+      finishedAt: run.finishedAt,
+      durationMs: run.durationMs,
+      warningCount: run.warningCount,
+    },
+    indexWarnings: toIndexWarningReportDto(report),
+    ...(run.ignoredCount === undefined ? {} : { ignoredCount: run.ignoredCount }),
+  };
+};
+
+const gatherIndexedStatus = async (
+  store: IndexStorePort,
+  initialized: boolean,
+): Promise<Failable<WorkspaceStatus | undefined>> => {
+  const current = await store.getCurrentSnapshotId();
+  if (!current.ok || current.value === undefined) {
+    return { ok: true, value: undefined };
+  }
+  const snapshot = await store.getSnapshot(current.value);
+  const graph = await store.loadGraph(current.value);
+  const hashes = await store.getFileHashes(current.value);
+  if (!snapshot.ok || snapshot.value === undefined || !graph.ok || !hashes.ok) {
+    return failWith('indexingFailure', 'index store is unreadable — re-run `impactgraph index`');
+  }
+  const run = await store.getRunRecord();
+  return {
+    ok: true,
+    value: {
+      initialized,
+      indexed: true,
+      snapshot: snapshotSummary(snapshot.value),
+      counts: {
+        files: Object.keys(hashes.value).length,
+        nodes: graph.value.nodes.length,
+        edges: graph.value.edges.length,
+      },
+      ...runBlocks(run.ok ? run.value : undefined),
+    },
   };
 };
 
@@ -77,35 +132,22 @@ export const collectWorkspaceStatus = async (
   if (!store.ok) {
     return failWith('indexingFailure', store.error.message);
   }
+  let gathered: Failable<WorkspaceStatus | undefined>;
   try {
-    const current = await store.value.getCurrentSnapshotId();
-    if (!current.ok || current.value === undefined) {
-      return { ok: true, value: notIndexed };
-    }
-    const snapshot = await store.value.getSnapshot(current.value);
-    const graph = await store.value.loadGraph(current.value);
-    const hashes = await store.value.getFileHashes(current.value);
-    if (!snapshot.ok || snapshot.value === undefined || !graph.ok || !hashes.ok) {
-      return failWith('indexingFailure', 'index store is unreadable — re-run `impactgraph index`');
-    }
-    const lastRun = await readLastRun(store.value);
-    return {
-      ok: true,
-      value: {
-        initialized,
-        indexed: true,
-        snapshot: snapshotSummary(snapshot.value),
-        counts: {
-          files: Object.keys(hashes.value).length,
-          nodes: graph.value.nodes.length,
-          edges: graph.value.edges.length,
-        },
-        ...(lastRun === undefined ? {} : { lastRun }),
-      },
-    };
+    gathered = await gatherIndexedStatus(store.value, initialized);
   } finally {
     await store.value.close();
   }
+  if (!gathered.ok) {
+    return gathered;
+  }
+  if (gathered.value === undefined) {
+    return { ok: true, value: notIndexed };
+  }
+  // Derived at answer time, never persisted (item 10). Git being unavailable does not fail the
+  // status: the assessment simply reports what it could verify.
+  const freshness = await assessWorkspaceFreshness({ rootDir });
+  return { ok: true, value: { ...gathered.value, freshness: toIndexFreshnessDto(freshness) } };
 };
 
 /** Warnings of the most recent index run (capped at write time) — Issues-view material. */

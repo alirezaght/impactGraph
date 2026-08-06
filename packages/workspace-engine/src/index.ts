@@ -107,9 +107,11 @@ export { predictArtifacts } from './reports/predicted-artifacts.js';
 export {
   assessWorkspaceFreshness,
   lastRunIgnoredCount,
+  lastRunWarningInputs,
   lastRunWarningRecords,
   parseWarningLine,
 } from './freshness.js';
+export type { LastRunWarningInputs } from './freshness.js';
 export type { AnalyzeOutputInput } from './reports/analyze-output.js';
 export { buildReviewOutput, applyAcceptedDeviations } from './reports/review-output.js';
 export type { ReviewBreakdownContext } from './reports/review-output.js';

@@ -9,6 +9,7 @@ import {
   openSqliteIndexStore,
 } from '@impactgraph/persistence';
 
+import type { IndexRunRecord } from '@impactgraph/application';
 import type {
   IndexFreshness,
   RawIndexWarning,
@@ -100,6 +101,23 @@ export const assessWorkspaceFreshness = async (query: FreshnessQuery): Promise<I
   });
 };
 
+const readRunRecord = async (rootDir: string): Promise<IndexRunRecord | undefined> => {
+  const dbPath = indexDatabasePath(rootDir);
+  if (!existsSync(dbPath)) {
+    return undefined;
+  }
+  const store = openSqliteIndexStore(dbPath);
+  if (!store.ok) {
+    return undefined;
+  }
+  try {
+    const run = await store.value.getRunRecord();
+    return run.ok ? run.value : undefined;
+  } finally {
+    await store.value.close();
+  }
+};
+
 /**
  * Warnings of the last index run, parsed back into `path` + `message` and categorized.
  *
@@ -109,23 +127,8 @@ export const assessWorkspaceFreshness = async (query: FreshnessQuery): Promise<I
 export const lastRunWarningRecords = async (
   rootDir: string,
 ): Promise<readonly RawIndexWarning[]> => {
-  const dbPath = indexDatabasePath(rootDir);
-  if (!existsSync(dbPath)) {
-    return [];
-  }
-  const store = openSqliteIndexStore(dbPath);
-  if (!store.ok) {
-    return [];
-  }
-  try {
-    const run = await store.value.getRunRecord();
-    if (!run.ok || run.value === undefined) {
-      return [];
-    }
-    return run.value.warnings.map(parseWarningLine);
-  } finally {
-    await store.value.close();
-  }
+  const run = await readRunRecord(rootDir);
+  return run === undefined ? [] : run.warnings.map(parseWarningLine);
 };
 
 export const parseWarningLine = (line: string): RawIndexWarning => {
@@ -148,18 +151,31 @@ export const parseWarningLine = (line: string): RawIndexWarning => {
  * reader needs is the one that produced the index they are querying.
  */
 export const lastRunIgnoredCount = async (rootDir: string): Promise<number | undefined> => {
-  const dbPath = indexDatabasePath(rootDir);
-  if (!existsSync(dbPath)) {
-    return undefined;
+  const run = await readRunRecord(rootDir);
+  return run?.ignoredCount;
+};
+
+export interface LastRunWarningInputs {
+  /** The persisted warning lines (a capped sample), parsed and categorized. */
+  readonly indexWarnings: readonly RawIndexWarning[];
+  /** The run's TRUE warning count — the sample above may be shorter (item 9, GAP 3). */
+  readonly totalWarningCount?: number;
+  /** Absent when the run predates the counter — never a fabricated 0 (item 10). */
+  readonly ignoredFileCount?: number;
+}
+
+/**
+ * Everything the summary's warning report needs from the last run, in one store read and in the
+ * builder's input shape — so every caller carries the true count alongside the capped sample.
+ */
+export const lastRunWarningInputs = async (rootDir: string): Promise<LastRunWarningInputs> => {
+  const run = await readRunRecord(rootDir);
+  if (run === undefined) {
+    return { indexWarnings: [] };
   }
-  const store = openSqliteIndexStore(dbPath);
-  if (!store.ok) {
-    return undefined;
-  }
-  try {
-    const run = await store.value.getRunRecord();
-    return run.ok && run.value !== undefined ? run.value.ignoredCount : undefined;
-  } finally {
-    await store.value.close();
-  }
+  return {
+    indexWarnings: run.warnings.map(parseWarningLine),
+    totalWarningCount: run.warningCount,
+    ...(run.ignoredCount === undefined ? {} : { ignoredFileCount: run.ignoredCount }),
+  };
 };

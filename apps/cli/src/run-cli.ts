@@ -11,6 +11,7 @@ import { runInit } from './commands/init.js';
 import { runReview } from './commands/review.js';
 import { runSelectOption } from './commands/select-option.js';
 import { runStatus } from './commands/status.js';
+import { runVersion } from './commands/version.js';
 import { failed } from './context.js';
 import { writeJson } from './output.js';
 
@@ -39,6 +40,7 @@ const USAGE = [
   '  review [target] compare the approved analysis against working-tree|commit (§24)',
   '  review accept <nodeId> "<reason>" [category]  accept a discrepancy as a deviation (§24.1)',
   '  config [history|diff [id]|rollback [id]|restore <id>|drift]  config + §Z12/§Z14/§Z10',
+  '  version         print the impactgraph version (also --version)',
 ];
 
 interface ParsedArgs {
@@ -75,6 +77,10 @@ interface ParseState {
 const BOOLEAN_FLAG_PARSERS: Record<string, (state: ParseState) => void> = {
   '--full': (state) => {
     state.full = true;
+  },
+  /** `--version` — equivalent to the `version` command; never consumes a value (item 9). */
+  '--version': (state) => {
+    state.command ??= 'version';
   },
   '--include-lexical': (state) => {
     state.impactFilters = { ...state.impactFilters, includeLexicalOnly: true };
@@ -222,6 +228,7 @@ const COMMANDS: Record<
   export: runExport,
   review: runReview,
   config: runConfig,
+  version: runVersion,
 };
 
 const dispatch = async (command: string, context: CommandContext): Promise<CommandResult> => {

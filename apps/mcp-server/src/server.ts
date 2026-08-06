@@ -9,6 +9,7 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { callTool, isKnownTool } from './registry.js';
+import { readOwnVersion, SERVER_NAME } from './version.js';
 
 // MCP over stdio: newline-delimited JSON-RPC 2.0. Hand-rolled on purpose — the protocol
 // surface used here (initialize, tools/list, tools/call, ping) is small, and the repo takes
@@ -77,7 +78,9 @@ const dispatch = async (rootDir: string, request: JsonRpcRequest): Promise<unkno
     return {
       protocolVersion: PROTOCOL_VERSION,
       capabilities: { tools: {} },
-      serverInfo: { name: 'impactgraph', version: '0.0.0' },
+      // The real version from package.json (item 9) — a client debugging a stale or divergent
+      // answer must be able to name the build it talked to.
+      serverInfo: { name: SERVER_NAME, version: readOwnVersion() },
       // The coverage-first workflow (§21): validate coverage → index → verify concepts →
       // analyze → present limitations. Stated by the server so no client has to infer it.
       instructions: MCP_SERVER_INSTRUCTIONS,

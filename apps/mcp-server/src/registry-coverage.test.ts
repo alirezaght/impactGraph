@@ -77,6 +77,7 @@ describe('MCP workspace coverage workflow', () => {
       indexed: boolean;
       fileCount: number;
       reason?: string;
+      reasonCode?: string;
     }[];
     const billing = repositories.find((repo) => repo.name === 'billing');
     expect(billing?.indexed).toBe(true);
@@ -84,6 +85,30 @@ describe('MCP workspace coverage workflow', () => {
     const ghost = repositories.find((repo) => repo.name === 'ghost');
     expect(ghost?.indexed).toBe(false);
     expect(ghost?.reason).toContain('does not exist');
+    // GAP 4 (item 9): derivations key off the typed code, the sentence is presentation only.
+    expect(ghost?.reasonCode).toBe('path-missing');
+  });
+
+  it('status states its own operational health: freshness, warnings, limitations, build (item 9)', async () => {
+    const status = await tool('get_workspace_status');
+    // Freshness is derived at answer time and stated by the tool — never left to the caller.
+    const freshness = asRecord(status['freshness']);
+    expect(typeof freshness['state']).toBe('string');
+    expect(typeof freshness['stale']).toBe('boolean');
+    // The categorized warning report and the run summary agree about the same fact (GAP 3).
+    const warnings = asRecord(status['indexWarnings']);
+    const lastRun = asRecord(status['lastRun']);
+    expect(warnings['totalCount']).toBe(
+      (lastRun['warningCount'] as number) + (status['ignoredCount'] as number),
+    );
+    // Roster limitations are no longer dropped by the handler (GAP 2).
+    const limitations = status['limitations'] as string[];
+    expect(limitations.some((line) => line.includes('ghost'))).toBe(true);
+    // Which build produced this answer (GAP 5).
+    const server = asRecord(status['server']);
+    expect(server['name']).toBe('impactgraph');
+    expect(typeof server['version']).toBe('string');
+    expect((server['version'] as string).length).toBeGreaterThan(0);
   });
 
   it('cross-repository analysis resolves components from a registered repository', async () => {

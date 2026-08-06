@@ -8,6 +8,7 @@ import {
   cliArchitectureOutputSchema,
   cliIndexOutputSchema,
   cliStatusOutputSchema,
+  cliVersionOutputSchema,
   EXIT_CODES,
 } from '@impactgraph/contracts';
 import { fixtureRepoPath } from '@impactgraph/test-kit';
@@ -100,6 +101,51 @@ describe('impactgraph CLI (Stories 4.1 + 4.2)', () => {
     expect(status.indexed).toBe(true);
     expect(status.counts?.nodes).toBeGreaterThan(10);
     expect(after.code).toBe(EXIT_CODES.success);
+  });
+
+  it('status states freshness, categorized warnings, limitations and the producing build (item 9)', async () => {
+    await cli('init');
+    await cli('index');
+    const result = await cli('status', '--format', 'json');
+    const status = cliStatusOutputSchema.parse(result.json());
+    // Freshness is derived at read time and stated by the tool, never judged by the caller.
+    expect(status.freshness).toBeDefined();
+    expect(typeof status.freshness?.stale).toBe('boolean');
+    // The categorized report agrees with the run summary about the same fact (GAP 3).
+    expect(status.indexWarnings?.totalCount).toBe(
+      (status.lastRun?.warningCount ?? -1) + (status.ignoredCount ?? -1),
+    );
+    expect(status.limitations?.some((line) => line.includes('repositor'))).toBe(true);
+    // Which build produced this answer — read from package.json, never hardcoded.
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+    expect(status.server).toEqual({ name: 'impactgraph', version: manifest.version });
+
+    const text = await cli('status');
+    expect(text.lines.some((line) => line.startsWith('freshness:'))).toBe(true);
+    expect(text.lines.some((line) => line.startsWith('limitation:'))).toBe(true);
+  });
+
+  it('version prints which build produced the answer, as text and validated JSON', async () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+    const text = await cli('version');
+    expect(text.code).toBe(EXIT_CODES.success);
+    expect(text.lines).toEqual([`impactgraph ${manifest.version}`]);
+
+    const viaFlag = await cli('--version');
+    expect(viaFlag.code).toBe(EXIT_CODES.success);
+    expect(viaFlag.lines).toEqual([`impactgraph ${manifest.version}`]);
+
+    const json = await cli('version', '--format', 'json');
+    expect(cliVersionOutputSchema.parse(json.json())).toEqual({
+      schemaVersion: 1,
+      command: 'version',
+      name: 'impactgraph',
+      version: manifest.version,
+    });
   });
 
   it('architecture summarizes packages and graph composition (§20 JSON graph export)', async () => {

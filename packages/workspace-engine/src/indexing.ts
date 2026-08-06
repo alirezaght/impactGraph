@@ -33,11 +33,11 @@ import {
 } from '@impactgraph/persistence';
 import { indexRepository } from '@impactgraph/repository-intelligence';
 
-import { readRepositoryRoster } from './registered-repositories.js';
+import { readRepositoryRoster, unusableMemberState } from './registered-repositories.js';
 import { captureSnapshot } from './snapshot.js';
 
 import type { EngineFailure } from './failure.js';
-import type { RegisteredRepository, RepositoryRoster } from './registered-repositories.js';
+import type { RepositoryRoster } from './registered-repositories.js';
 import type { ProgressReporter } from '@impactgraph/application';
 import type { RepositoryIndexStateDto } from '@impactgraph/contracts';
 import type { RepositorySnapshot } from '@impactgraph/domain';
@@ -108,16 +108,6 @@ const additionalRootsOf = (rootDir: string, roster: RepositoryRoster): Additiona
   return roots;
 };
 
-const unusableRunState = (member: RegisteredRepository): RepositoryIndexStateDto => ({
-  name: member.name,
-  path: member.declaredPath,
-  indexed: false,
-  fileCount: 0,
-  reason: member.enabled
-    ? (member.reason ?? 'the declared path does not exist on disk')
-    : 'disabled in configuration',
-});
-
 /** Per-member outcome of THIS run, from the scanner's per-root counts. */
 const runRepositoryStates = (
   rootDir: string,
@@ -133,7 +123,7 @@ const runRepositoryStates = (
     }
     const fileCount = counts.get(member.name);
     if (fileCount === undefined || member.resolvedPath === undefined) {
-      return unusableRunState(member);
+      return unusableMemberState(member);
     }
     return {
       name: member.name,

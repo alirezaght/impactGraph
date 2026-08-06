@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { impactLikelihoodSchema } from './impact-export.js';
+import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 import { readinessSchema } from './outputs.js';
 
 /**
@@ -46,54 +47,9 @@ export const impactEvidenceTypeSchema = z.enum([
   'lexical-only',
 ]);
 
-export const indexFreshnessSchema = z
-  .object({
-    state: z.enum([
-      'current',
-      'working-tree-modified',
-      'behind-head',
-      'specification-moved',
-      'aged',
-      'not-indexed',
-    ]),
-    stale: z.boolean(),
-    reasons: z.array(z.string().min(1)),
-    indexedSnapshotId: z.string().min(1).optional(),
-    indexedAt: z.string().min(1).optional(),
-    currentCommitSha: z.string().min(1).optional(),
-    recommendedAction: z.string().min(1).optional(),
-  })
-  .strict();
-
-export const indexWarningReportSchema = z
-  .object({
-    totalCount: z.number().int().min(0),
-    coverageLosingCount: z.number().int().min(0),
-    affectsPredictedArea: z.boolean(),
-    groups: z.array(
-      z
-        .object({
-          category: z.enum([
-            'parse-failure',
-            'unsupported-syntax',
-            'unresolved-import',
-            'unresolved-symbol',
-            'ignored-file',
-            'missing-generated-file',
-            'external-dependency',
-            'stale-index',
-            'no-adapter',
-            'other',
-          ]),
-          count: z.number().int().min(0),
-          examplePaths: z.array(z.string().min(1)),
-          exampleMessage: z.string().min(1).optional(),
-          affectsPredictedArea: z.boolean(),
-        })
-        .strict(),
-    ),
-  })
-  .strict();
+// Moved to ./index-health.js so the status document can share them; re-exported here so every
+// existing consumer keeps its import path (ADR-0009: one schema, no diverging near-duplicate).
+export { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 
 export const extractionQualitySchema = z
   .object({

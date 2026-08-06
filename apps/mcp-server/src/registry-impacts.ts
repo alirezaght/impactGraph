@@ -6,8 +6,7 @@ import {
   collectWorkspaceRepositoryContext,
   createWorkspaceAiServices,
   ensureRegisteredRepositoriesIndexed,
-  lastRunIgnoredCount,
-  lastRunWarningRecords,
+  lastRunWarningInputs,
   latestAnalysis,
   loadAnalysis,
   loadGraphForSnapshot,
@@ -55,7 +54,6 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   if (!workspace.ok) {
     return workspace;
   }
-  const ignoredFileCount = await lastRunIgnoredCount(rootDir);
   return {
     ok: true,
     value: buildImpactSummary({
@@ -72,8 +70,9 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
         specificationVersion: spec.value.version,
       }),
       extractionMode: 'unchanged',
-      indexWarnings: await lastRunWarningRecords(rootDir),
-      ...(ignoredFileCount === undefined ? {} : { ignoredFileCount }),
+      // The persisted warning lines are a capped sample; the true count travels with them so the
+      // report never silently maxes out near the cap (item 9, GAP 3).
+      ...(await lastRunWarningInputs(rootDir)),
       filters,
     }),
   };

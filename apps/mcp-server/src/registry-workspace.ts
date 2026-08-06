@@ -8,6 +8,8 @@ import {
   snapshotSummary,
 } from '@impactgraph/workspace-engine';
 
+import { readOwnVersion, SERVER_NAME } from './version.js';
+
 import type { ToolHandler } from './handler-types.js';
 
 // Workspace lifecycle tools — steps 1–2 of the coverage-first workflow: validate coverage
@@ -46,8 +48,13 @@ const workspaceStatus: ToolHandler<'get_workspace_status'> = async (rootDir) => 
         ? {
             repositories: [...context.value.repositories],
             candidateRepositories: [...context.value.candidates],
+            // Roster limitations were computed and then dropped here (item 9, GAP 2) — what the
+            // analysis does NOT cover is part of the workspace's operational state.
+            limitations: [...context.value.limitations],
           }
         : {}),
+      // Which build produced this answer (item 9, GAP 5). Version only — never an invented hash.
+      server: { name: SERVER_NAME, version: readOwnVersion() },
     },
   };
 };

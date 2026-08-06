@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { PassThrough } from 'node:stream';
 
 import { describe, expect, it } from 'vitest';
@@ -37,6 +38,11 @@ describe('MCP stdio server (Story 12.1, PRD §21)', () => {
     const init = record(record(responses[0])['result']);
     expect(init['protocolVersion']).toBe('2024-11-05');
     expect(record(init['serverInfo'])['name']).toBe('impactgraph');
+    // Item 9: the version comes from the package manifest at runtime, never a hardcoded string.
+    const manifest = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+    expect(record(init['serverInfo'])['version']).toBe(manifest.version);
     // The coverage-first workflow is stated by the SERVER — clients never have to infer it.
     const instructions = init['instructions'] as string;
     expect(instructions).toContain('insufficient-coverage');

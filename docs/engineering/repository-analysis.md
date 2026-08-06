@@ -130,3 +130,14 @@ branch, dirty), index generation + `indexSchemaVersion`, file counts (indexed / 
 failed / ignored), per-adapter coverage, parser warnings, last full and incremental run durations,
 and staleness (snapshot vs. current HEAD/working tree). Status is a first-class contract
 (`contracts/cli`, `contracts/tools`) — agents decide whether to reindex based on it (§Z3 step 8–9).
+
+Implemented today on that shared structure: `freshness` (derived at answer time by the same
+assessor the analyze path uses — never persisted; git being unavailable degrades, it never fails
+status), categorized `indexWarnings` whose `totalCount` is always the true total (when the
+persisted warning list was capped, the report says `sampled: true` with `omittedWarningCount`
+instead of letting two tools disagree about the same fact), `ignoredCount`, the repository-roster
+`limitations`, and a `server` block whose version is read from the app's own manifest (degrading to
+`unknown`, never a fabricated number; `impactgraph --version` mirrors it). Per-repository index
+states carry a typed `reasonCode` (`not-indexed` | `disabled` | `path-missing` |
+`path-outside-root`); every downstream derivation (required actions, coverage block, review scope)
+keys off the code — human-readable reason sentences are presentation, never the API.

@@ -62,6 +62,14 @@ export interface IndexWarningReport {
   readonly coverageLosingCount: number;
   /** True when any coverage-losing category touches the predicted area. */
   readonly affectsPredictedArea: boolean;
+  /**
+   * True when the grouped warnings are a SAMPLE of the run's warnings (the producer persists a
+   * bounded list, the run counted more). `totalCount` is still the true total; the groups and
+   * `coverageLosingCount` describe only the persisted sample. Absent when nothing was omitted.
+   */
+  readonly sampled?: boolean;
+  /** How many warnings the sample does not contain. Present exactly when `sampled` is. */
+  readonly omittedWarningCount?: number;
 }
 
 interface Bucket {
@@ -176,6 +184,12 @@ const EXAMPLE_LIMIT = 5;
  */
 export interface BulkWarningCounts {
   readonly ignoredFileCount?: number;
+  /**
+   * The run's TRUE warning count when the producer persists only a bounded warning list (the run
+   * record caps at 50 lines). Without it, totals silently max out near the cap while other tools
+   * report the real number — two surfaces disagreeing about the same fact.
+   */
+  readonly totalWarningCount?: number;
 }
 
 export const categorizeIndexWarnings = (
@@ -184,14 +198,19 @@ export const categorizeIndexWarnings = (
   bulk: BulkWarningCounts = {},
 ): IndexWarningReport => {
   const ignored = bulk.ignoredFileCount ?? 0;
+  // The list in hand is itself evidence of at least warnings.length warnings — an inconsistent
+  // (smaller) stated total never produces a negative omission.
+  const trueCount = Math.max(warnings.length, bulk.totalWarningCount ?? warnings.length);
+  const omitted = trueCount - warnings.length;
   const allGroups = withIgnoredCount(groupByCategory(warnings, predictedPaths), ignored);
   const coverageLosing = allGroups.filter((group) =>
     COVERAGE_LOSING_CATEGORIES.includes(group.category),
   );
   return {
-    totalCount: warnings.length + ignored,
+    totalCount: trueCount + ignored,
     groups: allGroups,
     coverageLosingCount: coverageLosing.reduce((sum, group) => sum + group.count, 0),
     affectsPredictedArea: coverageLosing.some((group) => group.affectsPredictedArea),
+    ...(omitted > 0 ? { sampled: true, omittedWarningCount: omitted } : {}),
   };
 };

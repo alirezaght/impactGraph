@@ -6,6 +6,7 @@ import { readWorkspaceConfig } from '@impactgraph/persistence';
 import { failWith } from './failure.js';
 
 import type { Failable } from './failure.js';
+import type { RepositoryIndexStateDto, RepositoryReasonCode } from '@impactgraph/contracts';
 
 /**
  * Related repositories registered as one workspace (item 6).
@@ -25,8 +26,10 @@ export interface RegisteredRepository {
   readonly resolvedPath?: string;
   readonly present: boolean;
   readonly enabled: boolean;
-  /** Why an entry is unusable, when it is. */
+  /** Why an entry is unusable, when it is — for humans. */
   readonly reason?: string;
+  /** The typed counterpart of `reason` — derivations key off this, never off the wording. */
+  readonly reasonCode?: RepositoryReasonCode;
 }
 
 export interface RepositoryRoster {
@@ -50,16 +53,17 @@ const ROOT_NAME = '(workspace root)';
 const resolveMember = (
   rootDir: string,
   declaredPath: string,
-): { path?: string; reason?: string } => {
+): { path?: string; reason?: string; reasonCode?: RepositoryReasonCode } => {
   const absolute = isAbsolute(declaredPath) ? declaredPath : resolve(rootDir, declaredPath);
   if (!absolute.startsWith(rootDir)) {
     return {
       reason:
         'the declared path resolves outside the workspace root, which is refused — registered repositories must live inside it',
+      reasonCode: 'path-outside-root',
     };
   }
   if (!existsSync(absolute)) {
-    return { reason: 'the declared path does not exist on disk' };
+    return { reason: 'the declared path does not exist on disk', reasonCode: 'path-missing' };
   }
   return { path: absolute };
 };
@@ -83,6 +87,7 @@ export const readRepositoryRoster = (rootDir: string): Failable<RepositoryRoster
       present: resolved.path !== undefined,
       enabled,
       ...(resolved.reason === undefined ? {} : { reason: resolved.reason }),
+      ...(resolved.reasonCode === undefined ? {} : { reasonCode: resolved.reasonCode }),
     });
   }
   const absent = members.filter((member) => member.enabled && !member.present);
@@ -118,6 +123,21 @@ const limitationsFor = (
       : [`Disabled in configuration, so not analyzed: ${disabled.join(', ')}.`]),
   ];
 };
+
+/**
+ * Index state of a member that cannot contribute files: disabled, absent from disk, or refused.
+ * Shared by the run report and the derived coverage so both carry the same reason AND code.
+ */
+export const unusableMemberState = (member: RegisteredRepository): RepositoryIndexStateDto => ({
+  name: member.name,
+  path: member.declaredPath,
+  indexed: false,
+  fileCount: 0,
+  reason: member.enabled
+    ? (member.reason ?? 'the declared path does not exist on disk')
+    : 'disabled in configuration',
+  reasonCode: member.enabled ? (member.reasonCode ?? 'path-missing') : 'disabled',
+});
 
 /** Absolute roots to index this run: the workspace plus every present, enabled member. */
 export const indexableRoots = (roster: RepositoryRoster): readonly string[] =>

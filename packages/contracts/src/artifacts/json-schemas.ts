@@ -19,6 +19,7 @@ import {
   cliInitOutputSchema,
   cliReviewOutputSchema,
   cliStatusOutputSchema,
+  cliVersionOutputSchema,
 } from '../cli/outputs.js';
 import { aliasesConfigSchema } from '../config/aliases-config.js';
 import { architectureConfigSchema } from '../config/architecture-config.js';
@@ -67,6 +68,7 @@ const cliSchemas = (): Record<string, unknown> => ({
     'CliAcceptDeviationOutputV1',
   ),
   'cli/export-output.v1': zodToJsonSchema(cliExportOutputSchema, 'CliExportOutputV1'),
+  'cli/version-output.v1': zodToJsonSchema(cliVersionOutputSchema, 'CliVersionOutputV1'),
   'cli/error-output.v1': zodToJsonSchema(cliErrorOutputSchema, 'CliErrorOutputV1'),
 });
 

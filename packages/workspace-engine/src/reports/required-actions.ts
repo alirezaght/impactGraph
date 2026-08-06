@@ -1,3 +1,5 @@
+import { isNotIndexedState, isUnavailableState } from '../repository-reasons.js';
+
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
 import type {
   EvidenceQualityDto,
@@ -20,9 +22,6 @@ export interface RequiredActionsInput {
   readonly evidenceQuality?: EvidenceQualityDto | undefined;
 }
 
-const UNINDEXED_MARKER = 'not in the current index';
-const DISABLED_REASON = 'disabled in configuration';
-
 const names = (entries: readonly { readonly name: string }[]): string[] =>
   entries.map((entry) => entry.name);
 
@@ -40,14 +39,8 @@ const refreshAction = (freshness: IndexFreshness): RequiredActionDto[] =>
 
 const repositoryActions = (context: WorkspaceRepositoryContext | undefined): RequiredActionDto[] => {
   const states = context?.repositories ?? [];
-  const unindexed = states.filter((state) => state.reason?.includes(UNINDEXED_MARKER) === true);
-  const absent = states.filter(
-    (state) =>
-      !state.indexed &&
-      state.reason !== undefined &&
-      !state.reason.includes(UNINDEXED_MARKER) &&
-      state.reason !== DISABLED_REASON,
-  );
+  const unindexed = states.filter(isNotIndexedState);
+  const absent = states.filter(isUnavailableState);
   return [
     ...(unindexed.length === 0
       ? []

@@ -11,8 +11,7 @@ import {
   contextsForGraph,
   createWorkspaceAiServices,
   ensureRegisteredRepositoriesIndexed,
-  lastRunIgnoredCount,
-  lastRunWarningRecords,
+  lastRunWarningInputs,
   submitSpecification,
 } from '@impactgraph/workspace-engine';
 
@@ -110,7 +109,6 @@ const render = async (
     );
     return;
   }
-  const ignoredFileCount = await lastRunIgnoredCount(context.rootDir);
   const workspace = await collectWorkspaceRepositoryContext(context.rootDir);
   renderImpactSummary(
     context,
@@ -126,8 +124,9 @@ const render = async (
         specificationVersion: submitted.specification.version,
       }),
       extractionMode: submitted.extractionMode,
-      indexWarnings: await lastRunWarningRecords(context.rootDir),
-      ...(ignoredFileCount === undefined ? {} : { ignoredFileCount }),
+      // The persisted warning lines are a capped sample; the true count travels with them so the
+      // report never silently maxes out near the cap (item 9, GAP 3).
+      ...(await lastRunWarningInputs(context.rootDir)),
       ...(context.impactFilters === undefined ? {} : { filters: context.impactFilters }),
     }),
   );

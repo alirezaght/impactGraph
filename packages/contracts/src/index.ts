@@ -108,6 +108,7 @@ export {
   cliApproveOutputSchema,
   cliReviewOutputSchema,
   cliExportOutputSchema,
+  cliVersionOutputSchema,
   cliErrorOutputSchema,
 } from './cli/outputs.js';
 export type {
@@ -121,6 +122,7 @@ export type {
   CliApproveOutput,
   CliReviewOutput,
   CliExportOutput,
+  CliVersionOutput,
   CliErrorOutput,
 } from './cli/outputs.js';
 export {
@@ -213,8 +215,17 @@ export type { ImplementationContextDto } from './export/implementation-context.j
 export { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from './tools/tools.js';
 export type { McpToolName } from './tools/tools.js';
 export { MCP_SERVER_INSTRUCTIONS } from './tools/guidance.js';
-export { repositoryIndexStateSchema, candidateRepositorySchema } from './cli/repository-state.js';
-export type { RepositoryIndexStateDto, CandidateRepositoryDto } from './cli/repository-state.js';
+export {
+  repositoryIndexStateSchema,
+  repositoryReasonCodeSchema,
+  candidateRepositorySchema,
+} from './cli/repository-state.js';
+export type {
+  RepositoryIndexStateDto,
+  RepositoryReasonCode,
+  CandidateRepositoryDto,
+} from './cli/repository-state.js';
+export type { IndexFreshnessDto, IndexWarningReportDto } from './cli/index-health.js';
 
 // The bounded analyze document and its paginated detail page (item 9 of the trial follow-up).
 export {

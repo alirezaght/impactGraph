@@ -1,5 +1,7 @@
 import { assessCoverageSufficiency } from '@impactgraph/domain';
 
+import { isDisabledState } from '../repository-reasons.js';
+
 import { conceptResolution, unmatchedRequirements } from './impact-summary-facts.js';
 
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
@@ -21,8 +23,6 @@ export interface WorkspaceCoverageInput {
   readonly context?: WorkspaceRepositoryContext | undefined;
 }
 
-const DISABLED_REASON = 'disabled in configuration';
-
 export const buildWorkspaceCoverage = (input: WorkspaceCoverageInput): WorkspaceCoverageDto => {
   const unmatched = unmatchedRequirements(input.specification, input.analysis);
   const concepts = conceptResolution(input.specification, input.analysis);
@@ -34,7 +34,7 @@ export const buildWorkspaceCoverage = (input: WorkspaceCoverageInput): Workspace
     totalConceptCount: concepts.totalConceptCount,
     unresolvedConceptCount: concepts.unresolvedConceptCount,
     // A disabled member is a user decision, not a coverage gap the verdict should punish.
-    missingRepositoryCount: missing.filter((state) => state.reason !== DISABLED_REASON).length,
+    missingRepositoryCount: missing.filter((state) => !isDisabledState(state)).length,
   });
   return {
     status: verdict.status,

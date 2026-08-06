@@ -4,8 +4,9 @@ import { relative } from 'node:path';
 import { indexDatabasePath, openSqliteIndexStore } from '@impactgraph/persistence';
 
 import { performIndexRun } from './indexing.js';
-import { readRepositoryRoster } from './registered-repositories.js';
+import { readRepositoryRoster, unusableMemberState } from './registered-repositories.js';
 import { discoverCandidateRepositories } from './repository-discovery.js';
+import { isNotIndexedState } from './repository-reasons.js';
 
 import type { Failable } from './failure.js';
 import type { RegisteredRepository, RepositoryRoster } from './registered-repositories.js';
@@ -32,16 +33,6 @@ export const memberPrefix = (rootDir: string, member: RegisteredRepository): str
   member.resolvedPath === undefined || member.resolvedPath === rootDir
     ? undefined
     : relative(rootDir, member.resolvedPath);
-
-const unusableState = (member: RegisteredRepository): RepositoryIndexStateDto => ({
-  name: member.name,
-  path: member.declaredPath,
-  indexed: false,
-  fileCount: 0,
-  reason: member.enabled
-    ? (member.reason ?? 'the declared path does not exist on disk')
-    : 'disabled in configuration',
-});
 
 /** Assign each indexed file to the deepest member prefix; the remainder belongs to the root. */
 const stateFromFilePaths = (
@@ -71,7 +62,7 @@ const stateFromFilePaths = (
     ...members.map((member) => {
       const entry = prefixed.find((candidate) => candidate.member.name === member.name);
       if (entry === undefined) {
-        return unusableState(member);
+        return unusableMemberState(member);
       }
       const fileCount = counts.get(member.name) ?? 0;
       return {
@@ -81,7 +72,10 @@ const stateFromFilePaths = (
         fileCount,
         ...(fileCount > 0
           ? {}
-          : { reason: 'registered but not in the current index — run index_workspace' }),
+          : {
+              reason: 'registered but not in the current index — run index_workspace',
+              reasonCode: 'not-indexed' as const,
+            }),
       };
     }),
   ];
@@ -151,7 +145,7 @@ export const ensureRegisteredRepositoriesIndexed = async (
       state.name !== ROOT_STATE_NAME &&
       !state.indexed &&
       state.path !== undefined &&
-      state.reason?.includes('not in the current index') === true,
+      isNotIndexedState(state),
   );
   if (!anythingIndexed || !unindexedMember) {
     return { ok: true, value: { reindexed: false } };

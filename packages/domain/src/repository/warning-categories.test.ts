@@ -105,4 +105,45 @@ describe('categorizeIndexWarnings', () => {
     expect(report.groups).toEqual([]);
     expect(report.coverageLosingCount).toBe(0);
   });
+
+  /**
+   * GAP 3 of dogfooding item 9: the run record stores the TRUE warningCount but persists at most
+   * 50 warning lines, so a report built from the persisted lines silently maxed out near 50 while
+   * `status` reported the real number — two tools disagreeing about the same fact. The report must
+   * state its basis: the true total, plus an explicit sampling marker for what was not persisted.
+   */
+  describe('sampling honesty when the warning list was truncated at write time', () => {
+    it('uses the true total and marks the report as sampled', () => {
+      const report = categorizeIndexWarnings(warnings, new Set(), { totalWarningCount: 38_412 });
+      expect(report.totalCount).toBe(38_412);
+      expect(report.sampled).toBe(true);
+      expect(report.omittedWarningCount).toBe(38_412 - warnings.length);
+    });
+
+    it('combines the true total with the bulk ignored count', () => {
+      const report = categorizeIndexWarnings(warnings, new Set(), {
+        totalWarningCount: 100,
+        ignoredFileCount: 12_000,
+      });
+      expect(report.totalCount).toBe(12_100);
+      expect(report.omittedWarningCount).toBe(95);
+    });
+
+    it('does not claim sampling when every warning is present', () => {
+      const report = categorizeIndexWarnings(warnings, new Set(), {
+        totalWarningCount: warnings.length,
+      });
+      expect(report.totalCount).toBe(warnings.length);
+      expect(report.sampled).toBeUndefined();
+      expect(report.omittedWarningCount).toBeUndefined();
+    });
+
+    it('never reports a negative omission when the stated total is inconsistent', () => {
+      const report = categorizeIndexWarnings(warnings, new Set(), { totalWarningCount: 2 });
+      // The warning list in hand is itself evidence of at least warnings.length warnings.
+      expect(report.totalCount).toBe(warnings.length);
+      expect(report.sampled).toBeUndefined();
+      expect(report.omittedWarningCount).toBeUndefined();
+    });
+  });
 });

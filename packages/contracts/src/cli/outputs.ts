@@ -4,6 +4,7 @@ import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
+import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
 
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
@@ -72,6 +73,23 @@ export const cliStatusOutputSchema = z
     repositories: z.array(repositoryIndexStateSchema).optional(),
     /** Additive v1: discovered git directories that are NOT registered — need user confirmation. */
     candidateRepositories: z.array(candidateRepositorySchema).optional(),
+    /**
+     * Additive v1 (dogfooding item 9): read-time index freshness — the status surface must state
+     * whether the index still describes the working tree instead of leaving the judgment to the
+     * caller. Absent when nothing is indexed at all.
+     */
+    freshness: indexFreshnessSchema.optional(),
+    /** Additive v1: the last run's warnings, categorized — the same report shape analyze uses. */
+    indexWarnings: indexWarningReportSchema.optional(),
+    /** Additive v1: files the last run deliberately excluded (ignore globs, .gitignore, size). */
+    ignoredCount: z.number().int().min(0).optional(),
+    /** Additive v1: roster limitations — what this workspace's analysis does NOT cover, and why. */
+    limitations: z.array(z.string().min(1)).optional(),
+    /** Additive v1: which build produced this answer. Version only — never an invented hash. */
+    server: z
+      .object({ name: z.string().min(1), version: z.string().min(1) })
+      .strict()
+      .optional(),
   })
   .strict();
 
@@ -321,6 +339,21 @@ export const cliExportOutputSchema = z
   .strict();
 
 export type CliExportOutput = z.infer<typeof cliExportOutputSchema>;
+
+/**
+ * `impactgraph version` / `--version` (dogfooding item 9): which build produced the answer.
+ * Version string only — build hashes or dates are a packaging-time follow-up, never invented.
+ */
+export const cliVersionOutputSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    command: z.literal('version'),
+    name: z.string().min(1),
+    version: z.string().min(1),
+  })
+  .strict();
+
+export type CliVersionOutput = z.infer<typeof cliVersionOutputSchema>;
 
 export const cliErrorOutputSchema = z
   .object({
