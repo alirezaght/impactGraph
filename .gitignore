@@ -17,7 +17,8 @@ coverage/
 # Generated exports (`impactgraph graph` / `export_graph_html`) — derived output, never committed.
 impactgraph-graph.html
 impactgraph-impact.html
-reports/
+# Root-anchored: source directories named `reports/` (e.g. workspace-engine/src/reports) stay tracked.
+/reports/
 
 # ImpactGraph runtime caches (the derived SQLite index is disposable — ADR-0006).
 # Committed .impactgraph/ config (YAML) stays tracked; only caches are ignored.
