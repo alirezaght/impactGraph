@@ -31,13 +31,18 @@ import {
 } from '@impactgraph/persistence';
 import { indexRepository } from '@impactgraph/repository-intelligence';
 
+import { relative } from 'node:path';
+
+import { readRepositoryRoster } from './registered-repositories.js';
 import { captureSnapshot } from './snapshot.js';
 
 import type { EngineFailure } from './failure.js';
+import type { RegisteredRepository, RepositoryRoster } from './registered-repositories.js';
 import type { ProgressReporter } from '@impactgraph/application';
+import type { RepositoryIndexStateDto } from '@impactgraph/contracts';
 import type { RepositorySnapshot } from '@impactgraph/domain';
 import type { ParseWarning } from '@impactgraph/language-adapters';
-import type { IndexSummary } from '@impactgraph/repository-intelligence';
+import type { AdditionalRoot, IndexSummary } from '@impactgraph/repository-intelligence';
 
 /**
  * Fallback coverage is expected degradation, not a warning; real scan/parse warnings are.
@@ -87,7 +92,55 @@ const buildFrameworkAdapters = (rootDir: string) => {
 export interface IndexRunOutcome {
   readonly summary: IndexSummary;
   readonly snapshot: RepositorySnapshot;
+  /** What this run indexed, per roster member — the root plus every registered repository. */
+  readonly repositories: readonly RepositoryIndexStateDto[];
 }
+
+/** Registered, enabled, present members other than the root — the extra roots this run scans. */
+const additionalRootsOf = (rootDir: string, roster: RepositoryRoster): AdditionalRoot[] => {
+  const roots: AdditionalRoot[] = [];
+  for (const member of roster.members) {
+    const path = member.resolvedPath;
+    if (member.enabled && member.present && path !== undefined && path !== rootDir) {
+      roots.push({ name: member.name, rootDir: path, relativePrefix: relative(rootDir, path) });
+    }
+  }
+  return roots;
+};
+
+const unusableRunState = (member: RegisteredRepository): RepositoryIndexStateDto => ({
+  name: member.name,
+  path: member.declaredPath,
+  indexed: false,
+  fileCount: 0,
+  reason: member.enabled
+    ? (member.reason ?? 'the declared path does not exist on disk')
+    : 'disabled in configuration',
+});
+
+/** Per-member outcome of THIS run, from the scanner's per-root counts. */
+const runRepositoryStates = (
+  rootDir: string,
+  roster: RepositoryRoster,
+  summary: IndexSummary,
+): readonly RepositoryIndexStateDto[] => {
+  const counts = new Map((summary.rootFileCounts ?? []).map((entry) => [entry.name, entry.fileCount]));
+  return roster.members.map((member) => {
+    if (member.resolvedPath === rootDir) {
+      return { name: member.name, indexed: true, fileCount: counts.get('.') ?? summary.fileCount };
+    }
+    const fileCount = counts.get(member.name);
+    if (fileCount === undefined || member.resolvedPath === undefined) {
+      return unusableRunState(member);
+    }
+    return {
+      name: member.name,
+      path: relative(rootDir, member.resolvedPath),
+      indexed: true,
+      fileCount,
+    };
+  });
+};
 
 export type IndexRunResult =
   | { readonly ok: true; readonly value: IndexRunOutcome }
@@ -109,12 +162,14 @@ const buildIndexRequest = (
     | null
     | undefined,
   options: IndexRunOptions,
+  additionalRoots: readonly AdditionalRoot[],
 ): Parameters<typeof indexRepository>[0] => ({
   rootDir,
   snapshot,
   analysisRunId: `run-${snapshot.id}`,
   createdAt: snapshot.createdAt,
   ignoreGlobs: config?.ignore ?? [],
+  additionalRoots,
   disabledFrameworks: config?.disabledFrameworks ?? [],
   ...(options.onProgress === undefined ? {} : { onProgress: options.onProgress }),
 });
@@ -130,6 +185,10 @@ export const performIndexRun = async (
       ok: false,
       failure: { category: 'configurationError', message: config.error.message },
     };
+  }
+  const roster = readRepositoryRoster(rootDir);
+  if (!roster.ok) {
+    return { ok: false, failure: roster.error };
   }
   const captured = await captureSnapshot(rootDir, () => new Date().toISOString());
   if (!captured.ok) {
@@ -160,7 +219,13 @@ export const performIndexRun = async (
   }
   try {
     const indexed = await indexRepository(
-      buildIndexRequest(rootDir, captured.snapshot, config.value, options),
+      buildIndexRequest(
+        rootDir,
+        captured.snapshot,
+        config.value,
+        options,
+        additionalRootsOf(rootDir, roster.value),
+      ),
       {
         store: store.value,
         registry: registry.value,
@@ -173,7 +238,14 @@ export const performIndexRun = async (
         failure: { category: 'indexingFailure', message: indexed.error.message },
       };
     }
-    return { ok: true, value: { summary: indexed.value, snapshot: captured.snapshot } };
+    return {
+      ok: true,
+      value: {
+        summary: indexed.value,
+        snapshot: captured.snapshot,
+        repositories: runRepositoryStates(rootDir, roster.value, indexed.value),
+      },
+    };
   } finally {
     await store.value.close();
   }

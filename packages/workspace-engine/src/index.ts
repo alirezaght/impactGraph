@@ -264,3 +264,13 @@ export type { DetectedTransformation, TransformationKind } from './field-transfo
 // Item 6: related repositories registered as one workspace, with separate identities.
 export { readRepositoryRoster, indexableRoots } from './registered-repositories.js';
 export type { RegisteredRepository, RepositoryRoster } from './registered-repositories.js';
+export { discoverCandidateRepositories } from './repository-discovery.js';
+export {
+  collectWorkspaceRepositoryContext,
+  ensureRegisteredRepositoriesIndexed,
+  memberPrefix,
+} from './repository-coverage.js';
+export type {
+  EnsureIndexedOutcome,
+  WorkspaceRepositoryContext,
+} from './repository-coverage.js';
