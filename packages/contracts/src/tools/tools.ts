@@ -96,13 +96,14 @@ export const MCP_TOOL_CONTRACTS = {
     output: z.object({ created: z.array(z.string()), alreadyInitialized: z.boolean() }).strict(),
   },
   get_workspace_status: {
-    description: 'Read the current index generation (initialized, indexed, snapshot, counts).',
+    description:
+      'Read the current index generation (initialized, indexed, snapshot, counts) plus repository coverage: the derived index state of every registered repository and any discovered-but-unregistered candidate repositories. Call this FIRST to validate workspace coverage before analyzing.',
     input: emptyInputSchema,
     output: cliStatusOutputSchema,
   },
   index_workspace: {
     description:
-      'Index the repository into the local knowledge graph (deterministic, offline). Rebuilds the disposable cache.',
+      'Index the workspace into the local knowledge graph (deterministic, offline): the workspace root plus every registered, present, enabled repository from `repositories:` in .impactgraph/config.yml — one graph spanning all of them. Rebuilds the disposable cache. Register related repositories before indexing when a feature spans them.',
     input: emptyInputSchema,
     output: cliIndexOutputSchema,
   },
@@ -176,7 +177,7 @@ export const MCP_TOOL_CONTRACTS = {
   },
   analyze_impact: {
     description:
-      'Build an evidence-backed impact analysis for a submitted specification and return a BOUNDED summary: status, extraction quality, index freshness, coverage, counts, the top structural impacts, unmatched requirements, unresolved concepts, blocking questions and important warnings. Lexical-only matches are excluded by default. Use list_impacts for the full paginated detail. Persists a new draft analysis.',
+      'Build an evidence-backed impact analysis for a submitted specification and return a BOUNDED summary: status, extraction quality, index freshness, coverage, counts, the top structural impacts, unmatched requirements, unresolved concepts, blocking questions and important warnings. Validates repository coverage first and auto-indexes registered repositories missing from the current index. When coverage is fundamentally insufficient, workspaceCoverage.status is "insufficient-coverage", the readiness score is WITHHELD, and requiredActions states machine-readable next steps (index/register repositories, confirm candidates, refresh the index, or report limited scope) — follow them instead of treating the partial result as the answer. Lexical-only matches are excluded by default. Use list_impacts for the full paginated detail. Persists a new draft analysis.',
     input: impactFiltersSchema.extend({ specificationId: z.string().min(1) }).strict(),
     output: cliImpactSummarySchema,
   },

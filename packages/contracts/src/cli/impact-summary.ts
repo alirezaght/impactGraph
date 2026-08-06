@@ -164,6 +164,70 @@ const predictedArtifactSchema = z
   })
   .strict();
 
+/**
+ * A machine-readable next step (item: guided coverage). The agent must never be the one to guess
+ * that the graph is incomplete — when ImpactGraph has evidence, it says exactly what to do next.
+ */
+export const requiredActionSchema = z
+  .object({
+    action: z.enum([
+      'refresh-stale-index',
+      'index-registered-repositories',
+      'register-missing-repositories',
+      'confirm-candidate-repositories',
+      'report-limited-scope',
+    ]),
+    reason: z.string().min(1),
+    /** Imperative sentence addressed to the coding agent. */
+    instruction: z.string().min(1),
+    repositories: z.array(z.string().min(1)).optional(),
+  })
+  .strict();
+
+/**
+ * Repository-coverage verdict for the analysis. `insufficient-coverage` means the readiness score
+ * is withheld: the graph demonstrably does not contain the parts of the system the specification
+ * changes, so a normal-looking score would be misleading.
+ */
+export const workspaceCoverageSchema = z
+  .object({
+    status: z.enum(['adequate', 'insufficient-coverage']),
+    reasons: z.array(z.string().min(1)),
+    repositories: z
+      .object({
+        /** Repositories whose files are in the current index (the workspace root is always one). */
+        indexed: z.array(
+          z
+            .object({
+              name: z.string().min(1),
+              path: z.string().min(1).optional(),
+              fileCount: z.number().int().min(0),
+            })
+            .strict(),
+        ),
+        /** Registered and enabled, but absent from disk or from the current index. */
+        registeredButMissing: z.array(
+          z.object({ name: z.string().min(1), reason: z.string().min(1) }).strict(),
+        ),
+        /** Discovered but unconfirmed — candidates the user must register; never auto-indexed. */
+        candidates: z.array(
+          z
+            .object({
+              name: z.string().min(1),
+              path: z.string().min(1),
+              hint: z.string().min(1),
+            })
+            .strict(),
+        ),
+      })
+      .strict(),
+    /** Requirements whose coverage depends on the missing parts (the unmatched set). */
+    affectedRequirementIds: z.array(z.string().min(1)),
+    /** Concepts that resolved to nothing — likely living in unindexed repositories. */
+    affectedConcepts: z.array(z.string().min(1)),
+  })
+  .strict();
+
 export const impactFiltersSchema = z
   .object({
     topN: z.number().int().min(1).max(500).optional(),
@@ -265,6 +329,13 @@ export const cliImpactSummarySchema = z
     pagination: paginationSchema,
     /** Provenance of the impact query itself (item 11). */
     impactQuery: queryOutcomeSchema,
+    /**
+     * Additive v1: repository-coverage verdict. When status is 'insufficient-coverage' the
+     * readiness score is withheld and `requiredActions` says what to do about it.
+     */
+    workspaceCoverage: workspaceCoverageSchema.optional(),
+    /** Additive v1: machine-readable next steps — the agent follows these, it never guesses. */
+    requiredActions: z.array(requiredActionSchema).optional(),
     /** How to get the detail this document deliberately withholds. */
     followUp: z.array(z.string().min(1)),
   })
@@ -272,6 +343,8 @@ export const cliImpactSummarySchema = z
 
 export type CliImpactSummary = z.infer<typeof cliImpactSummarySchema>;
 export type ImpactFilters = z.infer<typeof impactFiltersSchema>;
+export type WorkspaceCoverageDto = z.infer<typeof workspaceCoverageSchema>;
+export type RequiredActionDto = z.infer<typeof requiredActionSchema>;
 
 /** `list_impacts`: the paginated detail page the summary points at. */
 export const cliImpactPageSchema = z

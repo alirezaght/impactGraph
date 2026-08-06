@@ -100,6 +100,8 @@ export {
   cliInitOutputSchema,
   cliIndexOutputSchema,
   cliStatusOutputSchema,
+  repositoryIndexStateSchema,
+  candidateRepositorySchema,
   cliArchitectureOutputSchema,
   cliConfigOutputSchema,
   cliAnalyzeOutputSchema,
@@ -114,6 +116,8 @@ export type {
   CliInitOutput,
   CliIndexOutput,
   CliStatusOutput,
+  RepositoryIndexStateDto,
+  CandidateRepositoryDto,
   CliArchitectureOutput,
   CliConfigOutput,
   CliAnalyzeOutput,
@@ -212,6 +216,7 @@ export { implementationContextSchema } from './export/implementation-context.js'
 export type { ImplementationContextDto } from './export/implementation-context.js';
 export { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from './tools/tools.js';
 export type { McpToolName } from './tools/tools.js';
+export { MCP_SERVER_INSTRUCTIONS } from './tools/guidance.js';
 
 // The bounded analyze document and its paginated detail page (item 9 of the trial follow-up).
 export {
@@ -223,8 +228,16 @@ export {
   indexWarningReportSchema,
   extractionQualitySchema,
   queryOutcomeSchema,
+  workspaceCoverageSchema,
+  requiredActionSchema,
 } from './cli/impact-summary.js';
-export type { CliImpactSummary, CliImpactPage, ImpactFilters } from './cli/impact-summary.js';
+export type {
+  CliImpactSummary,
+  CliImpactPage,
+  ImpactFilters,
+  WorkspaceCoverageDto,
+  RequiredActionDto,
+} from './cli/impact-summary.js';
 
 // Item 13: the review breakdown, and item 12: recorded outcomes with their measured accuracy.
 export { cliReviewBreakdownSchema } from './cli/review-breakdown.js';

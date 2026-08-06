@@ -622,6 +622,148 @@
           "required": ["status", "scope", "limitations", "resultCount"],
           "additionalProperties": false
         },
+        "workspaceCoverage": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["adequate", "insufficient-coverage"]
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "repositories": {
+              "type": "object",
+              "properties": {
+                "indexed": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "path": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "fileCount": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": ["name", "fileCount"],
+                    "additionalProperties": false
+                  }
+                },
+                "registeredButMissing": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "reason": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["name", "reason"],
+                    "additionalProperties": false
+                  }
+                },
+                "candidates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "path": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "hint": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["name", "path", "hint"],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": ["indexed", "registeredButMissing", "candidates"],
+              "additionalProperties": false
+            },
+            "affectedRequirementIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "affectedConcepts": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "status",
+            "reasons",
+            "repositories",
+            "affectedRequirementIds",
+            "affectedConcepts"
+          ],
+          "additionalProperties": false
+        },
+        "requiredActions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "refresh-stale-index",
+                  "index-registered-repositories",
+                  "register-missing-repositories",
+                  "confirm-candidate-repositories",
+                  "report-limited-scope"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "instruction": {
+                "type": "string",
+                "minLength": 1
+              },
+              "repositories": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["action", "reason", "instruction"],
+            "additionalProperties": false
+          }
+        },
         "followUp": {
           "type": "array",
           "items": {
