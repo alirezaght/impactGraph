@@ -3,7 +3,9 @@ import {
   buildAnalysisForSpecification,
   buildImpactPage,
   buildImpactSummary,
+  collectWorkspaceRepositoryContext,
   createWorkspaceAiServices,
+  ensureRegisteredRepositoriesIndexed,
   lastRunIgnoredCount,
   lastRunWarningRecords,
   latestAnalysis,
@@ -35,12 +37,23 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   if (!ai.ok) {
     return ai;
   }
+  // Coverage validation BEFORE analysis: registered repositories missing from the current index
+  // are indexed automatically (registered = user-confirmed); a failed reindex is not fatal —
+  // the summary's workspaceCoverage and requiredActions report the remaining gap.
+  const ensured = await ensureRegisteredRepositoriesIndexed(rootDir);
+  if (!ensured.ok) {
+    return ensured;
+  }
   const built = await buildAnalysisForSpecification(rootDir, spec.value, {
     classifier: ai.value.classifier,
     interpreter: ai.value.interpreter,
   });
   if (!built.ok) {
     return built;
+  }
+  const workspace = await collectWorkspaceRepositoryContext(rootDir);
+  if (!workspace.ok) {
+    return workspace;
   }
   const ignoredFileCount = await lastRunIgnoredCount(rootDir);
   return {
@@ -49,6 +62,7 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
       specification: spec.value,
       analysis: built.value.analysis,
       graph: built.value.graph,
+      workspace: workspace.value,
       // Freshness is compared at ANSWER time, not index time: the tree can move between the two,
       // and a conclusion drawn from a stale index has to say so (item 10).
       freshness: await assessWorkspaceFreshness({

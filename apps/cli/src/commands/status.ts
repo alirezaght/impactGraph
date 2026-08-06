@@ -1,13 +1,16 @@
 import { cliStatusOutputSchema } from '@impactgraph/contracts';
-import { collectWorkspaceStatus } from '@impactgraph/workspace-engine';
+import {
+  collectWorkspaceRepositoryContext,
+  collectWorkspaceStatus,
+} from '@impactgraph/workspace-engine';
 
 import { failed, succeeded } from '../context.js';
 import { writeJson, writeLines } from '../output.js';
 
 import type { CommandContext, CommandResult } from '../context.js';
-import type { WorkspaceStatus } from '@impactgraph/workspace-engine';
+import type { WorkspaceRepositoryContext, WorkspaceStatus } from '@impactgraph/workspace-engine';
 
-const textLines = (status: WorkspaceStatus): string[] => {
+const textLines = (status: WorkspaceStatus, repos?: WorkspaceRepositoryContext): string[] => {
   const lines = [
     `initialized: ${status.initialized ? 'yes' : 'no'}`,
     `indexed:     ${status.indexed ? 'yes' : 'no'}`,
@@ -23,6 +26,14 @@ const textLines = (status: WorkspaceStatus): string[] => {
       `last run:    ${status.lastRun.finishedAt} (${String(status.lastRun.durationMs)} ms, ${String(status.lastRun.warningCount)} warnings)`,
     );
   }
+  for (const repo of repos?.repositories ?? []) {
+    lines.push(
+      `repository:  ${repo.name} — ${repo.indexed ? `indexed (${String(repo.fileCount)} files)` : `not indexed (${repo.reason ?? 'unknown'})`}`,
+    );
+  }
+  for (const candidate of repos?.candidates ?? []) {
+    lines.push(`candidate:   ${candidate.path} — ${candidate.hint}`);
+  }
   return lines;
 };
 
@@ -31,6 +42,7 @@ export const runStatus = async (context: CommandContext): Promise<CommandResult>
   if (!status.ok) {
     return failed(status.error);
   }
+  const repos = await collectWorkspaceRepositoryContext(context.rootDir);
   if (context.format === 'json') {
     writeJson(context, cliStatusOutputSchema, {
       schemaVersion: 1,
@@ -40,9 +52,15 @@ export const runStatus = async (context: CommandContext): Promise<CommandResult>
       ...(status.value.snapshot === undefined ? {} : { snapshot: status.value.snapshot }),
       ...(status.value.counts === undefined ? {} : { counts: status.value.counts }),
       ...(status.value.lastRun === undefined ? {} : { lastRun: status.value.lastRun }),
+      ...(repos.ok
+        ? {
+            repositories: [...repos.value.repositories],
+            candidateRepositories: [...repos.value.candidates],
+          }
+        : {}),
     });
     return succeeded();
   }
-  writeLines(context, textLines(status.value));
+  writeLines(context, textLines(status.value, repos.ok ? repos.value : undefined));
   return succeeded();
 };

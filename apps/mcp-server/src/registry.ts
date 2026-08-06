@@ -17,6 +17,7 @@ import {
   buildExportBundle,
   buildExportOutput,
   buildReviewOutput,
+  collectWorkspaceRepositoryContext,
   collectWorkspaceStatus,
   createWorkspaceAiServices,
   explainEdge,
@@ -69,9 +70,21 @@ const HANDLERS: ToolHandlerMap = {
     if (!status.ok) {
       return status;
     }
+    // Repository coverage is part of the status: step 1 of the workflow is validating it.
+    const context = await collectWorkspaceRepositoryContext(rootDir);
     return {
       ok: true,
-      value: { schemaVersion: 1, command: 'status', ...status.value },
+      value: {
+        schemaVersion: 1,
+        command: 'status',
+        ...status.value,
+        ...(context.ok
+          ? {
+              repositories: [...context.value.repositories],
+              candidateRepositories: [...context.value.candidates],
+            }
+          : {}),
+      },
     };
   },
   index_workspace: async (rootDir) => {
@@ -97,6 +110,7 @@ const HANDLERS: ToolHandlerMap = {
         nodeCount: summary.nodeCount,
         edgeCount: summary.edgeCount,
         warnings: indexWarnings(summary),
+        repositories: [...indexed.value.repositories],
       },
     };
   },

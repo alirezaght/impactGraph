@@ -37,6 +37,11 @@ describe('MCP stdio server (Story 12.1, PRD §21)', () => {
     const init = record(record(responses[0])['result']);
     expect(init['protocolVersion']).toBe('2024-11-05');
     expect(record(init['serverInfo'])['name']).toBe('impactgraph');
+    // The coverage-first workflow is stated by the SERVER — clients never have to infer it.
+    const instructions = init['instructions'] as string;
+    expect(instructions).toContain('insufficient-coverage');
+    expect(instructions).toContain('requiredActions');
+    expect(instructions).toContain('index_workspace');
 
     const tools = record(record(responses[1])['result'])['tools'] as {
       name: string;

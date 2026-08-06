@@ -7,8 +7,10 @@ import {
   assessWorkspaceFreshness,
   buildAnalysisForSpecification,
   buildImpactSummary,
+  collectWorkspaceRepositoryContext,
   contextsForGraph,
   createWorkspaceAiServices,
+  ensureRegisteredRepositoriesIndexed,
   lastRunIgnoredCount,
   lastRunWarningRecords,
   submitSpecification,
@@ -63,6 +65,12 @@ export const runAnalyze = async (context: CommandContext): Promise<CommandResult
   if (!submitted.ok) {
     return failed(submitted.error);
   }
+  // Coverage validation before analysis: registered repositories missing from the current
+  // index are indexed automatically; the summary reports whatever gap remains.
+  const ensured = await ensureRegisteredRepositoriesIndexed(context.rootDir);
+  if (!ensured.ok) {
+    return failed(ensured.error);
+  }
   const built = await buildAnalysisForSpecification(
     context.rootDir,
     submitted.value.specification,
@@ -103,12 +111,14 @@ const render = async (
     return;
   }
   const ignoredFileCount = await lastRunIgnoredCount(context.rootDir);
+  const workspace = await collectWorkspaceRepositoryContext(context.rootDir);
   renderImpactSummary(
     context,
     buildImpactSummary({
       specification: submitted.specification,
       analysis: built.analysis,
       graph: built.graph,
+      ...(workspace.ok ? { workspace: workspace.value } : {}),
       freshness: await assessWorkspaceFreshness({
         rootDir: context.rootDir,
         snapshotId: built.snapshotId,

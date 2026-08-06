@@ -7,7 +7,7 @@ import { writeJson, writeLines } from '../output.js';
 
 import type { CommandContext, CommandResult } from '../context.js';
 import type { IndexProgress } from '@impactgraph/application';
-import type { IndexSummary } from '@impactgraph/workspace-engine';
+import type { IndexRunOutcome } from '@impactgraph/workspace-engine';
 
 /** Story 2.6: live progress on a TTY (overwritten line), silence when piped or in JSON mode. */
 const ttyProgress = (context: CommandContext): ((progress: IndexProgress) => void) | undefined => {
@@ -42,16 +42,16 @@ export const runIndex = async (context: CommandContext): Promise<CommandResult> 
     return failed(indexed.failure);
   }
   const warnings = indexWarnings(indexed.value.summary);
-  render(context, indexed.value.summary, warnings, indexed.value.snapshot);
+  render(context, indexed.value, warnings);
   return succeeded(warnings.length > 0);
 };
 
 const render = (
   context: CommandContext,
-  summary: IndexSummary,
+  outcome: IndexRunOutcome,
   warnings: readonly string[],
-  snapshot: Parameters<typeof snapshotSummary>[0],
 ): void => {
+  const { summary, snapshot, repositories } = outcome;
   if (context.format === 'json') {
     writeJson(context, cliIndexOutputSchema, {
       schemaVersion: 1,
@@ -64,6 +64,7 @@ const render = (
       nodeCount: summary.nodeCount,
       edgeCount: summary.edgeCount,
       warnings: [...warnings],
+      repositories: [...repositories],
     });
     return;
   }
@@ -71,6 +72,12 @@ const render = (
     `Indexed ${String(summary.fileCount)} files → snapshot ${snapshot.id}`,
     `  parsed: ${String(summary.changedFileCount)}  reused: ${String(summary.reusedFileCount)}  ignored: ${String(summary.ignoredCount)}`,
     `  graph: ${String(summary.nodeCount)} nodes, ${String(summary.edgeCount)} edges`,
+    ...repositories
+      .filter((repo) => repo.name !== '(workspace root)')
+      .map(
+        (repo) =>
+          `  repository: ${repo.name} — ${repo.indexed ? `${String(repo.fileCount)} files` : `not indexed (${repo.reason ?? 'unknown'})`}`,
+      ),
     ...(warnings.length > 0
       ? [`  warnings (${String(warnings.length)}):`, ...warnings.map((w) => `    - ${w}`)]
       : []),

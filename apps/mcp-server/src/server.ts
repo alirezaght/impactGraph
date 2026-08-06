@@ -1,6 +1,11 @@
 import { createInterface } from 'node:readline';
 
-import { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from '@impactgraph/contracts';
+import {
+  MCP_SERVER_INSTRUCTIONS,
+  MCP_TOOL_CONTRACTS,
+  MCP_TOOL_NAMES,
+  MCP_TOOL_PREFIX,
+} from '@impactgraph/contracts';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { callTool, isKnownTool } from './registry.js';
@@ -73,6 +78,9 @@ const dispatch = async (rootDir: string, request: JsonRpcRequest): Promise<unkno
       protocolVersion: PROTOCOL_VERSION,
       capabilities: { tools: {} },
       serverInfo: { name: 'impactgraph', version: '0.0.0' },
+      // The coverage-first workflow (§21): validate coverage → index → verify concepts →
+      // analyze → present limitations. Stated by the server so no client has to infer it.
+      instructions: MCP_SERVER_INSTRUCTIONS,
     };
   }
   if (method === 'ping') {
