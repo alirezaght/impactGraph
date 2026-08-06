@@ -304,6 +304,12 @@ export {
 } from './serialization/snapshot-json.js';
 export { computeReadiness } from './specification/readiness.js';
 export type { ReadinessReport } from './specification/readiness.js';
+export { assessCoverageSufficiency } from './impact/workspace-coverage.js';
+export type {
+  CoverageSufficiencyInput,
+  WorkspaceCoverageStatus,
+  WorkspaceCoverageVerdict,
+} from './impact/workspace-coverage.js';
 export {
   createClarificationRecord,
   answerOpenQuestion,
