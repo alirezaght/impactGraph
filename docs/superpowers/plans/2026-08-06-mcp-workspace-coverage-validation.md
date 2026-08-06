@@ -23,11 +23,13 @@
 ### Task 1: Domain — coverage-sufficiency verdict
 
 **Files:**
+
 - Create: `packages/domain/src/impact/workspace-coverage.ts`
 - Create: `packages/domain/src/impact/workspace-coverage.test.ts`
 - Modify: `packages/domain/src/index.ts` (export)
 
 **Interfaces (Produces):**
+
 ```ts
 export type WorkspaceCoverageStatus = 'adequate' | 'insufficient-coverage';
 export interface CoverageSufficiencyInput {
@@ -45,6 +47,7 @@ export const assessCoverageSufficiency = (input: CoverageSufficiencyInput): Work
 ```
 
 Rules (each reason is one sentence naming the numbers):
+
 - `requirementCount === 0` → adequate (empty spec is readiness's job).
 - unmatched ratio ≥ 0.5 → insufficient ("N of M requirements match no indexed component").
 - `totalConceptCount > 0` and every concept unresolved → insufficient ("none of the K specification concepts resolve to any indexed component").
@@ -59,6 +62,7 @@ Rules (each reason is one sentence naming the numbers):
 ### Task 2: Contracts — coverage block, required actions, per-repo outputs, server instructions, tool descriptions
 
 **Files:**
+
 - Create: `packages/contracts/src/tools/guidance.ts` (`MCP_SERVER_INSTRUCTIONS`)
 - Modify: `packages/contracts/src/cli/impact-summary.ts` (add `workspaceCoverageSchema`, `requiredActionSchema`; extend `cliImpactSummarySchema` with `workspaceCoverage` + `requiredActions`, both `.optional()` additive v1)
 - Modify: `packages/contracts/src/cli/outputs.ts` (`repositoryIndexStateSchema`; `cliIndexOutputSchema.repositories?`, `cliStatusOutputSchema.repositories?` + `candidateRepositories?`)
@@ -68,31 +72,62 @@ Rules (each reason is one sentence naming the numbers):
 - Regenerate committed JSON Schemas (`packages/contracts/schemas/…`).
 
 **Interfaces (Produces):**
+
 ```ts
-export const requiredActionSchema = z.object({
-  action: z.enum(['refresh-stale-index','index-registered-repositories','register-missing-repositories','confirm-candidate-repositories','report-limited-scope']),
-  reason: z.string().min(1),
-  instruction: z.string().min(1),          // imperative sentence for the coding agent
-  repositories: z.array(z.string().min(1)).optional(),
-}).strict();
+export const requiredActionSchema = z
+  .object({
+    action: z.enum([
+      'refresh-stale-index',
+      'index-registered-repositories',
+      'register-missing-repositories',
+      'confirm-candidate-repositories',
+      'report-limited-scope',
+    ]),
+    reason: z.string().min(1),
+    instruction: z.string().min(1), // imperative sentence for the coding agent
+    repositories: z.array(z.string().min(1)).optional(),
+  })
+  .strict();
 
-export const workspaceCoverageSchema = z.object({
-  status: z.enum(['adequate','insufficient-coverage']),
-  reasons: z.array(z.string().min(1)),
-  repositories: z.object({
-    indexed: z.array(z.object({ name: z.string().min(1), path: z.string().min(1).optional(), fileCount: z.number().int().min(0) }).strict()),
-    registeredButMissing: z.array(z.object({ name: z.string().min(1), reason: z.string().min(1) }).strict()),
-    candidates: z.array(z.object({ name: z.string().min(1), path: z.string().min(1), hint: z.string().min(1) }).strict()),
-  }).strict(),
-  affectedRequirementIds: z.array(z.string().min(1)),
-  affectedConcepts: z.array(z.string().min(1)),
-}).strict();
+export const workspaceCoverageSchema = z
+  .object({
+    status: z.enum(['adequate', 'insufficient-coverage']),
+    reasons: z.array(z.string().min(1)),
+    repositories: z
+      .object({
+        indexed: z.array(
+          z
+            .object({
+              name: z.string().min(1),
+              path: z.string().min(1).optional(),
+              fileCount: z.number().int().min(0),
+            })
+            .strict(),
+        ),
+        registeredButMissing: z.array(
+          z.object({ name: z.string().min(1), reason: z.string().min(1) }).strict(),
+        ),
+        candidates: z.array(
+          z
+            .object({ name: z.string().min(1), path: z.string().min(1), hint: z.string().min(1) })
+            .strict(),
+        ),
+      })
+      .strict(),
+    affectedRequirementIds: z.array(z.string().min(1)),
+    affectedConcepts: z.array(z.string().min(1)),
+  })
+  .strict();
 
-export const repositoryIndexStateSchema = z.object({
-  name: z.string().min(1), path: z.string().min(1).optional(),
-  indexed: z.boolean(), fileCount: z.number().int().min(0),
-  reason: z.string().min(1).optional(),
-}).strict();
+export const repositoryIndexStateSchema = z
+  .object({
+    name: z.string().min(1),
+    path: z.string().min(1).optional(),
+    indexed: z.boolean(),
+    fileCount: z.number().int().min(0),
+    reason: z.string().min(1).optional(),
+  })
+  .strict();
 ```
 
 `MCP_SERVER_INSTRUCTIONS` states the 5-step workflow: (1) `get_workspace_status` to validate coverage, (2) `index_workspace` (indexes root + every registered repository), (3) verify central concepts resolve (`find_components`), (4) `analyze_impact` — if `workspaceCoverage.status === 'insufficient-coverage'` readiness is withheld and `requiredActions` must be followed before trusting impacts, (5) present limitations when complete coverage is impossible. Also: never treat a partial graph as the final answer; candidates require user confirmation.
@@ -105,15 +140,18 @@ export const repositoryIndexStateSchema = z.object({
 ### Task 3: repository-intelligence — multi-root scan merged into one snapshot graph
 
 **Files:**
+
 - Create: `packages/repository-intelligence/src/scanner/multi-root.ts`
 - Modify: `packages/repository-intelligence/src/index-repository.ts` (`additionalRoots?: readonly {name, rootDir, relativePrefix}[]` on request; `IndexSummary.rootFileCounts?: readonly {name, fileCount}[]`)
 - Test: `packages/repository-intelligence/src/scanner/multi-root.test.ts` (+ index-repository multi-root case)
 
 **Interfaces (Produces):**
+
 ```ts
 export interface AdditionalRoot { readonly name: string; readonly rootDir: string; readonly relativePrefix: string; }
 export const scanRoots = (rootDir: string, additionalRoots: readonly AdditionalRoot[], options: ScanOptions): ScanResult & { rootFileCounts: readonly {name: string; fileCount: number}[] }
 ```
+
 Main root scanned with the additional roots' prefixes excluded (ignore globs); each additional root scanned from its own directory (own `.gitignore` chain) and rebased under `relativePrefix`; results merged, files de-duplicated by `relativePath`. Single-root behavior byte-identical (goldens must not change).
 
 - [ ] Failing tests on a temp fixture (root + two subdirectory repos): merged file list carries prefixed paths; excluded root double-scan; per-root counts; disabled/absent roots simply not passed in.
@@ -123,6 +161,7 @@ Main root scanned with the additional roots' prefixes excluded (ignore globs); e
 ### Task 4: workspace-engine — roster-driven indexing, discovery, per-repo index state
 
 **Files:**
+
 - Create: `packages/workspace-engine/src/repository-discovery.ts`
 - Create: `packages/workspace-engine/src/repository-coverage.ts`
 - Modify: `packages/workspace-engine/src/indexing.ts` (read roster, pass `additionalRoots`, return `repositories` on outcome)
@@ -130,6 +169,7 @@ Main root scanned with the additional roots' prefixes excluded (ignore globs); e
 - Tests: `packages/workspace-engine/src/repository-discovery.test.ts`, `packages/workspace-engine/src/repository-coverage.test.ts` (temp dirs, real store)
 
 **Interfaces (Produces):**
+
 ```ts
 // repository-discovery.ts — unregistered candidates, NEVER indexed automatically
 export interface CandidateRepository { readonly name: string; readonly path: string; readonly hint: string; }
@@ -148,6 +188,7 @@ export const collectWorkspaceRepositoryContext = async (rootDir: string): Promis
 export const ensureRegisteredRepositoriesIndexed = async (rootDir: string): Promise<Failable<{ reindexed: boolean }>>
 // reindexes (performIndexRun) iff the store has a current snapshot AND an enabled+present member has zero files under its prefix
 ```
+
 `performIndexRun` outcome gains `repositories: readonly RepositoryIndexState[]` (from `rootFileCounts` + roster).
 
 - [ ] Failing tests: discovery finds unregistered git dir, skips registered ones; context reports indexed/missing per member; `ensureRegisteredRepositoriesIndexed` reindexes exactly when a registered member is absent from the snapshot; multi-root `performIndexRun` produces one graph containing both repos' files.
@@ -157,6 +198,7 @@ export const ensureRegisteredRepositoriesIndexed = async (rootDir: string): Prom
 ### Task 5: workspace-engine reports — coverage block, required actions, readiness withholding
 
 **Files:**
+
 - Create: `packages/workspace-engine/src/reports/workspace-coverage-block.ts`
 - Create: `packages/workspace-engine/src/reports/required-actions.ts`
 - Modify: `packages/workspace-engine/src/reports/impact-summary.ts` (accept optional `workspace?: WorkspaceRepositoryContext`; emit `workspaceCoverage` + `requiredActions`; withhold readiness on insufficient; add coverage reasons to `provisionalReasons`; add roster limitations to `impactQuery.limitations`)
@@ -164,10 +206,12 @@ export const ensureRegisteredRepositoriesIndexed = async (rootDir: string): Prom
 - Tests: `packages/workspace-engine/src/reports/workspace-coverage-block.test.ts`, `required-actions.test.ts`
 
 **Interfaces (Produces):**
+
 ```ts
 export const buildWorkspaceCoverage = (input: { specification; analysis; context?: WorkspaceRepositoryContext }): CliImpactSummary['workspaceCoverage']  // uses domain assessCoverageSufficiency
 export const buildRequiredActions = (input: { coverage; freshness; context?: WorkspaceRepositoryContext }): CliImpactSummary['requiredActions']
 ```
+
 Action derivation order: `refresh-stale-index` (freshness.stale) → `index-registered-repositories` (enabled+present member unindexed) → `register-missing-repositories` (roster.absent) → `confirm-candidate-repositories` (candidates exist AND status insufficient) → `report-limited-scope` (insufficient and nothing else actionable). Readiness withholding precedence: provisional extraction message (existing) wins; else insufficient coverage → `readinessWithheldReason: 'Repository coverage is insufficient — a readiness score over a graph that is missing the feature's repositories would be misleading. Follow requiredActions and re-run the analysis.'`
 
 - [ ] Failing tests: insufficient → readiness absent + withheld reason + provisional true with coverage reason; adequate → readiness present, `report-limited-scope` absent; each action trigger pinned; both blocks always emitted (empty-arrays allowed).
@@ -177,6 +221,7 @@ Action derivation order: `refresh-stale-index` (freshness.stale) → `index-regi
 ### Task 6: MCP server — auto-index, per-repo outputs, server instructions
 
 **Files:**
+
 - Modify: `apps/mcp-server/src/registry-impacts.ts` (analyze: `ensureRegisteredRepositoriesIndexed` before building; pass `workspace` context into summary)
 - Modify: `apps/mcp-server/src/registry.ts` (index/status handlers emit `repositories` / `candidateRepositories`)
 - Modify: `apps/mcp-server/src/server.ts` (`initialize` → `instructions: MCP_SERVER_INSTRUCTIONS`)

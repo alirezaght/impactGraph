@@ -15,9 +15,8 @@ import { buildPackageFacts } from './assembly/package-facts.js';
 import { hashFiles, readForParse } from './hash-files.js';
 import { scanRoots } from './scanner/multi-root.js';
 
-import type { AdditionalRoot, MultiRootScanResult, RootFileCount } from './scanner/multi-root.js';
-
 import type { HashedFile } from './hash-files.js';
+import type { AdditionalRoot, MultiRootScanResult, RootFileCount } from './scanner/multi-root.js';
 import type { ScanWarning } from './scanner/scanner.js';
 import type {
   CancellationToken,
@@ -217,14 +216,42 @@ export const indexRepository = async (
   if (!parsed.ok) {
     return parsed;
   }
+  const graph = await assembleAndEnrich(request, deps, {
+    scan,
+    files,
+    manifests,
+    fragments: [...plan.reused, ...parsed.value],
+    context,
+  });
+
+  request.onProgress?.({
+    phase: 'persisting',
+    filesProcessed: files.length,
+    totalFiles: files.length,
+  });
+  return persistAndSummarize({ request, deps, scan, files, plan, graph, readWarnings, startedAt });
+};
+
+interface AssembleInput {
+  readonly scan: MultiRootScanResult;
+  readonly files: readonly HashedFile[];
+  readonly manifests: ReturnType<typeof hashFiles>['manifests'];
+  readonly fragments: readonly GraphFragment[];
+  readonly context: IndexingContext;
+}
+
+const assembleAndEnrich = async (
+  request: IndexRepositoryRequest,
+  deps: IndexRepositoryDeps,
+  input: AssembleInput,
+): Promise<Awaited<ReturnType<typeof enrichWithFrameworks>>> => {
+  const { scan, files, manifests, context } = input;
   const fragments = [
-    ...plan.reused,
-    ...parsed.value,
+    ...input.fragments,
     buildPackageFacts(scan.packages, scan.files, context),
     buildDiscoveryFacts(scan.packages, scan.files, context),
     buildDependencyFacts(scan.packages, context),
   ];
-
   request.onProgress?.({
     phase: 'assembling',
     filesProcessed: files.length,
@@ -235,19 +262,12 @@ export const indexRepository = async (
     context,
     createModuleResolver(new Set(files.map((file) => file.relativePath)), manifests),
   );
-  const graph = await enrichWithFrameworks(
+  return enrichWithFrameworks(
     assembled,
     deps.frameworkAdapters ?? [],
     context,
     request.disabledFrameworks ?? [],
   );
-
-  request.onProgress?.({
-    phase: 'persisting',
-    filesProcessed: files.length,
-    totalFiles: files.length,
-  });
-  return persistAndSummarize({ request, deps, scan, files, plan, graph, readWarnings, startedAt });
 };
 
 interface PersistInput {

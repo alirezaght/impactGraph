@@ -1,3 +1,5 @@
+import { relative } from 'node:path';
+
 import {
   createAsyncChainAdapter,
   createAstroFrameworkAdapter,
@@ -30,8 +32,6 @@ import {
   readWorkspaceConfig,
 } from '@impactgraph/persistence';
 import { indexRepository } from '@impactgraph/repository-intelligence';
-
-import { relative } from 'node:path';
 
 import { readRepositoryRoster } from './registered-repositories.js';
 import { captureSnapshot } from './snapshot.js';
@@ -124,7 +124,9 @@ const runRepositoryStates = (
   roster: RepositoryRoster,
   summary: IndexSummary,
 ): readonly RepositoryIndexStateDto[] => {
-  const counts = new Map((summary.rootFileCounts ?? []).map((entry) => [entry.name, entry.fileCount]));
+  const counts = new Map(
+    (summary.rootFileCounts ?? []).map((entry) => [entry.name, entry.fileCount]),
+  );
   return roster.members.map((member) => {
     if (member.resolvedPath === rootDir) {
       return { name: member.name, indexed: true, fileCount: counts.get('.') ?? summary.fileCount };
@@ -151,27 +153,44 @@ export interface IndexRunOptions {
   readonly onProgress?: ProgressReporter;
 }
 
-const buildIndexRequest = (
-  rootDir: string,
-  snapshot: RepositorySnapshot,
-  config:
+interface IndexRequestInput {
+  readonly rootDir: string;
+  readonly snapshot: RepositorySnapshot;
+  readonly config:
     | {
         ignore?: readonly string[] | undefined;
         disabledFrameworks?: readonly string[] | undefined;
       }
     | null
-    | undefined,
-  options: IndexRunOptions,
-  additionalRoots: readonly AdditionalRoot[],
-): Parameters<typeof indexRepository>[0] => ({
-  rootDir,
-  snapshot,
-  analysisRunId: `run-${snapshot.id}`,
-  createdAt: snapshot.createdAt,
-  ignoreGlobs: config?.ignore ?? [],
-  additionalRoots,
-  disabledFrameworks: config?.disabledFrameworks ?? [],
-  ...(options.onProgress === undefined ? {} : { onProgress: options.onProgress }),
+    | undefined;
+  readonly options: IndexRunOptions;
+  readonly additionalRoots: readonly AdditionalRoot[];
+}
+
+const buildLanguageRegistry = (): ReturnType<typeof createAdapterRegistry> =>
+  createAdapterRegistry([
+    createTypeScriptAdapter(),
+    createPythonAdapter(),
+    createJavaAdapter(),
+    createAstroAdapter(),
+    createHtmlAdapter(),
+    createTerraformAdapter(),
+    createPrismaAdapter(),
+    createSpringConfigAdapter(),
+    // §item 8: `.json` assets — locale bundles, OpenAPI, JSON Schema, event definitions,
+    // configuration. `.tf.json` still routes to Terraform (longest matching suffix wins).
+    createAssetAdapter(),
+  ]);
+
+const buildIndexRequest = (input: IndexRequestInput): Parameters<typeof indexRepository>[0] => ({
+  rootDir: input.rootDir,
+  snapshot: input.snapshot,
+  analysisRunId: `run-${input.snapshot.id}`,
+  createdAt: input.snapshot.createdAt,
+  ignoreGlobs: input.config?.ignore ?? [],
+  additionalRoots: input.additionalRoots,
+  disabledFrameworks: input.config?.disabledFrameworks ?? [],
+  ...(input.options.onProgress === undefined ? {} : { onProgress: input.options.onProgress }),
 });
 
 /** One full index run over the workspace — shared by `index` and `review` (which reindexes). */
@@ -198,19 +217,7 @@ export const performIndexRun = async (
   if (!store.ok) {
     return { ok: false, failure: { category: 'indexingFailure', message: store.error.message } };
   }
-  const registry = createAdapterRegistry([
-    createTypeScriptAdapter(),
-    createPythonAdapter(),
-    createJavaAdapter(),
-    createAstroAdapter(),
-    createHtmlAdapter(),
-    createTerraformAdapter(),
-    createPrismaAdapter(),
-    createSpringConfigAdapter(),
-    // §item 8: `.json` assets — locale bundles, OpenAPI, JSON Schema, event definitions,
-    // configuration. `.tf.json` still routes to Terraform (longest matching suffix wins).
-    createAssetAdapter(),
-  ]);
+  const registry = buildLanguageRegistry();
   if (!registry.ok) {
     return {
       ok: false,
@@ -219,34 +226,38 @@ export const performIndexRun = async (
   }
   try {
     const indexed = await indexRepository(
-      buildIndexRequest(
+      buildIndexRequest({
         rootDir,
-        captured.snapshot,
-        config.value,
+        snapshot: captured.snapshot,
+        config: config.value,
         options,
-        additionalRootsOf(rootDir, roster.value),
-      ),
+        additionalRoots: additionalRootsOf(rootDir, roster.value),
+      }),
       {
         store: store.value,
         registry: registry.value,
         frameworkAdapters: buildFrameworkAdapters(rootDir),
       },
     );
-    if (!indexed.ok) {
-      return {
-        ok: false,
-        failure: { category: 'indexingFailure', message: indexed.error.message },
-      };
-    }
-    return {
-      ok: true,
-      value: {
-        summary: indexed.value,
-        snapshot: captured.snapshot,
-        repositories: runRepositoryStates(rootDir, roster.value, indexed.value),
-      },
-    };
+    return toRunResult(rootDir, roster.value, captured.snapshot, indexed);
   } finally {
     await store.value.close();
   }
 };
+
+const toRunResult = (
+  rootDir: string,
+  roster: RepositoryRoster,
+  snapshot: RepositorySnapshot,
+  indexed: Awaited<ReturnType<typeof indexRepository>>,
+): IndexRunResult =>
+  indexed.ok
+    ? {
+        ok: true,
+        value: {
+          summary: indexed.value,
+          snapshot,
+          repositories: runRepositoryStates(rootDir, roster, indexed.value),
+        },
+      }
+    : { ok: false, failure: { category: 'indexingFailure', message: indexed.error.message } };

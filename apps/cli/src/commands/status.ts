@@ -10,6 +10,16 @@ import { writeJson, writeLines } from '../output.js';
 import type { CommandContext, CommandResult } from '../context.js';
 import type { WorkspaceRepositoryContext, WorkspaceStatus } from '@impactgraph/workspace-engine';
 
+const repositoryLines = (repos?: WorkspaceRepositoryContext): string[] => [
+  ...(repos?.repositories ?? []).map(
+    (repo) =>
+      `repository:  ${repo.name} — ${repo.indexed ? `indexed (${String(repo.fileCount)} files)` : `not indexed (${repo.reason ?? 'unknown'})`}`,
+  ),
+  ...(repos?.candidates ?? []).map(
+    (candidate) => `candidate:   ${candidate.path} — ${candidate.hint}`,
+  ),
+];
+
 const textLines = (status: WorkspaceStatus, repos?: WorkspaceRepositoryContext): string[] => {
   const lines = [
     `initialized: ${status.initialized ? 'yes' : 'no'}`,
@@ -26,15 +36,7 @@ const textLines = (status: WorkspaceStatus, repos?: WorkspaceRepositoryContext):
       `last run:    ${status.lastRun.finishedAt} (${String(status.lastRun.durationMs)} ms, ${String(status.lastRun.warningCount)} warnings)`,
     );
   }
-  for (const repo of repos?.repositories ?? []) {
-    lines.push(
-      `repository:  ${repo.name} — ${repo.indexed ? `indexed (${String(repo.fileCount)} files)` : `not indexed (${repo.reason ?? 'unknown'})`}`,
-    );
-  }
-  for (const candidate of repos?.candidates ?? []) {
-    lines.push(`candidate:   ${candidate.path} — ${candidate.hint}`);
-  }
-  return lines;
+  return [...lines, ...repositoryLines(repos)];
 };
 
 export const runStatus = async (context: CommandContext): Promise<CommandResult> => {

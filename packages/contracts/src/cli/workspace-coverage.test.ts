@@ -34,13 +34,24 @@ const action = {
 const minimalSummary = {
   schemaVersion: 1,
   command: 'analyze',
-  analysis: { id: 'a-1', snapshotId: 's-1', status: 'draft', provisional: false, provisionalReasons: [] },
+  analysis: {
+    id: 'a-1',
+    snapshotId: 's-1',
+    status: 'draft',
+    provisional: false,
+    provisionalReasons: [],
+  },
   specification: { id: 'sp-1', version: 1, title: 't', extractionMode: 'unchanged' },
   freshness: { state: 'current', stale: false, reasons: [] },
   coverage: {
     requirementCount: 0,
     requirementsWithStructuralImpact: 0,
-    indexWarnings: { totalCount: 0, coverageLosingCount: 0, affectsPredictedArea: false, groups: [] },
+    indexWarnings: {
+      totalCount: 0,
+      coverageLosingCount: 0,
+      affectsPredictedArea: false,
+      groups: [],
+    },
   },
   counts: { totalImpacts: 0, componentCount: 0, byLikelihood: {}, byEvidenceType: {} },
   topImpacts: [],

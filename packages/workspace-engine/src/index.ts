@@ -270,7 +270,4 @@ export {
   ensureRegisteredRepositoriesIndexed,
   memberPrefix,
 } from './repository-coverage.js';
-export type {
-  EnsureIndexedOutcome,
-  WorkspaceRepositoryContext,
-} from './repository-coverage.js';
+export type { EnsureIndexedOutcome, WorkspaceRepositoryContext } from './repository-coverage.js';

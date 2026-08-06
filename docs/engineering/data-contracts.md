@@ -156,6 +156,21 @@ same thing in both, so one layout engine, one SVG emitter and one HTML shell ser
   component names; `specificationStale` / `currentSpecificationVersion` say whether the spec has
   moved past the version the analysis saw (§40.2). Nothing is silently refreshed.
 
+### Workspace coverage on the analyze document
+
+The bounded summary carries two **additive, optional** v1 fields, always emitted by current
+producers: `workspaceCoverage` (`status: 'adequate' | 'insufficient-coverage'`, reasons, the
+repositories that were indexed / registered-but-missing / discovered candidates, and the
+requirement ids and concepts that depend on the gap) and `requiredActions` (a closed vocabulary —
+`refresh-stale-index`, `index-registered-repositories`, `register-missing-repositories`,
+`confirm-candidate-repositories`, `report-limited-scope` — each with a reason and an imperative
+`instruction` for the agent). When status is `insufficient-coverage` the readiness score is
+**withheld** (`readinessWithheldReason`), for the same reason it is withheld on provisional
+extraction: a number computed over a graph missing the feature's repositories looks exactly like a
+trustworthy one. The index and status documents carry the matching additive `repositories` /
+`candidateRepositories` arrays (`repositoryIndexStateSchema`, `candidateRepositorySchema`), all
+DERIVED from the current snapshot's file hashes — never persisted.
+
 ### Proposed structure on the analyze document (§18.4)
 
 `analyze` carries an **additive, optional** v1 field `proposedStructure`

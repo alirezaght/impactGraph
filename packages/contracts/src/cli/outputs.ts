@@ -4,6 +4,7 @@ import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
+import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
 import { cliReviewBreakdownSchema } from './review-breakdown.js';
 
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
@@ -25,28 +26,6 @@ export const cliInitOutputSchema = z
     command: z.literal('init'),
     created: z.array(z.string()),
     alreadyInitialized: z.boolean(),
-  })
-  .strict();
-
-/** Per-repository index state, DERIVED from the current snapshot (additive v1). */
-export const repositoryIndexStateSchema = z
-  .object({
-    name: z.string().min(1),
-    /** Path relative to the workspace root; absent for the root itself. */
-    path: z.string().min(1).optional(),
-    indexed: z.boolean(),
-    fileCount: z.number().int().min(0),
-    /** Why a registered repository is not indexed, when it is not. */
-    reason: z.string().min(1).optional(),
-  })
-  .strict();
-
-/** A discovered-but-unregistered repository: a candidate the user must confirm (additive v1). */
-export const candidateRepositorySchema = z
-  .object({
-    name: z.string().min(1),
-    path: z.string().min(1),
-    hint: z.string().min(1),
   })
   .strict();
 
@@ -449,8 +428,6 @@ export const cliErrorOutputSchema = z
 export type CliInitOutput = z.infer<typeof cliInitOutputSchema>;
 export type CliIndexOutput = z.infer<typeof cliIndexOutputSchema>;
 export type CliStatusOutput = z.infer<typeof cliStatusOutputSchema>;
-export type RepositoryIndexStateDto = z.infer<typeof repositoryIndexStateSchema>;
-export type CandidateRepositoryDto = z.infer<typeof candidateRepositorySchema>;
 export type CliArchitectureOutput = z.infer<typeof cliArchitectureOutputSchema>;
 export type CliConfigOutput = z.infer<typeof cliConfigOutputSchema>;
 export type CliErrorOutput = z.infer<typeof cliErrorOutputSchema>;

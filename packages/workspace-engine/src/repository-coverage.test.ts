@@ -99,10 +99,7 @@ describe('roster-driven indexing and derived repository coverage', () => {
 
     write('svc-b/package.json', JSON.stringify({ name: 'svc-b' }));
     write('svc-b/src/b.ts', 'export const b = 1;\n');
-    appendFileSync(
-      join(root, '.impactgraph', 'config.yml'),
-      '  - name: svc-b\n    path: svc-b\n',
-    );
+    appendFileSync(join(root, '.impactgraph', 'config.yml'), '  - name: svc-b\n    path: svc-b\n');
 
     const ensured = await ensureRegisteredRepositoriesIndexed(root);
     expect(ensured.ok).toBe(true);

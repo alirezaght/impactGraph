@@ -147,8 +147,11 @@ export const ensureRegisteredRepositoriesIndexed = async (
   }
   const anythingIndexed = context.value.repositories.some((state) => state.indexed);
   const unindexedMember = context.value.repositories.some(
-    (state) => state.name !== ROOT_STATE_NAME && !state.indexed && state.path !== undefined
-      && state.reason?.includes('not in the current index') === true,
+    (state) =>
+      state.name !== ROOT_STATE_NAME &&
+      !state.indexed &&
+      state.path !== undefined &&
+      state.reason?.includes('not in the current index') === true,
   );
   if (!anythingIndexed || !unindexedMember) {
     return { ok: true, value: { reindexed: false } };

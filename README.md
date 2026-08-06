@@ -106,9 +106,21 @@ defect — do not fail a build on it, or people will learn to ignore it.
 
 ## Use it from an agent (MCP)
 
-The MCP server exposes 40 tools over stdio. An agent can submit a specification, receive a
+The MCP server exposes 42 tools over stdio. An agent can submit a specification, receive a
 **bounded** impact model it cannot hallucinate past, implement, and then be reviewed against the
 approved plan.
+
+The server states the expected workflow in its `initialize` instructions: **(1)** validate
+workspace coverage (`get_workspace_status` reports every registered repository's index state and
+any discovered-but-unregistered candidates), **(2)** index relevant repositories
+(`index_workspace` indexes the workspace root plus every registered repository from
+`repositories:` in `.impactgraph/config.yml` into one graph), **(3)** verify the specification's
+central concepts resolve (`find_components`), **(4)** run `analyze_impact` — it auto-indexes
+registered repositories missing from the current index, and when coverage is fundamentally
+insufficient it reports `workspaceCoverage.status: "insufficient-coverage"`, **withholds the
+readiness score**, and returns machine-readable `requiredActions` — **(5)** present limitations
+when complete coverage is impossible. Candidate repositories are never indexed without user
+confirmation.
 
 **Claude Code:**
 

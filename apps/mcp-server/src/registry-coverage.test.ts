@@ -65,11 +65,7 @@ describe('MCP workspace coverage workflow', () => {
     );
     const status = await tool('get_workspace_status');
     const repositories = status['repositories'] as { name: string; indexed: boolean }[];
-    expect(repositories.map((repo) => repo.name)).toEqual([
-      '(workspace root)',
-      'billing',
-      'ghost',
-    ]);
+    expect(repositories.map((repo) => repo.name)).toEqual(['(workspace root)', 'billing', 'ghost']);
     const candidates = status['candidateRepositories'] as { name: string }[];
     expect(candidates.map((candidate) => candidate.name)).toEqual(['web']);
   });

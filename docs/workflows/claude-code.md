@@ -11,6 +11,27 @@ The whole loop below is deterministic and offline — no AI provider is required
 context is a local file/stdout document, and what the coding agent does with it is governed by
 the agent's own configuration, not ImpactGraph's.
 
+## Workspace coverage first
+
+A feature that spans several repositories needs all of them in the index — a partial graph
+produces a partial answer that looks complete. Register related repositories (inside the
+workspace root) in `.impactgraph/config.yml` before analyzing:
+
+```yaml
+repositories:
+  - name: billing
+    path: billing
+```
+
+`impactgraph index` / `index_workspace` then indexes every registered, present repository into
+one graph, and `status` reports each repository's index state plus discovered-but-unregistered
+candidates. `analyze` auto-indexes registered repositories missing from the current index. When
+coverage is fundamentally insufficient (most requirements unmatched, central concepts unresolved,
+registered repositories missing) the summary says `workspaceCoverage.status:
+"insufficient-coverage"`, **withholds the readiness score**, and returns `requiredActions` — the
+agent follows them instead of treating the partial result as the answer. Candidates are never
+indexed without the user's confirmation.
+
 ## Session
 
 From the repository root:

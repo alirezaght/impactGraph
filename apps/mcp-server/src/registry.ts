@@ -17,19 +17,13 @@ import {
   buildExportBundle,
   buildExportOutput,
   buildReviewOutput,
-  collectWorkspaceRepositoryContext,
-  collectWorkspaceStatus,
   createWorkspaceAiServices,
   explainEdge,
   explainNode,
-  indexWarnings,
-  initializeWorkspace,
   loadReviewArtifact,
-  performIndexRun,
   recordImpactDecision,
   requireInitialized,
   runReviewPipeline,
-  snapshotSummary,
   submitSpecification,
   summarizeArchitecture,
 } from '@impactgraph/workspace-engine';
@@ -40,6 +34,7 @@ import { GRAPH_HANDLERS } from './registry-graph.js';
 import { IMPACT_HANDLERS } from './registry-impacts.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';
+import { WORKSPACE_HANDLERS } from './registry-workspace.js';
 
 import type { ToolHandler, ToolHandlerMap } from './handler-types.js';
 import type { McpToolName } from '@impactgraph/contracts';
@@ -51,69 +46,7 @@ import type { EngineFailure, Failable } from '@impactgraph/workspace-engine';
 // only parses when the caller asserts explicit human confirmation (§21.1, §35).
 
 const HANDLERS: ToolHandlerMap = {
-  initialize_workspace: (rootDir) => {
-    const outcome = initializeWorkspace(rootDir);
-    return Promise.resolve(
-      outcome.ok
-        ? {
-            ok: true,
-            value: {
-              created: [...outcome.value.created],
-              alreadyInitialized: outcome.value.alreadyInitialized,
-            },
-          }
-        : outcome,
-    );
-  },
-  get_workspace_status: async (rootDir) => {
-    const status = await collectWorkspaceStatus(rootDir);
-    if (!status.ok) {
-      return status;
-    }
-    // Repository coverage is part of the status: step 1 of the workflow is validating it.
-    const context = await collectWorkspaceRepositoryContext(rootDir);
-    return {
-      ok: true,
-      value: {
-        schemaVersion: 1,
-        command: 'status',
-        ...status.value,
-        ...(context.ok
-          ? {
-              repositories: [...context.value.repositories],
-              candidateRepositories: [...context.value.candidates],
-            }
-          : {}),
-      },
-    };
-  },
-  index_workspace: async (rootDir) => {
-    const initialized = requireInitialized(rootDir);
-    if (!initialized.ok) {
-      return initialized;
-    }
-    const indexed = await performIndexRun(rootDir);
-    if (!indexed.ok) {
-      return { ok: false, error: indexed.failure };
-    }
-    const { summary, snapshot } = indexed.value;
-    return {
-      ok: true,
-      value: {
-        schemaVersion: 1,
-        command: 'index',
-        snapshot: snapshotSummary(snapshot),
-        fileCount: summary.fileCount,
-        changedFileCount: summary.changedFileCount,
-        reusedFileCount: summary.reusedFileCount,
-        ignoredCount: summary.ignoredCount,
-        nodeCount: summary.nodeCount,
-        edgeCount: summary.edgeCount,
-        warnings: indexWarnings(summary),
-        repositories: [...indexed.value.repositories],
-      },
-    };
-  },
+  ...WORKSPACE_HANDLERS,
   submit_specification: async (rootDir, input) => {
     const initialized = requireInitialized(rootDir);
     if (!initialized.ok) {

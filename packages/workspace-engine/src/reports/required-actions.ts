@@ -20,27 +20,21 @@ const DISABLED_REASON = 'disabled in configuration';
 const names = (entries: readonly { readonly name: string }[]): string[] =>
   entries.map((entry) => entry.name);
 
-export const buildRequiredActions = (input: RequiredActionsInput): RequiredActionDto[] => {
-  const actions: RequiredActionDto[] = [];
-  if (input.freshness.stale) {
-    actions.push({
-      action: 'refresh-stale-index',
-      reason: input.freshness.reasons.join(' ') || 'the index no longer matches the working tree',
-      instruction:
-        input.freshness.recommendedAction ?? 'Run index_workspace, then re-run analyze_impact.',
-    });
-  }
-  const states = input.context?.repositories ?? [];
+const refreshAction = (freshness: IndexFreshness): RequiredActionDto[] =>
+  freshness.stale
+    ? [
+        {
+          action: 'refresh-stale-index',
+          reason: freshness.reasons.join(' ') || 'the index no longer matches the working tree',
+          instruction:
+            freshness.recommendedAction ?? 'Run index_workspace, then re-run analyze_impact.',
+        },
+      ]
+    : [];
+
+const repositoryActions = (context: WorkspaceRepositoryContext | undefined): RequiredActionDto[] => {
+  const states = context?.repositories ?? [];
   const unindexed = states.filter((state) => state.reason?.includes(UNINDEXED_MARKER) === true);
-  if (unindexed.length > 0) {
-    actions.push({
-      action: 'index-registered-repositories',
-      reason: `registered repositories are missing from the current index: ${names(unindexed).join(', ')}`,
-      instruction:
-        'Run index_workspace — it indexes every registered, present repository automatically — then re-run analyze_impact.',
-      repositories: names(unindexed),
-    });
-  }
   const absent = states.filter(
     (state) =>
       !state.indexed &&
@@ -48,27 +42,56 @@ export const buildRequiredActions = (input: RequiredActionsInput): RequiredActio
       !state.reason.includes(UNINDEXED_MARKER) &&
       state.reason !== DISABLED_REASON,
   );
-  if (absent.length > 0) {
-    actions.push({
-      action: 'register-missing-repositories',
-      reason: `registered repositories are unavailable: ${absent
-        .map((state) => `${state.name} (${state.reason ?? 'not present'})`)
-        .join(', ')}`,
-      instruction:
-        'Ask the user where these repositories live. Registered paths must stay inside the workspace root — fix the `repositories:` entries in .impactgraph/config.yml (or ask the user to open a common parent as the workspace), then run index_workspace and re-run analyze_impact.',
-      repositories: names(absent),
-    });
-  }
+  return [
+    ...(unindexed.length === 0
+      ? []
+      : [
+          {
+            action: 'index-registered-repositories' as const,
+            reason: `registered repositories are missing from the current index: ${names(unindexed).join(', ')}`,
+            instruction:
+              'Run index_workspace — it indexes every registered, present repository automatically — then re-run analyze_impact.',
+            repositories: names(unindexed),
+          },
+        ]),
+    ...(absent.length === 0
+      ? []
+      : [
+          {
+            action: 'register-missing-repositories' as const,
+            reason: `registered repositories are unavailable: ${absent
+              .map((state) => `${state.name} (${state.reason ?? 'not present'})`)
+              .join(', ')}`,
+            instruction:
+              'Ask the user where these repositories live. Registered paths must stay inside the workspace root — fix the `repositories:` entries in .impactgraph/config.yml (or ask the user to open a common parent as the workspace), then run index_workspace and re-run analyze_impact.',
+            repositories: names(absent),
+          },
+        ]),
+  ];
+};
+
+const candidateAction = (input: RequiredActionsInput): RequiredActionDto[] => {
   const candidates = input.context?.candidates ?? [];
-  if (candidates.length > 0 && input.coverage.status === 'insufficient-coverage') {
-    actions.push({
+  if (candidates.length === 0 || input.coverage.status !== 'insufficient-coverage') {
+    return [];
+  }
+  return [
+    {
       action: 'confirm-candidate-repositories',
       reason: `unregistered repositories were discovered in the workspace: ${names(candidates).join(', ')}`,
       instruction:
         'Ask the user which of these repositories belong to this feature, register the confirmed ones under `repositories:` in .impactgraph/config.yml, then run index_workspace and re-run analyze_impact. Never index them without confirmation.',
       repositories: names(candidates),
-    });
-  }
+    },
+  ];
+};
+
+export const buildRequiredActions = (input: RequiredActionsInput): RequiredActionDto[] => {
+  const actions: RequiredActionDto[] = [
+    ...refreshAction(input.freshness),
+    ...repositoryActions(input.context),
+    ...candidateAction(input),
+  ];
   const expandsCoverage = actions.some((action) => action.action !== 'refresh-stale-index');
   if (input.coverage.status === 'insufficient-coverage' && !expandsCoverage) {
     actions.push({

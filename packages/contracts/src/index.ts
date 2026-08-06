@@ -100,8 +100,6 @@ export {
   cliInitOutputSchema,
   cliIndexOutputSchema,
   cliStatusOutputSchema,
-  repositoryIndexStateSchema,
-  candidateRepositorySchema,
   cliArchitectureOutputSchema,
   cliConfigOutputSchema,
   cliAnalyzeOutputSchema,
@@ -116,8 +114,6 @@ export type {
   CliInitOutput,
   CliIndexOutput,
   CliStatusOutput,
-  RepositoryIndexStateDto,
-  CandidateRepositoryDto,
   CliArchitectureOutput,
   CliConfigOutput,
   CliAnalyzeOutput,
@@ -217,6 +213,8 @@ export type { ImplementationContextDto } from './export/implementation-context.j
 export { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from './tools/tools.js';
 export type { McpToolName } from './tools/tools.js';
 export { MCP_SERVER_INSTRUCTIONS } from './tools/guidance.js';
+export { repositoryIndexStateSchema, candidateRepositorySchema } from './cli/repository-state.js';
+export type { RepositoryIndexStateDto, CandidateRepositoryDto } from './cli/repository-state.js';
 
 // The bounded analyze document and its paginated detail page (item 9 of the trial follow-up).
 export {
