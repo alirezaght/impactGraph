@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { evidenceTypesOf } from '@impactgraph/domain';
 import {
   analysisGoldenPath,
   digest,
@@ -96,6 +97,8 @@ const goldenFor = (analysis: ImpactAnalysis, graph: KnowledgeGraph): string => {
     relationship: firstRelationship(graph, impact.dependencyPath),
     explanationDigest: digest(impact.explanation),
     signalTypes: impact.confidenceSignals.map((signal) => signal.type),
+    evidenceTypes: evidenceTypesOf(impact),
+    tierCappedBy: impact.tierCappedBy,
   }));
   return serializeAnalysisGolden({
     impacts,

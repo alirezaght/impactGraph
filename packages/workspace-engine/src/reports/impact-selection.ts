@@ -90,11 +90,14 @@ const keeps = (
   if (impact.likelihood === 'excluded') {
     return resolved.includeExcluded;
   }
-  if (impact.likelihood === 'lexical-only' && !resolved.includeLexical) {
-    return false;
-  }
   if (filters.requirementId !== undefined && impact.requirementId !== filters.requirementId) {
     return false;
+  }
+  // Opting in to lexical-only bypasses the min-likelihood ceiling the same way includeExcluded
+  // does — otherwise "includeLexicalOnly: true to see them" would show nothing under the default
+  // minLikelihood and the advertised opt-in would be a lie.
+  if (impact.likelihood === 'lexical-only') {
+    return resolved.includeLexical && matchesEvidence(impact, filters.evidenceTypes);
   }
   return (
     likelihoodRank(impact.likelihood) <= resolved.ceiling &&

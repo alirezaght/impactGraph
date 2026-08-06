@@ -86,6 +86,9 @@ const impactFor = (requirementId: string): RequirementImpact => ({
   evidenceIds: ['ev-1'],
   dependencyPath: ['sym:deal'],
   provenance: 'static-analysis',
+  // Absent evidenceTypes reads as lexical-only (the weakest reading) and would trip the
+  // evidence-quality verdict — this fixture models an exact structural match, so it says so.
+  evidenceTypes: ['direct-structural'],
 });
 
 const unknownConceptWarnings = (requirementId: string, concept: string): AnalysisWarning[] => [

@@ -135,7 +135,10 @@ const findByName = (
     return { exact, similar };
   }
   for (const node of graph.nodes.values()) {
-    if (normalize(node.name) === target) {
+    // A declared route path is an identifier the specification can name (§12.1.1): a concept
+    // equal to it is exact-grade on EVERY verb served at that path — a path move obliges them
+    // all — never a fuzzy resemblance to the `GET /api/deals` display name.
+    if (normalize(node.name) === target || normalize(node.route?.path ?? '') === target) {
       exact.push(node);
     } else if (isSimilar(name, node.name)) {
       similar.push(node);

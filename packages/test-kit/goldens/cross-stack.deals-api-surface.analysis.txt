@@ -1,21 +1,21 @@
 impacts:
-req-0e24b3d5|cross-stack|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance
-req-0e24b3d5|cross-stack|possible|domain-model|indirect|0.25|CONTAINS|53f3c0cb|ambiguity+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-0e24b3d5|deals-web|required|domain-model|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match
-req-0e24b3d5|deals-web|required|infrastructure|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match
-req-0e24b3d5|main.tf|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance
-req-d00e8268|/|possible|read-model|indirect|0.15|EXPOSES|1088c175|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-d00e8268|GET /api/deals|likely|api-contract|indirect|0.65|EXPOSES|7abd5c77|exact-concept-to-symbol-match+graph-distance
-req-d00e8268|POST /api/deals|possible|api-contract|indirect|0.15|EXPOSES|ff6e8620|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-d00e8268|api.ts|possible|domain-model|indirect|0.15|EXPOSES|7e9e0cec|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-d00e8268|app|possible|domain-model|indirect|0.40|EXPOSES|e4c5bd1a|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|create_deal|possible|domain-model|indirect|0.05|EXPOSES|27f6024e|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance+graph-distance
-req-d00e8268|cross-stack|possible|domain-model|indirect|0.40|CONTAINS|c987f82b|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|index.astro|possible|domain-model|indirect|0.15|EXPOSES|5de081c5|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-d00e8268|index|possible|read-model|indirect|0.40|EXPOSES|e0f89eaf|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|list_deals|required|domain-model|direct|0.90|anchor|00b3b3ed|exact-concept-to-symbol-match
-req-d00e8268|loadDeals|possible|domain-model|indirect|0.40|EXPOSES|5af3ced4|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|loadExternal|possible|domain-model|indirect|0.40|EXPOSES|5af3ced4|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-d00e8268|main.py|likely|domain-model|indirect|0.65|CONTAINS|ef583970|exact-concept-to-symbol-match+graph-distance
+req-0e24b3d5|cross-stack|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance|direct-structural|-
+req-0e24b3d5|cross-stack|possible|domain-model|indirect|0.25|CONTAINS|53f3c0cb|ambiguity+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-0e24b3d5|deals-web|required|domain-model|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match|direct-structural|-
+req-0e24b3d5|deals-web|required|infrastructure|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match|configuration-asset+direct-structural|-
+req-0e24b3d5|main.tf|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance|direct-structural|-
+req-d00e8268|/|possible|read-model|indirect|0.15|EXPOSES|1088c175|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-d00e8268|GET /api/deals|likely|api-contract|indirect|0.65|EXPOSES|7abd5c77|exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-d00e8268|POST /api/deals|possible|api-contract|indirect|0.15|EXPOSES|ff6e8620|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-d00e8268|api.ts|possible|domain-model|indirect|0.15|EXPOSES|7e9e0cec|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-d00e8268|app|possible|domain-model|indirect|0.40|EXPOSES|e4c5bd1a|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-d00e8268|create_deal|possible|domain-model|indirect|0.05|EXPOSES|27f6024e|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance+graph-distance|external-contract|-
+req-d00e8268|cross-stack|possible|domain-model|indirect|0.40|CONTAINS|c987f82b|exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-d00e8268|index.astro|possible|domain-model|indirect|0.15|EXPOSES|5de081c5|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-d00e8268|index|possible|read-model|indirect|0.40|EXPOSES|e0f89eaf|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-d00e8268|list_deals|required|domain-model|direct|0.90|anchor|00b3b3ed|exact-concept-to-symbol-match|direct-structural|-
+req-d00e8268|loadDeals|possible|domain-model|indirect|0.40|EXPOSES|5af3ced4|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-d00e8268|loadExternal|possible|domain-model|indirect|0.40|EXPOSES|5af3ced4|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-d00e8268|main.py|likely|domain-model|indirect|0.65|CONTAINS|ef583970|exact-concept-to-symbol-match+graph-distance|direct-structural|-
 
 warnings:

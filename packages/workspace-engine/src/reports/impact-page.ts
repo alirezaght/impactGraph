@@ -1,6 +1,8 @@
 import { evidenceTypesOf, primaryEvidenceType } from '@impactgraph/domain';
 
+import { evidenceLimitations } from './evidence-quality-block.js';
 import { groupByNode, selectImpacts } from './impact-selection.js';
+import { summaryCounts } from './impact-summary-facts.js';
 
 import type { GroupedImpact } from './impact-selection.js';
 import type { CliImpactPage, ImpactFilters } from '@impactgraph/contracts';
@@ -76,6 +78,9 @@ export const buildImpactPage = (input: ImpactPageInput): CliImpactPage => {
     command: 'impacts',
     analysisId: input.analysis.id,
     impacts: grouped.map((entry) => rowFor(entry, input, includeFullPaths)),
+    // Additive v1: the WHOLE analysis's distribution, so a paged caller can see how many of the
+    // totals are weak or lexical without fetching every page (item 4).
+    counts: summaryCounts(input.analysis),
     pagination: {
       returned: grouped.length,
       totalMatching: selection.totalMatching,
@@ -85,10 +90,7 @@ export const buildImpactPage = (input: ImpactPageInput): CliImpactPage => {
     impactQuery: {
       status: selection.totalMatching === 0 ? 'completed-empty' : 'completed',
       scope: `the stored impact analysis ${input.analysis.id} (${String(input.analysis.requirementImpacts.length)} impacts) under the stated filters`,
-      limitations:
-        filters.includeLexicalOnly === true
-          ? []
-          : ['Lexical-only matches were excluded (includeLexicalOnly: true to see them).'],
+      limitations: evidenceLimitations(input.analysis, filters),
       resultCount: selection.totalMatching,
     },
   };

@@ -40,6 +40,8 @@ export const impactEvidenceTypeSchema = z.enum([
   'external-contract',
   'field-data-flow',
   'configuration-asset',
+  /** Additive v1: deterministic fuzzy name match — capped at `likely`, never `required`. */
+  'name-similarity',
   'semantic-match',
   'lexical-only',
 ]);
@@ -176,6 +178,8 @@ export const requiredActionSchema = z
       'register-missing-repositories',
       'confirm-candidate-repositories',
       'report-limited-scope',
+      /** Additive v1: the shown impacts rest on weak evidence — treat them as exploratory. */
+      'report-limited-evidence',
     ]),
     reason: z.string().min(1),
     /** Imperative sentence addressed to the coding agent. */
@@ -225,6 +229,38 @@ export const workspaceCoverageSchema = z
     affectedRequirementIds: z.array(z.string().min(1)),
     /** Concepts that resolved to nothing — likely living in unindexed repositories. */
     affectedConcepts: z.array(z.string().min(1)),
+  })
+  .strict();
+
+/** Distribution counts over an analysis — shared by the summary and the paginated detail page. */
+const impactCountsSchema = z
+  .object({
+    totalImpacts: z.number().int().min(0),
+    componentCount: z.number().int().min(0),
+    byLikelihood: z.record(z.number().int().min(0)),
+    byEvidenceType: z.record(z.number().int().min(0)),
+  })
+  .strict();
+
+/**
+ * Additive v1: the aggregate honesty verdict over the impacts this view SHOWS (dogfooding item 4).
+ * Deterministic — computed from the tier/basis distribution, never model-authored. When status is
+ * 'weak' the analysis is marked provisional and a 'report-limited-evidence' action is emitted.
+ */
+export const evidenceQualitySchema = z
+  .object({
+    status: z.enum(['evidence-backed', 'mixed', 'weak']),
+    reasons: z.array(z.string().min(1)),
+    counts: z
+      .object({
+        shownImpactCount: z.number().int().min(0),
+        strongTierCount: z.number().int().min(0),
+        strongTierStructuralCount: z.number().int().min(0),
+        fuzzyAnchorCount: z.number().int().min(0),
+        multiHopCount: z.number().int().min(0),
+        tierCappedCount: z.number().int().min(0),
+      })
+      .strict(),
   })
   .strict();
 
@@ -288,14 +324,9 @@ export const cliImpactSummarySchema = z
         indexWarnings: indexWarningReportSchema,
       })
       .strict(),
-    counts: z
-      .object({
-        totalImpacts: z.number().int().min(0),
-        componentCount: z.number().int().min(0),
-        byLikelihood: z.record(z.number().int().min(0)),
-        byEvidenceType: z.record(z.number().int().min(0)),
-      })
-      .strict(),
+    counts: impactCountsSchema,
+    /** Additive v1: is the default view evidence-backed, mixed, or weak — with reasons. */
+    evidenceQuality: evidenceQualitySchema.optional(),
     topImpacts: z.array(summaryImpactSchema),
     unmatchedRequirements: z.array(unmatchedRequirementSchema),
     unresolvedConcepts: z.array(unresolvedConceptSchema),
@@ -362,9 +393,15 @@ export const cliImpactPageSchema = z
         ),
       }),
     ),
+    /**
+     * Additive v1: distribution of the WHOLE analysis, so a paged caller can see the aggregate
+     * context (how many of the totals are weak or lexical) without fetching every page.
+     */
+    counts: impactCountsSchema.optional(),
     pagination: paginationSchema,
     impactQuery: queryOutcomeSchema,
   })
   .strict();
 
 export type CliImpactPage = z.infer<typeof cliImpactPageSchema>;
+export type EvidenceQualityDto = z.infer<typeof evidenceQualitySchema>;

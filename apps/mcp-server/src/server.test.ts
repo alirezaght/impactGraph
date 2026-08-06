@@ -42,6 +42,9 @@ describe('MCP stdio server (Story 12.1, PRD §21)', () => {
     expect(instructions).toContain('insufficient-coverage');
     expect(instructions).toContain('requiredActions');
     expect(instructions).toContain('index_workspace');
+    // …and so is the evidence-quality check: a weak verdict means exploratory, not actionable.
+    expect(instructions).toContain('evidenceQuality');
+    expect(instructions).toContain('report-limited-evidence');
 
     const tools = record(record(responses[1])['result'])['tools'] as {
       name: string;

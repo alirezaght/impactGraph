@@ -125,6 +125,44 @@ describe('matchConcepts token alignment', () => {
   });
 });
 
+describe('matchConcepts route-path identity (§12.1.1)', () => {
+  const routeNode = (id: string, method: string, path: string): GraphNode => {
+    const result = createGraphNode({
+      id,
+      category: 'application',
+      type: 'api-endpoint',
+      name: `${method} ${path}`,
+      route: { path, method, pathParameters: [], queryParameters: [] },
+      knowledge,
+    });
+    if (!result.ok) {
+      throw new Error(`route node ${id}`);
+    }
+    return result.value;
+  };
+  const routes = graphOf([
+    routeNode('route:GET /api/deals', 'GET', '/api/deals'),
+    routeNode('route:POST /api/deals', 'POST', '/api/deals'),
+  ]);
+
+  it('treats a concept naming a declared route path as an exact match on every verb', () => {
+    // A path is an identifier the specification can name (§12.1.1: a path moving obliges every
+    // verb served at it) — NOT a fuzzy resemblance to the display name 'GET /api/deals'.
+    const result = matchConcepts(routes, ['/api/deals']);
+    expect(result.matches.map((match) => match.nodeId).sort()).toEqual([
+      'route:GET /api/deals',
+      'route:POST /api/deals',
+    ]);
+    expect(result.matches.every((match) => match.mechanism === 'exact')).toBe(true);
+  });
+
+  it('a verb-qualified concept still resolves to the single route by display name', () => {
+    const result = matchConcepts(routes, ['GET /api/deals']);
+    expect(result.matches.map((match) => match.nodeId)).toEqual(['route:GET /api/deals']);
+    expect(result.matches[0]?.mechanism).toBe('exact');
+  });
+});
+
 describe('matchConcepts and ubiquitous dependencies', () => {
   const workspaceOf = (declarers: number, totalPackages: number): KnowledgeGraph => {
     const nodes: GraphNode[] = [node('dependency:typescript', 'third-party-service', 'typescript')];

@@ -76,6 +76,30 @@ describe('basisFor — anchors', () => {
     const basis = basisFor(candidate(), node('n1', 'pubsub-topic', 'infrastructure'));
     expect(basis.evidenceTypes).toContain('async-event');
   });
+
+  it('files a fuzzy name match as name-similarity, never as direct structural', () => {
+    expect(basisFor(candidate({ mechanism: 'name-similarity' }), node('n1', 'class')).primary).toBe(
+      'name-similarity',
+    );
+  });
+
+  it('does not let a node-type basis out-rank a fuzzy anchor', () => {
+    // A fuzzy match on a topic node is still a guess about WHICH topic was meant — the node being
+    // async does not upgrade the claim to a required-capable basis.
+    const basis = basisFor(
+      candidate({ mechanism: 'name-similarity' }),
+      node('n1', 'pubsub-topic', 'infrastructure'),
+    );
+    expect(basis.evidenceTypes).toEqual(['name-similarity']);
+  });
+
+  it('does not let a node-type basis out-rank a lexical anchor either', () => {
+    const basis = basisFor(
+      candidate({ mechanism: 'lexical' }),
+      node('n1', 'pubsub-topic', 'infrastructure'),
+    );
+    expect(basis.evidenceTypes).toEqual(['lexical-only']);
+  });
 });
 
 describe('basisFor — routes', () => {
@@ -125,6 +149,22 @@ describe('basisFor — routes', () => {
       corroboratingEdgeTypes: ['CALLS', 'IMPORTS'],
     });
     expect(basisFor(lexicalRoute, node('n3', 'function')).primary).toBe('lexical-only');
+  });
+
+  it('keeps a route anchored on a fuzzy name match at name-similarity, whatever it crosses', () => {
+    // The chain is only as strong as the link that attached it to the specification: a route from
+    // a guessed anchor across an async boundary must not claim the required-capable async basis.
+    const fuzzyRoute = candidate({
+      mechanism: 'name-similarity',
+      nodeId: 'n3',
+      distance: 2,
+      dependencyPath: ['n1', 'n2', 'n3'],
+      edgeTypes: ['PUBLISHES', 'SUBSCRIBES_TO'],
+      corroboratingEdgeTypes: ['PUBLISHES', 'SUBSCRIBES_TO'],
+    });
+    expect(basisFor(fuzzyRoute, node('n3', 'consumer', 'integration')).evidenceTypes).toEqual([
+      'name-similarity',
+    ]);
   });
 });
 
@@ -190,5 +230,33 @@ describe('classifyCandidate — tiers follow the basis', () => {
       return;
     }
     expect(classified.value.likelihood).toBe('possible');
+  });
+
+  it('caps a fuzzy-matched anchor at likely and records why (never rejected)', () => {
+    const classified = classifyCandidate(
+      candidate({ mechanism: 'name-similarity' }),
+      node('n1', 'class'),
+      'req-1',
+    );
+    expect(classified.ok).toBe(true);
+    if (!classified.ok) {
+      return;
+    }
+    expect(classified.value.likelihood).toBe('likely');
+    expect(classified.value.evidenceTypes).toEqual(['name-similarity']);
+    expect(classified.value.tierCappedBy).toBe('name-similarity');
+  });
+
+  it('keeps exact and alias anchors at required with a direct structural basis', () => {
+    for (const mechanism of ['exact', 'alias'] as const) {
+      const classified = classifyCandidate(candidate({ mechanism }), node('n1', 'class'), 'req-1');
+      expect(classified.ok).toBe(true);
+      if (!classified.ok) {
+        continue;
+      }
+      expect(classified.value.likelihood).toBe('required');
+      expect(classified.value.evidenceTypes).toEqual(['direct-structural']);
+      expect(classified.value.tierCappedBy).toBeUndefined();
+    }
   });
 });

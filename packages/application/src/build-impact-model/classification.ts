@@ -141,7 +141,9 @@ const likelihoodFor = (
   if (candidate.distance === 0) {
     // An anchor is `required` only when the specification named it by identifier. A `semantic` or
     // `lexical` anchor means the engine GUESSED which component was meant, and guessing is not an
-    // obligation — the tier ceiling for those bases holds it lower (item 3).
+    // obligation — the tier ceiling for those bases holds it lower (item 3). A `name-similarity`
+    // anchor proposes `required` and lets the `likely` ceiling cap it, so the record carries
+    // `tierCappedBy` and the downgrade is auditable rather than silent (dogfooding item 4).
     return candidate.match.mechanism === 'semantic' || candidate.match.mechanism === 'lexical'
       ? 'possible'
       : 'required';

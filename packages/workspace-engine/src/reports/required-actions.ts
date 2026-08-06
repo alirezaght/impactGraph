@@ -1,5 +1,9 @@
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
-import type { RequiredActionDto, WorkspaceCoverageDto } from '@impactgraph/contracts';
+import type {
+  EvidenceQualityDto,
+  RequiredActionDto,
+  WorkspaceCoverageDto,
+} from '@impactgraph/contracts';
 import type { IndexFreshness } from '@impactgraph/domain';
 
 /**
@@ -12,6 +16,8 @@ export interface RequiredActionsInput {
   readonly coverage: WorkspaceCoverageDto;
   readonly freshness: IndexFreshness;
   readonly context?: WorkspaceRepositoryContext | undefined;
+  /** The evidence-quality verdict over the shown impacts; absent when no analysis was run. */
+  readonly evidenceQuality?: EvidenceQualityDto | undefined;
 }
 
 const UNINDEXED_MARKER = 'not in the current index';
@@ -99,6 +105,15 @@ export const buildRequiredActions = (input: RequiredActionsInput): RequiredActio
       reason: input.coverage.reasons.join(' ') || 'repository coverage is insufficient',
       instruction:
         'Stop and report limited scope: state which repositories were indexed and present the unmatched requirements and unresolved concepts as gaps — do not present the partial impacts as a complete answer. If the user can point at the missing repositories, register and index them instead.',
+    });
+  }
+  if (input.evidenceQuality?.status === 'weak') {
+    actions.push({
+      action: 'report-limited-evidence',
+      reason:
+        input.evidenceQuality.reasons.join(' ') || 'the shown impacts rest on weak evidence',
+      instruction:
+        'Treat this prediction as exploratory: the shown impacts rest on name or meaning matches rather than structural evidence. Confirm the component names with find_components or with the user before implementing against them, and present the result as a starting point, not a change list.',
     });
   }
   return actions;

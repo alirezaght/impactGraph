@@ -224,6 +224,80 @@ describe('refineWithClassifier (Story 6.3, §43.5 stage two)', () => {
     expect(kept?.provenance).toBe('static-analysis');
   });
 
+  it('clamps a model over-promotion to the evidence ceiling instead of voiding the batch', async () => {
+    // A fuzzy anchor: the specification says 'VisibilityPolicy', the graph has
+    // 'DealVisibilityPolicy' — a name-similarity match whose basis caps the tier at `likely`.
+    const fuzzyStatement = 'The VisibilityPolicy must hide expired deals.';
+    const fuzzySpecification = ((): Specification => {
+      const result = createSpecification({
+        ...specification,
+        rawText: fuzzyStatement,
+        requirements: [
+          {
+            id: stableRequirementId(fuzzyStatement),
+            statement: fuzzyStatement,
+            type: 'functional',
+            concepts: ['VisibilityPolicy'],
+            actors: [],
+            status: 'draft',
+          },
+        ],
+      });
+      if (!result.ok) {
+        throw new Error('fuzzy spec');
+      }
+      return result.value;
+    })();
+    const built = buildImpactModel({
+      specification: fuzzySpecification,
+      graph,
+      repositorySnapshotId: 'snap-1',
+      analysisId: 'analysis-2',
+      createdAt: '2026-08-01T10:00:00.000Z',
+    });
+    expect(built.ok).toBe(true);
+    if (!built.ok) {
+      return;
+    }
+    const anchor = mustFind(built.value, 'sym:policy');
+    expect(anchor.evidenceTypes).toEqual(['name-similarity']);
+    expect(anchor.likelihood).toBe('likely');
+
+    const outcome = await refineWithClassifier(
+      built.value,
+      fuzzySpecification,
+      graph,
+      stubClassifier(
+        ok([
+          {
+            nodeId: 'sym:policy',
+            likelihood: 'required', // over-promotion: the basis supports at most `likely`
+            impactType: 'business-rule',
+            explanation: 'The policy owns the visibility rule.',
+            expectedChanges: ['Change the visibility predicate'],
+          },
+        ]),
+      ),
+    );
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) {
+      return;
+    }
+    // The refinement is NOT discarded: the record is stored at the capped tier as llm-inferred…
+    const refined = mustFind(outcome.value.analysis, 'sym:policy');
+    expect(outcome.value.classificationMode).toBe('llm');
+    expect(refined.provenance).toBe('llm-inferred');
+    expect(refined.likelihood).toBe('likely');
+    expect(refined.tierCappedBy).toBe('name-similarity');
+    expect(refined.impactType).toBe('business-rule');
+    // …and the downgrade is recorded as an unsupported-claim warning (§34), never silent.
+    expect(
+      outcome.value.analysis.warnings.some(
+        (warning) => warning.code === 'unsupported-claim' && warning.message.includes("'required'"),
+      ),
+    ).toBe(true);
+  });
+
   it('provider failure leaves the deterministic analysis fully usable (PRD §8, §34)', async () => {
     const analysis = draftAnalysis();
     const failure: ModelProviderError = {

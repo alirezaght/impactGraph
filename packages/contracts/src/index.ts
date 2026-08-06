@@ -220,6 +220,7 @@ export type { RepositoryIndexStateDto, CandidateRepositoryDto } from './cli/repo
 export {
   cliImpactSummarySchema,
   cliImpactPageSchema,
+  evidenceQualitySchema,
   impactFiltersSchema,
   impactEvidenceTypeSchema,
   indexFreshnessSchema,
@@ -232,6 +233,7 @@ export {
 export type {
   CliImpactSummary,
   CliImpactPage,
+  EvidenceQualityDto,
   ImpactFilters,
   WorkspaceCoverageDto,
   RequiredActionDto,

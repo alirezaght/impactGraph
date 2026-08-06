@@ -1,16 +1,16 @@
 impacts:
-req-9f6c3901|/|possible|read-model|indirect|0.40|NAVIGATES_TO|b418a7be|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-9f6c3901|GET /api/deals|required|api-contract|direct|0.90|anchor|44bf0c55|exact-concept-to-symbol-match
-req-9f6c3901|POST /api/deals|possible|api-contract|indirect|0.40|EXPOSES|39eea5f3|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-9f6c3901|api.ts|possible|domain-model|indirect|0.40|CALLS_ENDPOINT|5dc87553|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-9f6c3901|app|likely|domain-model|indirect|0.65|EXPOSES|e733fe6c|exact-concept-to-symbol-match+graph-distance
-req-9f6c3901|create_deal|possible|domain-model|indirect|0.15|CALLS_ENDPOINT|b357642f|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-9f6c3901|cross-stack|possible|domain-model|indirect|0.15|EXPOSES|6a7503c7|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance
-req-9f6c3901|index.astro|possible|domain-model|indirect|0.40|NAVIGATES_TO|016c0d41|exact-concept-to-symbol-match+graph-distance+graph-distance
-req-9f6c3901|index|possible|read-model|indirect|0.65|NAVIGATES_TO|7cfd9710|exact-concept-to-symbol-match+graph-distance
-req-9f6c3901|list_deals|likely|domain-model|indirect|0.65|EXPOSES|e733fe6c|exact-concept-to-symbol-match+graph-distance
-req-9f6c3901|loadDeals|possible|domain-model|indirect|0.65|CALLS_ENDPOINT|1a60589c|exact-concept-to-symbol-match+graph-distance
-req-9f6c3901|loadExternal|possible|domain-model|indirect|0.65|CALLS_ENDPOINT|1a60589c|exact-concept-to-symbol-match+graph-distance
-req-9f6c3901|main.py|possible|domain-model|indirect|0.40|EXPOSES|79af80ad|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-9f6c3901|/|possible|read-model|indirect|0.40|NAVIGATES_TO|b418a7be|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-9f6c3901|GET /api/deals|required|api-contract|direct|0.90|anchor|44bf0c55|exact-concept-to-symbol-match|direct-structural+external-contract|-
+req-9f6c3901|POST /api/deals|possible|api-contract|indirect|0.40|EXPOSES|39eea5f3|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-9f6c3901|api.ts|possible|domain-model|indirect|0.40|CALLS_ENDPOINT|5dc87553|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
+req-9f6c3901|app|likely|domain-model|indirect|0.65|EXPOSES|e733fe6c|exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-9f6c3901|create_deal|possible|domain-model|indirect|0.15|CALLS_ENDPOINT|b357642f|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-9f6c3901|cross-stack|possible|domain-model|indirect|0.15|EXPOSES|6a7503c7|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-
+req-9f6c3901|index.astro|possible|domain-model|indirect|0.40|NAVIGATES_TO|016c0d41|exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-9f6c3901|index|possible|read-model|indirect|0.65|NAVIGATES_TO|7cfd9710|exact-concept-to-symbol-match+graph-distance|direct-structural|-
+req-9f6c3901|list_deals|likely|domain-model|indirect|0.65|EXPOSES|e733fe6c|exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-9f6c3901|loadDeals|possible|domain-model|indirect|0.65|CALLS_ENDPOINT|1a60589c|exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-9f6c3901|loadExternal|possible|domain-model|indirect|0.65|CALLS_ENDPOINT|1a60589c|exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-9f6c3901|main.py|possible|domain-model|indirect|0.40|EXPOSES|79af80ad|exact-concept-to-symbol-match+graph-distance+graph-distance|external-contract|-
 
 warnings:

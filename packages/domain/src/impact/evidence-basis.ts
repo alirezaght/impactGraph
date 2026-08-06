@@ -23,6 +23,13 @@ export const IMPACT_EVIDENCE_TYPES = [
   'field-data-flow',
   /** A configuration file, asset, locale entry, migration, or contract document. */
   'configuration-asset',
+  /**
+   * Matched by deterministic fuzzy name similarity — whole-token alignment plus character
+   * coverage — not by exact identifier or alias. The engine GUESSED which component was meant, and
+   * a guess is never an obligation: this basis tops out at `likely` and poisons every route
+   * reached through it.
+   */
+  'name-similarity',
   /** Matched by meaning — documentation, sibling symbols, normalized naming — not by identifier. */
   'semantic-match',
   /**
@@ -37,7 +44,14 @@ export type ImpactEvidenceType = (typeof IMPACT_EVIDENCE_TYPES)[number];
 export const isImpactEvidenceType = (value: unknown): value is ImpactEvidenceType =>
   typeof value === 'string' && (IMPACT_EVIDENCE_TYPES as readonly string[]).includes(value);
 
-/** Strongest first. Used to pick the primary basis and to order the default view. */
+/**
+ * Strongest first. Used to pick the primary basis and to order the default view.
+ *
+ * `name-similarity` sits below every structural type — a name resemblance establishes no
+ * relationship, and every type above it reflects an actually traversed one — but above
+ * `semantic-match`: deterministic token alignment against a real symbol name is more reliable
+ * evidence of "this is the component the specification meant" than a meaning-level association.
+ */
 const STRENGTH_ORDER: readonly ImpactEvidenceType[] = [
   'direct-structural',
   'async-event',
@@ -45,6 +59,7 @@ const STRENGTH_ORDER: readonly ImpactEvidenceType[] = [
   'field-data-flow',
   'configuration-asset',
   'transitive-structural',
+  'name-similarity',
   'semantic-match',
   'lexical-only',
 ];
@@ -72,6 +87,7 @@ const TIER_CEILING: Readonly<Record<ImpactEvidenceType, ImpactLikelihood>> = {
   'field-data-flow': 'required',
   'configuration-asset': 'likely',
   'transitive-structural': 'likely',
+  'name-similarity': 'likely',
   'semantic-match': 'likely',
   'lexical-only': 'lexical-only',
 };

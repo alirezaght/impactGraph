@@ -1,13 +1,13 @@
 impacts:
-req-ff2c8f11|DealRepository|likely|domain-model|indirect|0.75|CALLS|a444e35a|direct-function-call+exact-concept-to-symbol-match+graph-distance
-req-ff2c8f11|DealService|possible|domain-model|indirect|0.50|CALLS|f980d9e2|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|alias-user.ts|possible|domain-model|indirect|0.50|CONTAINS|d76305fc|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|buildDealService|possible|domain-model|indirect|0.50|CALLS|fd6dc48d|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|createRepository|required|domain-model|direct|0.90|anchor|8ae9e79d|exact-concept-to-symbol-match
-req-ff2c8f11|deal-repository.ts|likely|domain-model|indirect|0.65|CONTAINS|ccc9f164|exact-concept-to-symbol-match+graph-distance
-req-ff2c8f11|deals.ts|possible|domain-model|indirect|0.60|CONTAINS|d76305fc|direct-function-call+direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|getDeals|likely|api-contract|indirect|0.75|CALLS|4425d312|direct-function-call+exact-concept-to-symbol-match+graph-distance
-req-ff2c8f11|index.ts|possible|domain-model|indirect|0.50|CONTAINS|d76305fc|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance
-req-ff2c8f11|ts-basic|possible|domain-model|indirect|0.40|CONTAINS|e2a9383f|exact-concept-to-symbol-match+graph-distance+graph-distance
+req-ff2c8f11|DealRepository|likely|domain-model|indirect|0.75|CALLS|a444e35a|direct-function-call+exact-concept-to-symbol-match+graph-distance|direct-structural|-
+req-ff2c8f11|DealService|possible|domain-model|indirect|0.50|CALLS|f980d9e2|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-ff2c8f11|alias-user.ts|possible|domain-model|indirect|0.50|CONTAINS|d76305fc|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-ff2c8f11|buildDealService|possible|domain-model|indirect|0.50|CALLS|fd6dc48d|direct-function-call+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-ff2c8f11|createRepository|required|domain-model|direct|0.90|anchor|8ae9e79d|exact-concept-to-symbol-match|direct-structural|-
+req-ff2c8f11|deal-repository.ts|likely|domain-model|indirect|0.65|CONTAINS|ccc9f164|exact-concept-to-symbol-match+graph-distance|direct-structural|-
+req-ff2c8f11|deals.ts|possible|domain-model|indirect|0.60|CONTAINS|d76305fc|direct-function-call+direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-ff2c8f11|getDeals|likely|api-contract|indirect|0.75|CALLS|4425d312|direct-function-call+exact-concept-to-symbol-match+graph-distance|external-contract|-
+req-ff2c8f11|index.ts|possible|domain-model|indirect|0.50|CONTAINS|d76305fc|direct-import+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
+req-ff2c8f11|ts-basic|possible|domain-model|indirect|0.40|CONTAINS|e2a9383f|exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
 
 warnings:

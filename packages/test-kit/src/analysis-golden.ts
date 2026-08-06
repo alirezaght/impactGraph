@@ -31,6 +31,13 @@ export interface GoldenImpact {
    */
   readonly explanationDigest: string;
   readonly signalTypes: readonly string[];
+  /**
+   * The evidence-basis set and any tier cap (dogfooding item 4). Pinned so a basis regression —
+   * a fuzzy match silently regaining `direct-structural`, or a cap disappearing — is a visible
+   * one-line diff instead of an invisible semantic change under a stable tier.
+   */
+  readonly evidenceTypes: readonly string[];
+  readonly tierCappedBy?: string | undefined;
 }
 
 /** FNV-1a, 32-bit, hex. Small and stable — never used for anything but change detection. */
@@ -84,13 +91,16 @@ const impactLine = (impact: GoldenImpact): string =>
     impact.relationship,
     impact.explanationDigest,
     [...impact.signalTypes].sort(lexicographic).join('+'),
+    [...impact.evidenceTypes].sort(lexicographic).join('+'),
+    impact.tierCappedBy ?? '-',
   ].join('|');
 
 /**
  * Stable text form of an impact analysis: sorted impact lines
- * (`requirementId|name|likelihood|type|directness|confidence|relationship|explanationDigest|signals`)
+ * (`requirementId|name|likelihood|type|directness|confidence|relationship|explanationDigest|signals|evidenceTypes|tierCappedBy`)
  * then sorted warning
  * codes. Confidence is pinned to two decimals — a weighting change must be a reviewed diff.
+ * The two basis fields are appended LAST so the movement parser's field indices stay valid.
  */
 export const serializeAnalysisGolden = (analysis: GoldenAnalysisInput): string => {
   const impacts = analysis.impacts.map(impactLine).sort(lexicographic);

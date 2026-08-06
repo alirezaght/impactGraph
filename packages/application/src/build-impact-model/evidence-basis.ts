@@ -76,7 +76,10 @@ const CONFIG_NODE_TYPES = new Set([
 const MECHANISM_BASIS: Readonly<Record<MatchMechanism, ImpactEvidenceType>> = {
   exact: 'direct-structural',
   alias: 'direct-structural',
-  'name-similarity': 'direct-structural',
+  // A fuzzy name match is NOT direct structural evidence: the specification did not name this
+  // component, the engine guessed it from token alignment. Filed under its own basis so the tier
+  // ceiling (`likely`) applies and the guess is auditable (dogfooding item 4).
+  'name-similarity': 'name-similarity',
   semantic: 'semantic-match',
   lexical: 'lexical-only',
 };
@@ -91,6 +94,12 @@ const hasAny = (types: readonly string[], set: ReadonlySet<string>): boolean =>
  */
 const anchorBasis = (candidate: ImpactCandidate, node: GraphNode): ImpactEvidenceType[] => {
   const fromMechanism = MECHANISM_BASIS[candidate.match.mechanism] ?? 'lexical-only';
+  // A guessed anchor stays a guess whatever kind of node it landed on: the node-type bases below
+  // describe what the node IS, but the claim's strength comes from how the specification attached
+  // to it. Letting `async-event` out-rank a fuzzy or lexical mechanism would reopen the ceiling.
+  if (fromMechanism !== 'direct-structural') {
+    return [fromMechanism];
+  }
   const bases: ImpactEvidenceType[] = [fromMechanism];
   if (CONFIG_NODE_TYPES.has(node.type)) {
     bases.push('configuration-asset');
@@ -117,10 +126,12 @@ const ROUTE_RULES: readonly {
 ];
 
 const routeBasis = (candidate: ImpactCandidate, node: GraphNode): ImpactEvidenceType[] => {
-  // A route that starts from a lexical anchor is a lexical finding however far it travels: the
-  // chain is only as strong as the link that attached it to the specification.
-  if (candidate.match.mechanism === 'lexical') {
-    return ['lexical-only'];
+  // A route that starts from a guessed anchor (fuzzy, semantic, or lexical) is that kind of
+  // finding however far it travels: the chain is only as strong as the link that attached it to
+  // the specification, so the anchor's basis poisons the whole route.
+  const anchor = MECHANISM_BASIS[candidate.match.mechanism] ?? 'lexical-only';
+  if (anchor !== 'direct-structural') {
+    return [anchor];
   }
   const bases = ROUTE_RULES.filter(
     (rule) => hasAny(candidate.edgeTypes, rule.edges) || rule.nodes.has(node.type),

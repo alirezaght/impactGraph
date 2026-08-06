@@ -6,6 +6,7 @@ import {
   primaryEvidenceType,
 } from '@impactgraph/domain';
 
+import { buildEvidenceQuality, evidenceLimitations } from './evidence-quality-block.js';
 import {
   DEFAULT_TOP_N,
   groupByNode,
@@ -19,7 +20,12 @@ import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
 import type { GroupedImpact } from './impact-selection.js';
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
-import type { CliImpactSummary, ImpactFilters, WorkspaceCoverageDto } from '@impactgraph/contracts';
+import type {
+  CliImpactSummary,
+  EvidenceQualityDto,
+  ImpactFilters,
+  WorkspaceCoverageDto,
+} from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
   IndexFreshness,
@@ -153,6 +159,7 @@ const specificationBlock = (
 const provisionalReasons = (
   input: ImpactSummaryInput,
   coverage: WorkspaceCoverageDto,
+  evidenceQuality: EvidenceQualityDto,
 ): readonly string[] => {
   const reasons: string[] = [];
   if (input.specification.extractionQuality?.provisional === true) {
@@ -164,6 +171,11 @@ const provisionalReasons = (
     reasons.push(...input.freshness.reasons);
   }
   reasons.push(...coverage.reasons);
+  // A weak evidence verdict makes the result indicative only, the same way insufficient coverage
+  // does: the shown impacts are name/meaning matches, not structural findings (item 4).
+  if (evidenceQuality.status === 'weak') {
+    reasons.push(...evidenceQuality.reasons);
+  }
   return reasons;
 };
 
@@ -237,6 +249,16 @@ const FOLLOW_UP: readonly string[] = [
   'export_graph_html — the reviewable diagram and tables',
 ];
 
+const paginationBlock = (
+  grouped: readonly GroupedImpact[],
+  selection: ReturnType<typeof selectImpacts>,
+): CliImpactSummary['pagination'] => ({
+  returned: grouped.length,
+  totalMatching: selection.totalMatching,
+  ...(selection.nextCursor === undefined ? {} : { nextCursor: selection.nextCursor }),
+  appliedFilters: selection.appliedFilters,
+});
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -247,7 +269,8 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     analysis,
     context: input.workspace,
   });
-  const reasons = provisionalReasons(input, workspaceCoverage);
+  const evidenceQuality = buildEvidenceQuality(grouped);
+  const reasons = provisionalReasons(input, workspaceCoverage, evidenceQuality);
   const warnings = importantWarnings(analysis);
   const includeFullPaths = input.filters?.includeFullPaths ?? true;
   return {
@@ -268,6 +291,7 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     freshness: { ...input.freshness, reasons: [...input.freshness.reasons] },
     coverage: coverageBlock(input, unmatched.length),
     counts: summaryCounts(analysis),
+    evidenceQuality,
     topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
     unmatchedRequirements: unmatched.map((requirement) => ({
       id: requirement.id,
@@ -279,37 +303,30 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     ...blockersBlock(input),
     warnings: warnings.kept,
     omittedWarningCount: warnings.omitted,
-    pagination: {
-      returned: grouped.length,
-      totalMatching: selection.totalMatching,
-      ...(selection.nextCursor === undefined ? {} : { nextCursor: selection.nextCursor }),
-      appliedFilters: selection.appliedFilters,
-    },
+    pagination: paginationBlock(grouped, selection),
     impactQuery: impactQueryOutcome(input, selection.totalMatching),
     workspaceCoverage,
     requiredActions: buildRequiredActions({
       coverage: workspaceCoverage,
       freshness: input.freshness,
       context: input.workspace,
+      evidenceQuality,
     }),
     followUp: [...FOLLOW_UP],
   };
 };
 
-/** What this view did NOT cover. The half that stops an empty or short result being over-read. */
+/**
+ * What this view did NOT cover. The half that stops an empty or short result being over-read.
+ * The hidden-tier strings are conditional and count-bearing (item 4): "N lexical-only matches
+ * were excluded" only when N > 0 — an exclusion notice for nothing is noise, not honesty.
+ */
 const limitationsOf = (input: ImpactSummaryInput): readonly string[] => [
   ...(input.workspace?.limitations ?? []),
   ...(input.freshness.stale
     ? ['The index is not current, so components changed since indexing were not considered.']
     : []),
-  ...(input.filters?.includeLexicalOnly === true
-    ? []
-    : ['Lexical-only matches were excluded from this view (includeLexicalOnly: true to see them).']),
-  ...(input.filters?.includeExcluded === true
-    ? []
-    : [
-        'Impacts excluded by specification non-goals were omitted (includeExcluded: true to see them).',
-      ]),
+  ...evidenceLimitations(input.analysis, input.filters),
 ];
 
 const impactQueryOutcome = (

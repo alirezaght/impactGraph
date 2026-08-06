@@ -298,6 +298,62 @@
           "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
           "additionalProperties": false
         },
+        "evidenceQuality": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["evidence-backed", "mixed", "weak"]
+            },
+            "reasons": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "shownImpactCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "strongTierCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "strongTierStructuralCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "fuzzyAnchorCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "multiHopCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tierCappedCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "shownImpactCount",
+                "strongTierCount",
+                "strongTierStructuralCount",
+                "fuzzyAnchorCount",
+                "multiHopCount",
+                "tierCappedCount"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": ["status", "reasons", "counts"],
+          "additionalProperties": false
+        },
         "topImpacts": {
           "type": "array",
           "items": {
@@ -328,6 +384,7 @@
                   "external-contract",
                   "field-data-flow",
                   "configuration-asset",
+                  "name-similarity",
                   "semantic-match",
                   "lexical-only"
                 ]
@@ -741,7 +798,8 @@
                   "index-registered-repositories",
                   "register-missing-repositories",
                   "confirm-candidate-repositories",
-                  "report-limited-scope"
+                  "report-limited-scope",
+                  "report-limited-evidence"
                 ]
               },
               "reason": {

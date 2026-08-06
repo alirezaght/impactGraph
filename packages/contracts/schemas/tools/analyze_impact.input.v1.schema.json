@@ -24,6 +24,7 @@
               "external-contract",
               "field-data-flow",
               "configuration-asset",
+              "name-similarity",
               "semantic-match",
               "lexical-only"
             ]

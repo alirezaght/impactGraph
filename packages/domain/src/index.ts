@@ -310,6 +310,13 @@ export type {
   WorkspaceCoverageStatus,
   WorkspaceCoverageVerdict,
 } from './impact/workspace-coverage.js';
+export { assessEvidenceQuality } from './impact/evidence-quality.js';
+export type {
+  EvidenceQualityCounts,
+  EvidenceQualityStatus,
+  EvidenceQualityVerdict,
+  ShownImpactFact,
+} from './impact/evidence-quality.js';
 export {
   createClarificationRecord,
   answerOpenQuestion,

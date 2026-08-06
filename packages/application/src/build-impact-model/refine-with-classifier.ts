@@ -1,4 +1,11 @@
-import { createImpactAnalysis, IMPACT_LIKELIHOODS, IMPACT_TYPES, ok } from '@impactgraph/domain';
+import {
+  capLikelihood,
+  createImpactAnalysis,
+  IMPACT_LIKELIHOODS,
+  IMPACT_TYPES,
+  ok,
+  primaryEvidenceType,
+} from '@impactgraph/domain';
 
 import type {
   ClassificationCandidate,
@@ -46,10 +53,16 @@ const candidateFor = (
   };
 };
 
+interface AppliedClassification {
+  readonly impact: RequirementImpact;
+  /** The proposed tier exceeded the evidence ceiling and was clamped — a §34 downgrade. */
+  readonly capped: boolean;
+}
+
 const applyClassification = (
   impact: RequirementImpact,
   classification: ImpactClassification,
-): RequirementImpact | undefined => {
+): AppliedClassification | undefined => {
   const validLikelihood = (IMPACT_LIKELIHOODS as readonly string[]).includes(
     classification.likelihood,
   );
@@ -57,14 +70,26 @@ const applyClassification = (
   if (!validLikelihood || !validType) {
     return undefined;
   }
+  // Clamp per record against the impact's own evidence basis. Without this, one model
+  // over-promotion made `createImpactAnalysis` reject the whole batch and the entire refinement
+  // was silently discarded — the claim is downgraded (§34) instead, and the batch survives.
+  // Clamping mirrors the factory's gate exactly: no recorded basis means no ceiling to enforce.
+  const proposed = classification.likelihood as ImpactLikelihood;
+  const basis = impact.evidenceTypes ?? [];
+  const likelihood = basis.length === 0 ? proposed : capLikelihood(proposed, basis);
+  const capped = likelihood !== proposed;
   return {
-    ...impact,
-    likelihood: classification.likelihood as ImpactLikelihood,
-    impactType: classification.impactType as ImpactType,
-    explanation: classification.explanation,
-    expectedChanges: classification.expectedChanges,
-    // Confidence and its signals stay computed (§14) — the model never sets the number.
-    provenance: 'llm-inferred',
+    capped,
+    impact: {
+      ...impact,
+      likelihood,
+      impactType: classification.impactType as ImpactType,
+      explanation: classification.explanation,
+      expectedChanges: classification.expectedChanges,
+      // Confidence and its signals stay computed (§14) — the model never sets the number.
+      provenance: 'llm-inferred',
+      ...(capped ? { tierCappedBy: primaryEvidenceType(basis) } : {}),
+    },
   };
 };
 
@@ -94,7 +119,14 @@ const mergeRequirement = (
       });
       continue;
     }
-    byNodeId.set(classification.nodeId, refined);
+    if (refined.capped) {
+      warnings.push({
+        code: 'unsupported-claim',
+        message: `model proposed '${classification.likelihood}' for '${classification.nodeId}' but its '${refined.impact.tierCappedBy ?? ''}' evidence supports at most '${refined.impact.likelihood}' — stored at the capped tier (§34)`,
+        requirementId,
+      });
+    }
+    byNodeId.set(classification.nodeId, refined.impact);
   }
   return [...byNodeId.values()];
 };
