@@ -149,6 +149,9 @@ const recordActual: ToolHandler<'record_actual_impact'> = async (rootDir, input)
         falsePositiveBases: [...recorded.value.metrics.falsePositiveBases],
       },
       historyCount: recorded.value.historyCount,
+      // Item 8: every recording answers "how is prediction quality trending" — derived from all
+      // stored outcomes at answer time, never persisted. Absent only if listing them failed.
+      ...(recorded.value.aggregate === undefined ? {} : { aggregate: recorded.value.aggregate }),
       note: EVIDENCE_NOTE,
     },
   };

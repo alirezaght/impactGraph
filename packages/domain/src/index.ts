@@ -344,3 +344,6 @@ export type {
 export { ARTIFACT_CATEGORIES, createActualImpact } from './evaluation/actual-impact.js';
 export type { MeasureInput } from './evaluation/measure.js';
 export { DEFAULT_JUDGED_TIERS, measureAnalysis } from './evaluation/measure.js';
+// Item 8: accuracy ACROSS the recorded outcomes — derived at answer time, never persisted.
+export type { FrequencyCount, MetricAggregate, OutcomeAggregate } from './evaluation/aggregate.js';
+export { aggregateOutcomes } from './evaluation/aggregate.js';

@@ -253,4 +253,8 @@ export type {
 // Item 13: the review breakdown, and item 12: recorded outcomes with their measured accuracy.
 export { cliReviewBreakdownSchema } from './cli/review-breakdown.js';
 export type { CliReviewBreakdown } from './cli/review-breakdown.js';
-export { OUTCOME_TOOL_CONTRACTS, evaluationMetricsSchema } from './tools/outcome-tools.js';
+export {
+  OUTCOME_TOOL_CONTRACTS,
+  evaluationMetricsSchema,
+  outcomeAggregateSchema,
+} from './tools/outcome-tools.js';

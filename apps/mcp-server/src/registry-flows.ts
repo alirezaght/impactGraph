@@ -259,6 +259,12 @@ export const expectActualImpactRecording = async (
   expect(metrics['missedRelationshipTypes']).toContain('PUBLISHES');
   expect(recorded['historyCount']).toBe(1);
   expect(String(recorded['note'])).toContain('no ranking rule was learned');
+  // Item 8: every recording answers "how is prediction quality trending" — the aggregate spans ALL
+  // stored outcomes (here: just this one) and states the ADR-0015 trigger verdict as a fact.
+  const aggregate = asRecord(recorded['aggregate']);
+  expect(aggregate['outcomeCount']).toBe(1);
+  expect(asRecord(aggregate['precision'])['sampleSize']).toBe(1);
+  expect(aggregate['adrTriggerMet']).toBe(false);
 
   // Append-only: the same outcome id cannot be recorded twice.
   const outcomeId = recorded['outcomeId'] as string;

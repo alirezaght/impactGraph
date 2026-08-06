@@ -1,4 +1,4 @@
-import { createActualImpact, measureAnalysis } from '@impactgraph/domain';
+import { aggregateOutcomes, createActualImpact, measureAnalysis } from '@impactgraph/domain';
 import { artifactsPath, createActualImpactStore } from '@impactgraph/persistence';
 
 import { loadAnalysis } from './analyses.js';
@@ -15,6 +15,7 @@ import type {
   ImpactAnalysis,
   KnowledgeGraph,
   NodeId,
+  OutcomeAggregate,
   Specification,
 } from '@impactgraph/domain';
 import type { ActualImpactRecord } from '@impactgraph/persistence';
@@ -86,7 +87,27 @@ const routeTypesOf = (analysis: ImpactAnalysis, graph: KnowledgeGraph): Readonly
 export interface RecordActualImpactOutcome extends ActualImpactRecord {
   /** Every outcome recorded against this analysis so far, this one included. */
   readonly historyCount: number;
+  /**
+   * Accuracy across ALL stored outcomes for the workspace, this one included — derived at answer
+   * time from the append-only records, never persisted (a stored aggregate would be stale by the
+   * next record). Absent only when the stored outcomes could not be listed; the recording itself
+   * still succeeded.
+   */
+  readonly aggregate?: OutcomeAggregate;
 }
+
+/** Every recorded outcome, newest first — the material for reviewing measured accuracy over time. */
+export const listActualImpacts = (rootDir: string): Failable<readonly ActualImpactRecord[]> => {
+  const store = createActualImpactStore(artifactsPath(rootDir));
+  const all = store.listAll();
+  if (!all.ok) {
+    return failWith('configurationError', all.error.message);
+  }
+  return {
+    ok: true,
+    value: [...all.value].sort((a, b) => b.actual.recordedAt.localeCompare(a.actual.recordedAt)),
+  };
+};
 
 /** The outcome record itself, built from the request and the analysis it measures. */
 /**
@@ -172,9 +193,18 @@ export const recordActualImpact = async (
     return failWith('configurationError', saved.error.message);
   }
   const history = store.listForAnalysis(request.analysisId);
+  // Aggregated over EVERY stored outcome, this one included, so each recording answers "how is
+  // prediction quality trending" (item 8) — including ADR-0015's ten-outcome revisit trigger.
+  const all = listActualImpacts(request.rootDir);
   return {
     ok: true,
-    value: { ...saved.value, historyCount: history.ok ? history.value.length : 1 },
+    value: {
+      ...saved.value,
+      historyCount: history.ok ? history.value.length : 1,
+      ...(all.ok
+        ? { aggregate: aggregateOutcomes(all.value.map((record) => record.metrics)) }
+        : {}),
+    },
   };
 };
 
@@ -207,16 +237,3 @@ const predictedCategories = (
   predictArtifacts(specification, analysis, graph, new Set()).map(
     (prediction) => prediction.category,
   );
-
-/** Every recorded outcome, newest first — the material for reviewing measured accuracy over time. */
-export const listActualImpacts = (rootDir: string): Failable<readonly ActualImpactRecord[]> => {
-  const store = createActualImpactStore(artifactsPath(rootDir));
-  const all = store.listAll();
-  if (!all.ok) {
-    return failWith('configurationError', all.error.message);
-  }
-  return {
-    ok: true,
-    value: [...all.value].sort((a, b) => b.actual.recordedAt.localeCompare(a.actual.recordedAt)),
-  };
-};

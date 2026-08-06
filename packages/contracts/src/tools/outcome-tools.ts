@@ -60,10 +60,49 @@ export const evaluationMetricsSchema = z
   })
   .strict();
 
+/** A mean over the outcomes that HAVE the figure; the sample size says how many that was. */
+const metricAggregateSchema = z
+  .object({
+    mean: z.number().min(0).max(1),
+    sampleSize: z.number().int().min(1),
+  })
+  .strict();
+
+/** How many OUTCOMES a value recurred in — each record stores it deduplicated. */
+const frequencyCountSchema = z
+  .object({
+    value: z.string().min(1),
+    count: z.number().int().min(1),
+  })
+  .strict();
+
+/**
+ * Accuracy across every stored outcome, item 8: derived at answer time, never persisted, and kept
+ * apart from architectural facts — nothing in it feeds ranking or confirmed knowledge.
+ */
+export const outcomeAggregateSchema = z
+  .object({
+    outcomeCount: z.number().int().min(0),
+    /** Absent when no stored outcome has the figure — never reported as 0. */
+    precision: metricAggregateSchema.optional(),
+    recall: metricAggregateSchema.optional(),
+    rankingQuality: metricAggregateSchema.optional(),
+    truePositiveCount: z.number().int().min(0),
+    falsePositiveCount: z.number().int().min(0),
+    falseNegativeCount: z.number().int().min(0),
+    topFalsePositiveBases: z.array(frequencyCountSchema),
+    topMissedArtifactCategories: z.array(frequencyCountSchema),
+    /** ADR-0015's revisit trigger, evaluated: ≥ 10 judged-tier outcomes with mean precision < 0.6. */
+    adrTriggerMet: z.boolean(),
+    /** Present when the trigger fired — a statement for a human, never an automated action. */
+    adrTriggerNote: z.string().min(1).optional(),
+  })
+  .strict();
+
 export const OUTCOME_TOOL_CONTRACTS = {
   record_actual_impact: {
     description:
-      'Record what an implementation actually changed after the fact, and measure the analysis against it: precision, recall, false positives/negatives, ranking quality, missed artifact categories and missed relationship types. Append-only evidence — it never modifies the analysis and never mutates confirmed repository knowledge. Modifies the workspace.',
+      'Record what an implementation actually changed after the fact, and measure the analysis against it: precision, recall, false positives/negatives, ranking quality, missed artifact categories and missed relationship types. The response also aggregates accuracy across every stored outcome for the workspace, so each recording answers how prediction quality is trending. Append-only evidence — it never modifies the analysis and never mutates confirmed repository knowledge. Modifies the workspace.',
     input: z
       .object({
         analysisId: z.string().min(1),
@@ -89,6 +128,12 @@ export const OUTCOME_TOOL_CONTRACTS = {
         metrics: evaluationMetricsSchema,
         /** Outcomes recorded against this analysis so far, this one included. */
         historyCount: z.number().int().min(1),
+        /**
+         * Accuracy across ALL stored outcomes for the workspace, this one included. Additive and
+         * optional: omitted when the stored outcomes could not be listed — the recording itself
+         * still succeeded.
+         */
+        aggregate: outcomeAggregateSchema.optional(),
         /**
          * Stated on every response: a measured outcome is evidence for a human to review, and
          * ImpactGraph does not change its ranking or its confirmed knowledge from one result.

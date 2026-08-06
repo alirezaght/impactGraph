@@ -127,6 +127,90 @@
           "type": "integer",
           "minimum": 1
         },
+        "aggregate": {
+          "type": "object",
+          "properties": {
+            "outcomeCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "precision": {
+              "type": "object",
+              "properties": {
+                "mean": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "sampleSize": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": ["mean", "sampleSize"],
+              "additionalProperties": false
+            },
+            "recall": {
+              "$ref": "#/definitions/Tool_record_actual_impact_OutputV1/properties/aggregate/properties/precision"
+            },
+            "rankingQuality": {
+              "$ref": "#/definitions/Tool_record_actual_impact_OutputV1/properties/aggregate/properties/precision"
+            },
+            "truePositiveCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "falsePositiveCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "falseNegativeCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "topFalsePositiveBases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": ["value", "count"],
+                "additionalProperties": false
+              }
+            },
+            "topMissedArtifactCategories": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Tool_record_actual_impact_OutputV1/properties/aggregate/properties/topFalsePositiveBases/items"
+              }
+            },
+            "adrTriggerMet": {
+              "type": "boolean"
+            },
+            "adrTriggerNote": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "outcomeCount",
+            "truePositiveCount",
+            "falsePositiveCount",
+            "falseNegativeCount",
+            "topFalsePositiveBases",
+            "topMissedArtifactCategories",
+            "adrTriggerMet"
+          ],
+          "additionalProperties": false
+        },
         "note": {
           "type": "string",
           "minLength": 1
