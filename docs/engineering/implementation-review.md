@@ -77,6 +77,13 @@ Classification inputs are deterministic (graph diff + approved model). Where AI 
 `llm-inferred`, carries evidence, may only reference existing nodes, and is downgraded when
 unsupported — same rules as everywhere else (PRD §34).
 
+**Only predictive tiers are predictions.** Impacts with likelihood `required`, `likely`, or
+`possible` are eligible for Matched/Missing/Divergent. `lexical-only`, `excluded`, `unlikely`, and
+user-rejected impacts are never reported as Matched, and their paths do not shield a change from
+the Unexpected category — a change inside a non-goal-excluded area is Unexpected, with the specific
+contradicted non-goal named. Reporting a non-prediction as a successful prediction would invert the
+report's meaning (a non-goal violation reading as success).
+
 ## Requirement coverage (PRD §25 — an estimate, not proof)
 
 The engine maps actual changes back to requirements (via the approved model's
@@ -103,6 +110,22 @@ PRD §40.5) contains, in order: 1 review summary, 2 approved specification, 3 ma
 11 infrastructure discrepancies, 12 accepted deviations, 13 recommended follow-up actions.
 Every finding links its evidence IDs, the approved analysis ID, both snapshot IDs, and the review
 run ID — the seven provenance questions must be answerable from the report alone.
+
+## Scope, limitations and confidence — the review explains itself
+
+Every review document states the conditions it was produced under, in the `breakdown.scope` and
+`breakdown.confidence` blocks and in the human-facing renderers (Markdown report and CLI text),
+never only in JSON:
+
+- **Scope:** approved and review snapshot IDs, review target, changed-file count, indexed-component
+  count.
+- **Limitations are measured, not boilerplate.** Registered repositories missing from the index are
+  named individually ("changes there were not reviewed"), discovered-but-unregistered candidates are
+  listed, truncated edge-change lists state how many IDs were omitted, and an unreadable repository
+  roster is itself reported rather than assumed fine.
+- **Confidence is deterministic** (`high` | `limited` | `low`), derived from the unverifiable-finding
+  share, missing registered repositories, and truncation — never model-authored — and always carries
+  at least one human-readable reason.
 
 ## What the engine must NOT claim
 

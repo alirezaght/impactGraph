@@ -32,7 +32,8 @@ Four coupled changes, each in the domain so no adapter can bypass it.
 
 `RequirementImpact` carries `evidenceTypes` from a closed vocabulary (`direct-structural`,
 `transitive-structural`, `async-event`, `external-contract`, `field-data-flow`,
-`configuration-asset`, `semantic-match`, `lexical-only`), and each basis has a **tier ceiling**. The
+`configuration-asset`, `name-similarity`, `semantic-match`, `lexical-only`), and each basis has a
+**tier ceiling**. The
 `ImpactAnalysis` factory REJECTS a record claiming a tier its basis does not permit — a lexical match
 cannot be labeled `required` by any code path, including a future model pass.
 
@@ -100,3 +101,25 @@ Non-goals act as exclusions: they downgrade impacts to `excluded`, and where a n
   extractor rather than a wider traversal.
 - If the bounded summary is routinely followed by a full `list_impacts` fetch, the summary is missing a
   field the reader needs; add it rather than raising `topN`.
+
+## Addendum (2026-08-06) — the vocabulary split happened
+
+Dogfooding showed the first revisit trigger firing early, from the other direction: the
+name-coincidence risk was not in the (unreachable) `lexical`/`semantic` mechanisms the ceilings
+guarded, but in `name-similarity` concept matching, which mapped to `direct-structural` and could
+therefore claim `required` uncapped. The vocabulary gained a distinct **`name-similarity`** basis
+(ceiling `likely`, ranked below all structural bases: a name resemblance establishes no traversed
+relationship). Guessed anchors now poison their whole route with their own basis, and anchor
+node-type upgrades (e.g. topic → `async-event`) are suppressed for guessed anchors so a fuzzy match
+cannot reopen a `required`-capable ceiling.
+
+Two companions landed with it, same decision rationale as the original ADR:
+
+- **`assessEvidenceQuality`** — a deterministic domain verdict (`evidence-backed` | `mixed` |
+  `weak`) over the shown default view, modeled on the coverage-sufficiency verdict. A weak verdict
+  marks the analysis provisional, emits the `report-limited-evidence` required action, and is named
+  in the MCP workflow instructions. Raw distribution counts stay in the summary; the verdict is the
+  interpretation the counts were missing.
+- **Per-record clamping in the model-refinement path** — an LLM tier over-promotion is capped via
+  `capLikelihood` with an `unsupported-claim` warning instead of the factory rejecting the whole
+  refinement batch (which silently discarded all model input on one bad record).
