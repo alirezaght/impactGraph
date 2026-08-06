@@ -85,6 +85,34 @@ const violationSection = (report: CliReviewOutput): string[] => {
   return lines;
 };
 
+/** Item 7: the report explains its own scope, limitations, and confidence — measured, not assumed. */
+const scopeSection = (report: CliReviewOutput): string[] => {
+  const breakdown = report.breakdown;
+  if (breakdown === undefined) {
+    return [];
+  }
+  const { scope, confidence } = breakdown;
+  return [
+    '',
+    '## Scope and Confidence',
+    '',
+    `Compared ${String(scope.changedFileCount)} changed files against ${String(scope.indexedComponentCount)} indexed components (approved snapshot ${scope.approvedSnapshotId} → review snapshot ${scope.reviewSnapshotId}).`,
+    ...(confidence === undefined
+      ? []
+      : ['', `Confidence: **${confidence.level}**`, ...confidence.reasons.map((r) => `- ${r}`)]),
+    '',
+    'Limitations:',
+    ...scope.limitations.map((limitation) => `- ${limitation}`),
+  ];
+};
+
+const edgeList = (ids: readonly string[], omitted: number | undefined): string => {
+  const listed = ids.length > 0 ? ids.join(', ') : 'none';
+  return omitted === undefined || omitted === 0
+    ? listed
+    : `${listed} (${String(omitted)} more omitted)`;
+};
+
 export const buildReviewMarkdown = (report: CliReviewOutput): string[] => [
   '# Implementation Review',
   '',
@@ -103,6 +131,7 @@ export const buildReviewMarkdown = (report: CliReviewOutput): string[] => [
   '',
   '## Architectural Edge Changes',
   '',
-  `Added: ${report.edgeChanges.added.length > 0 ? report.edgeChanges.added.join(', ') : 'none'}`,
-  `Removed: ${report.edgeChanges.removed.length > 0 ? report.edgeChanges.removed.join(', ') : 'none'}`,
+  `Added: ${edgeList(report.edgeChanges.added, report.edgeChanges.omittedAdded)}`,
+  `Removed: ${edgeList(report.edgeChanges.removed, report.edgeChanges.omittedRemoved)}`,
+  ...scopeSection(report),
 ];

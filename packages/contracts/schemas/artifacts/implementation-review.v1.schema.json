@@ -176,6 +176,14 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "omittedAdded": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "omittedRemoved": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               },
               "required": ["added", "removed"],
@@ -375,6 +383,25 @@
                     "indexedComponentCount",
                     "limitations"
                   ],
+                  "additionalProperties": false
+                },
+                "confidence": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "string",
+                      "enum": ["high", "limited", "low"]
+                    },
+                    "reasons": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 1
+                    }
+                  },
+                  "required": ["level", "reasons"],
                   "additionalProperties": false
                 }
               },

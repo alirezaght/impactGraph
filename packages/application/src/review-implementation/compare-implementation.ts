@@ -1,9 +1,10 @@
-import { createImplementationReview } from '@impactgraph/domain';
+import { createImplementationReview, PREDICTIVE_LIKELIHOODS } from '@impactgraph/domain';
 
 import { estimateCoverage } from './coverage.js';
 
 import type { ChangedPath } from '../ports/git.js';
 import type {
+  EdgeChangeSummary,
   ImpactAnalysis,
   ImplementationReview,
   KnowledgeGraph,
@@ -138,11 +139,21 @@ const coveredPaths = (
   return paths;
 };
 
+/** Paths of impacts a specification non-goal excluded — a change there contradicts the exclusion. */
+const excludedPaths = (context: ComparisonContext): Set<string> =>
+  coveredPaths(
+    context.request.analysis.requirementImpacts.filter(
+      (impact) => impact.likelihood === 'excluded',
+    ),
+    context,
+  );
+
 const unexpectedFindings = (
   impacts: readonly RequirementImpact[],
   context: ComparisonContext,
 ): ReviewFinding[] => {
   const covered = coveredPaths(impacts, context);
+  const excluded = excludedPaths(context);
   const findings: ReviewFinding[] = [];
   for (const change of context.request.changes) {
     if (
@@ -158,14 +169,19 @@ const unexpectedFindings = (
       category: 'unexpected',
       nodeId,
       nodeName: node?.name ?? change.path.slice(change.path.lastIndexOf('/') + 1),
-      explanation: `'${change.path}' was ${change.changeType} but is not part of the approved analysis.`,
+      explanation: excluded.has(change.path)
+        ? `'${change.path}' was ${change.changeType} although the approved analysis excluded it (specification non-goal).`
+        : `'${change.path}' was ${change.changeType} but is not part of the approved analysis.`,
       filePaths: [change.path],
     });
   }
   return findings;
 };
 
-const edgeChanges = (context: ComparisonContext): { added: string[]; removed: string[] } => {
+/** Report cap on edge-change ids; anything beyond it is COUNTED, never silently dropped. */
+const EDGE_CHANGE_LIMIT = 50;
+
+const edgeChanges = (context: ComparisonContext): EdgeChangeSummary => {
   const touches = (graph: KnowledgeGraph, edgeId: string): boolean => {
     const edge = graph.edges.get(edgeId as never);
     if (edge === undefined) {
@@ -179,13 +195,20 @@ const edgeChanges = (context: ComparisonContext): { added: string[]; removed: st
     );
   };
   const { approvedGraph, currentGraph } = context.request;
-  const added = [...currentGraph.edges.keys()]
-    .filter((id) => !approvedGraph.edges.has(id) && touches(currentGraph, id))
-    .slice(0, 50);
-  const removed = [...approvedGraph.edges.keys()]
-    .filter((id) => !currentGraph.edges.has(id) && touches(approvedGraph, id))
-    .slice(0, 50);
-  return { added, removed };
+  const added = [...currentGraph.edges.keys()].filter(
+    (id) => !approvedGraph.edges.has(id) && touches(currentGraph, id),
+  );
+  const removed = [...approvedGraph.edges.keys()].filter(
+    (id) => !currentGraph.edges.has(id) && touches(approvedGraph, id),
+  );
+  const omittedAdded = Math.max(0, added.length - EDGE_CHANGE_LIMIT);
+  const omittedRemoved = Math.max(0, removed.length - EDGE_CHANGE_LIMIT);
+  return {
+    added: added.slice(0, EDGE_CHANGE_LIMIT),
+    removed: removed.slice(0, EDGE_CHANGE_LIMIT),
+    ...(omittedAdded > 0 ? { omittedAdded } : {}),
+    ...(omittedRemoved > 0 ? { omittedRemoved } : {}),
+  };
 };
 
 /** Expected-vs-actual comparison against the immutable approved baseline (PRD §24, §40.5). */
@@ -194,9 +217,14 @@ export const compareImplementation = (
 ): Result<ImplementationReview, ValidationError> => {
   const context: ComparisonContext = { request, changedFiles: changedFileSet(request.changes) };
   const rejected = rejectedKeys(request.analysis);
+  // Only the PREDICTIVE tiers (required/likely/possible) are predictions the review can match
+  // against. A lexical-only impact is explicitly NOT a prediction, `excluded` says the
+  // specification ruled the component out, and `unlikely` is a weak negative — a change in any
+  // of those areas must surface as `unexpected`, never be absorbed as `matched` (§24.1).
   const impacts = request.analysis.requirementImpacts.filter(
     (impact) =>
-      impact.likelihood !== 'unlikely' && !rejected.has(`${impact.requirementId}→${impact.nodeId}`),
+      PREDICTIVE_LIKELIHOODS.includes(impact.likelihood) &&
+      !rejected.has(`${impact.requirementId}→${impact.nodeId}`),
   );
   const findings: ReviewFinding[] = [];
   for (const impact of impacts) {

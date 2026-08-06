@@ -94,6 +94,14 @@ describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () =
     expect(output.findings.filter((f) => f.category === 'missing')).toHaveLength(0);
     expect(output.coverage[0]?.status).toBe('implemented');
     expect(output.coverage[0]?.evidence.some((line) => line.marker === 'confirmed')).toBe(true);
+    // item 7: the review always explains its own confidence and scope
+    expect(output.breakdown?.confidence?.reasons.length).toBeGreaterThan(0);
+    expect(output.breakdown?.scope.limitations.length).toBeGreaterThan(0);
+
+    const text = await cli('review', 'working-tree');
+    const rendered = text.lines.join('\n');
+    expect(rendered).toContain('Confidence:');
+    expect(rendered).toContain('Limitations:');
   });
 
   it('reports missing required impacts (unchanged tree) and unexpected files with exit code 3', async () => {
@@ -153,10 +161,12 @@ describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () =
       '## Requirement Coverage (estimate — not proof, §25)',
       '## Rule Violations',
       '## Architectural Edge Changes',
+      '## Scope and Confidence',
     ]) {
       expect(report).toContain(section);
     }
     expect(report).toContain('✓');
+    expect(report).toContain('Confidence: **');
   });
 
   it('evaluates §27 accompanying-change rules on the review delta (Story 8.4)', async () => {

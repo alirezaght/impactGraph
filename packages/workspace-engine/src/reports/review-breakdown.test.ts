@@ -57,7 +57,9 @@ const graph = (nodes: readonly GraphNode[]): KnowledgeGraph => {
 
 const REQUIREMENT = '`Renderer` must name the seller.';
 
-const specification = (): Specification => {
+const specification = (
+  nonGoals: readonly string[] = ['Reworking the mailer.'],
+): Specification => {
   const created = createSpecification({
     id: 'spec-1',
     title: 'Notification wording',
@@ -81,13 +83,11 @@ const specification = (): Specification => {
     constraints: [],
     openQuestions: [],
     decisions: [],
-    notes: [
-      {
-        id: specNoteId('non-goal', 'Reworking the mailer.'),
-        kind: 'non-goal',
-        statement: 'Reworking the mailer.',
-      },
-    ],
+    notes: nonGoals.map((statement) => ({
+      id: specNoteId('non-goal', statement),
+      kind: 'non-goal' as const,
+      statement,
+    })),
   });
   if (!created.ok) {
     throw new Error(created.error.issues.map((issue) => issue.message).join('; '));
@@ -99,6 +99,7 @@ const impact = (
   nodeId: string,
   likelihood: ImpactLikelihood,
   evidenceTypes: readonly string[] = ['direct-structural'],
+  explanation = `predicted ${nodeId}`,
 ) => ({
   requirementId: stableRequirementId(REQUIREMENT),
   nodeId,
@@ -107,7 +108,7 @@ const impact = (
   directness: 'direct' as const,
   confidence: 0.8,
   confidenceSignals: [{ type: 'direct-observation' as const, contribution: 1 }],
-  explanation: `predicted ${nodeId}`,
+  explanation,
   expectedChanges: ['review it'],
   evidenceIds: ['ev-1'],
   dependencyPath: [nodeId],
@@ -134,7 +135,10 @@ const analysis = (impacts: readonly ReturnType<typeof impact>[]): ImpactAnalysis
   return created.value;
 };
 
-const review = (changedFiles: readonly string[]): ImplementationReview => {
+const review = (
+  changedFiles: readonly string[],
+  overrides: Partial<Pick<ImplementationReview, 'findings' | 'edgeChanges'>> = {},
+): ImplementationReview => {
   const created = createImplementationReview({
     id: 'review-1',
     analysisId: 'analysis-1',
@@ -142,15 +146,26 @@ const review = (changedFiles: readonly string[]): ImplementationReview => {
     target: 'working-tree',
     createdAt: '2026-08-05T10:00:00.000Z',
     changedFiles: [...changedFiles],
-    findings: [],
+    findings: overrides.findings ?? [],
     coverage: [],
-    edgeChanges: { added: [], removed: [] },
+    edgeChanges: overrides.edgeChanges ?? { added: [], removed: [] },
   });
   if (!created.ok) {
     throw new Error(created.error.issues.map((issue) => issue.message).join('; '));
   }
   return created.value;
 };
+
+const findingOf = (
+  category: 'matched' | 'unverifiable',
+  nodeId: string,
+): ImplementationReview['findings'][number] => ({
+  category,
+  nodeId,
+  nodeName: nodeId,
+  explanation: `finding about ${nodeId}`,
+  filePaths: [],
+});
 
 const NODES = [
   node('file:src/renderer.ts', 'renderer.ts', 'src/renderer.ts'),
@@ -254,5 +269,110 @@ describe('buildReviewBreakdown', () => {
     // Without `addedPaths` the caller did not distinguish additions, and the scope says so rather
     // than letting `missedNewFiles: []` read as "no new files were needed".
     expect(breakdown.scope.limitations.join(' ')).toContain('Added files were not distinguished');
+  });
+
+  it('attributes a non-goal contradiction to the specific non-goal that excluded the component', () => {
+    const excludedByMailer = impact(
+      'file:src/mailer.ts',
+      'excluded',
+      ['direct-structural'],
+      'predicted mailer. Excluded by a specification non-goal: "Reworking the mailer.".',
+    );
+    const excludedByTheme = impact(
+      'file:src/unrelated.ts',
+      'excluded',
+      ['direct-structural'],
+      'predicted unrelated. Excluded by a specification non-goal: "Changing the renderer theme.".',
+    );
+    const breakdown = buildReviewBreakdown({
+      review: review(['src/mailer.ts']),
+      analysis: analysis([excludedByMailer, excludedByTheme]),
+      specification: specification(['Reworking the mailer.', 'Changing the renderer theme.']),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+    });
+    // One changed excluded file must contradict ONE non-goal — never both with identical paths.
+    expect(breakdown.nonGoalContradictions).toEqual([
+      { statement: 'Reworking the mailer.', changedPaths: ['src/mailer.ts'] },
+    ]);
+  });
+
+  it('names unindexed registered repositories and unregistered candidates as measured limitations', () => {
+    const breakdown = buildReviewBreakdown({
+      review: review([]),
+      analysis: analysis([]),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+      repositoryScope: {
+        unindexedRegistered: [{ name: 'api-docs', reason: 'registered but not in the current index' }],
+        unregisteredCandidates: ['services/legacy'],
+      },
+    });
+    const limitations = breakdown.scope.limitations.join(' ');
+    expect(limitations).toContain("Registered repository 'api-docs' was not indexed");
+    expect(limitations).toContain('services/legacy');
+    expect(breakdown.confidence?.level).toBe('low');
+    expect(breakdown.confidence?.reasons.join(' ')).toContain('api-docs');
+  });
+
+  it('states edge-change truncation as a limitation and lowers confidence to limited', () => {
+    const breakdown = buildReviewBreakdown({
+      review: review(['src/renderer.ts'], {
+        edgeChanges: { added: [], removed: [], omittedAdded: 5 },
+      }),
+      analysis: analysis([]),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+      repositoryScope: { unindexedRegistered: [], unregisteredCandidates: [] },
+    });
+    expect(breakdown.scope.limitations.join(' ')).toContain('truncated');
+    expect(breakdown.confidence?.level).toBe('limited');
+  });
+
+  it('reports high confidence, with a stated reason, when nothing degrades the review', () => {
+    const breakdown = buildReviewBreakdown({
+      review: review(['src/renderer.ts'], {
+        findings: [findingOf('matched', 'file:src/renderer.ts')],
+      }),
+      analysis: analysis([impact('file:src/renderer.ts', 'required')]),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+      repositoryScope: { unindexedRegistered: [], unregisteredCandidates: [] },
+    });
+    expect(breakdown.confidence?.level).toBe('high');
+    expect(breakdown.confidence?.reasons.length).toBeGreaterThan(0);
+  });
+
+  it('lowers confidence to low when unverifiable findings reach half of all findings', () => {
+    const breakdown = buildReviewBreakdown({
+      review: review(['src/renderer.ts'], {
+        findings: [
+          findingOf('matched', 'file:src/renderer.ts'),
+          findingOf('unverifiable', 'topic:deal-updated'),
+        ],
+      }),
+      analysis: analysis([]),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+      repositoryScope: { unindexedRegistered: [], unregisteredCandidates: [] },
+    });
+    expect(breakdown.confidence?.level).toBe('low');
+    expect(breakdown.confidence?.reasons.join(' ')).toContain('unverifiable');
+  });
+
+  it('treats unknown repository-registration state as a stated limitation, not silence', () => {
+    const breakdown = buildReviewBreakdown({
+      review: review([]),
+      analysis: analysis([]),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [],
+    });
+    expect(breakdown.scope.limitations.join(' ')).toContain('registered-repository index state');
+    expect(breakdown.confidence?.level).toBe('limited');
   });
 });

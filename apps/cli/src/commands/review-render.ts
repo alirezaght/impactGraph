@@ -14,6 +14,30 @@ import type { ReviewBreakdownContext } from '@impactgraph/workspace-engine';
 
 const MARKERS = { confirmed: '✓', missing: '✕', unclear: '?' } as const;
 
+/** Item 7: the text report states its own scope, limitations, and confidence — never silently. */
+const scopeLines = (report: CliReviewOutput): string[] => {
+  const breakdown = report.breakdown;
+  if (breakdown === undefined) {
+    return [];
+  }
+  const lines: string[] = [];
+  if (breakdown.confidence !== undefined) {
+    lines.push(`Confidence: ${breakdown.confidence.level}`);
+    lines.push(...breakdown.confidence.reasons.map((reason) => `  - ${reason}`));
+  }
+  lines.push(
+    `Scope: ${String(breakdown.scope.changedFileCount)} changed files vs ${String(breakdown.scope.indexedComponentCount)} indexed components`,
+    'Limitations:',
+    ...breakdown.scope.limitations.map((limitation) => `  - ${limitation}`),
+  );
+  return lines;
+};
+
+const omittedEdgeLines = (report: CliReviewOutput): string[] => {
+  const omitted = (report.edgeChanges.omittedAdded ?? 0) + (report.edgeChanges.omittedRemoved ?? 0);
+  return omitted > 0 ? [`  Edge-change lists truncated: ${String(omitted)} edge ids omitted.`] : [];
+};
+
 const textLines = (report: CliReviewOutput): string[] => {
   const lines = [`Review (${report.target}) — ${String(report.changedFiles.length)} changed files`];
   for (const finding of report.findings) {
@@ -22,6 +46,7 @@ const textLines = (report: CliReviewOutput): string[] => {
   for (const violation of report.ruleViolations) {
     lines.push(`  [rule:${violation.ruleId}] ${violation.message}`);
   }
+  lines.push(...omittedEdgeLines(report));
   lines.push('Requirement coverage (estimate):');
   for (const entry of report.coverage) {
     lines.push(`  ${entry.requirementId}: ${entry.status}`);
@@ -29,6 +54,7 @@ const textLines = (report: CliReviewOutput): string[] => {
       lines.push(`    ${MARKERS[evidence.marker]} ${evidence.note}`);
     }
   }
+  lines.push(...scopeLines(report));
   return lines;
 };
 

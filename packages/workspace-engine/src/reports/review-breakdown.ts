@@ -1,5 +1,8 @@
 import { evidenceTypesOf, primaryEvidenceType, nonGoalsOf } from '@impactgraph/domain';
 
+import { deriveReviewConfidence, deriveScopeLimitations } from './review-scope.js';
+
+import type { ReviewRepositoryScope } from './review-scope.js';
 import type { CliReviewBreakdown } from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
@@ -28,6 +31,8 @@ export interface ReviewBreakdownInput {
   readonly currentGraph: KnowledgeGraph;
   /** Changed paths that are additions, from the diff. Absent → additions are not distinguished. */
   readonly addedPaths?: readonly string[];
+  /** Measured roster state (item 7). Absent → the limitation is stated, never assumed away. */
+  readonly repositoryScope?: ReviewRepositoryScope;
 }
 
 const ASSET_PATH = /(^|\/)(locales?|i18n|translations?)(\/|$)|\.(json|ya?ml|toml|tf|tfvars)$/i;
@@ -59,25 +64,40 @@ const predictedImpacts = (input: ReviewBreakdownInput): readonly PredictedImpact
   return impacts;
 };
 
+/** The exclusion reason `applyNonGoalExclusions` records in the impact's explanation. */
+const EXCLUSION_REASON = /Excluded by a specification non-goal: "(.+)"\.\s*$/;
+
 /**
  * Non-goal contradictions: the specification said not to touch a component, and the implementation
  * touched it. Reported plainly, without a verdict — a non-goal can be overtaken by events, and that
  * is a human call (§43.6).
+ *
+ * Each contradiction is keyed to the SPECIFIC non-goal that excluded the component, via the
+ * exclusion reason the analysis recorded in the impact's explanation at analysis time. An excluded
+ * impact whose explanation predates that recording cannot be attributed; it is reported under every
+ * non-goal — over-reporting a possible contradiction is safer than dropping it.
  */
 const nonGoalContradictions = (
   input: ReviewBreakdownInput,
   changed: ReadonlySet<string>,
 ): CliReviewBreakdown['nonGoalContradictions'] => {
+  // A non-goal names components, not paths, so the join is by the excluded impacts the analysis
+  // already resolved — the same resolution the analysis used, not a fresh guess.
+  const excludedChanged = input.analysis.requirementImpacts
+    .filter((impact) => impact.likelihood === 'excluded')
+    .map((impact) => ({
+      path: input.currentGraph.nodes.get(impact.nodeId as NodeId)?.path,
+      statement: EXCLUSION_REASON.exec(impact.explanation)?.[1],
+    }))
+    .filter(
+      (entry): entry is { path: string; statement: string | undefined } =>
+        entry.path !== undefined && changed.has(entry.path),
+    );
   const contradictions: { statement: string; changedPaths: string[] }[] = [];
   for (const note of nonGoalsOf(input.specification.notes)) {
-    // A non-goal names components, not paths, so the join is by the excluded impacts the analysis
-    // already resolved — the same resolution the analysis used, not a fresh guess.
-    const excluded = input.analysis.requirementImpacts.filter(
-      (impact) => impact.likelihood === 'excluded',
-    );
-    const paths = excluded
-      .map((impact) => input.currentGraph.nodes.get(impact.nodeId as NodeId)?.path)
-      .filter((path): path is string => path !== undefined && changed.has(path));
+    const paths = excludedChanged
+      .filter((entry) => entry.statement === note.statement || entry.statement === undefined)
+      .map((entry) => entry.path);
     if (paths.length > 0) {
       contradictions.push({ statement: note.statement, changedPaths: [...new Set(paths)].sort() });
     }
@@ -145,6 +165,7 @@ export const buildReviewBreakdown = (
     migrationChanges: byCategory(MIGRATION_PATH),
     nonGoalContradictions: nonGoalContradictions(input, changed),
     scope: scopeOf(input),
+    confidence: deriveReviewConfidence(input),
   };
 };
 
@@ -152,7 +173,9 @@ export const buildReviewBreakdown = (
  * The analyzed scope, stated on every review (item 13: "Always state the analyzed scope").
  *
  * Without it a review's silence is unreadable: "no async changes" and "async relationships were not
- * indexed in this workspace" produce the same empty list.
+ * indexed in this workspace" produce the same empty list. Limitations are MEASURED (item 7): each
+ * unindexed registered repository, unregistered candidate, and truncated list is named, not
+ * summarized into a constant sentence.
  */
 const scopeOf = (input: ReviewBreakdownInput): CliReviewBreakdown['scope'] => ({
   approvedSnapshotId: input.analysis.repositorySnapshotId,
@@ -160,10 +183,5 @@ const scopeOf = (input: ReviewBreakdownInput): CliReviewBreakdown['scope'] => ({
   target: input.review.target,
   changedFileCount: input.review.changedFiles.length,
   indexedComponentCount: input.currentGraph.nodes.size,
-  limitations: [
-    'Only this workspace was compared; repositories not registered in the workspace were not analyzed.',
-    ...(input.addedPaths === undefined
-      ? ['Added files were not distinguished from modified files by the caller.']
-      : []),
-  ],
+  limitations: deriveScopeLimitations(input),
 });

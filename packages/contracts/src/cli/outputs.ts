@@ -5,7 +5,6 @@ import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
 import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
-import { cliReviewBreakdownSchema } from './review-breakdown.js';
 
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
 // validated by the CLI before printing; consumers validate again before trusting.
@@ -305,94 +304,12 @@ export const cliApproveOutputSchema = z
   })
   .strict();
 
-const reviewFindingSchema = z
-  .object({
-    category: z.enum([
-      'matched',
-      'missing',
-      'unexpected',
-      'divergent',
-      'unverifiable',
-      'accepted-deviation',
-    ]),
-    nodeId: z.string().min(1),
-    nodeName: z.string().min(1),
-    requirementId: z.string().min(1).optional(),
-    explanation: z.string().min(1),
-    filePaths: z.array(z.string()),
-    /** Additive v1 field (Story 11.2): set when a human accepted this discrepancy (§24.1).
-     *  The finding itself is never rewritten — the mark rides alongside it. */
-    acceptedDeviation: z
-      .object({ reason: z.string().min(1) })
-      .strict()
-      .optional(),
-  })
-  .strict();
-
-const requirementCoverageSchema = z
-  .object({
-    requirementId: z.string().min(1),
-    statement: z.string().min(1),
-    status: z.enum(['implemented', 'partially-implemented', 'not-found', 'unclear']),
-    evidence: z.array(
-      z
-        .object({
-          marker: z.enum(['confirmed', 'missing', 'unclear']),
-          note: z.string().min(1),
-        })
-        .strict(),
-    ),
-  })
-  .strict();
-
-/** §27: deterministic rule violation with the evidence that proves it. */
-const ruleViolationSchema = z
-  .object({
-    ruleId: z.string().min(1),
-    message: z.string().min(1),
-    filePaths: z.array(z.string()),
-    edgeId: z.string().min(1).optional(),
-  })
-  .strict();
-
-/** PRD §38.2 review report as JSON. Coverage is an ESTIMATE, never proof (§25). */
-export const cliReviewOutputSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    command: z.literal('review'),
-    /** Additive v1 field (Story 11.2): id of the persisted review artifact this document
-     *  mirrors — the handle for accepting deviations on THIS review run. */
-    reviewId: z.string().min(1).optional(),
-    analysis: z
-      .object({
-        id: z.string().min(1),
-        specificationId: z.string().min(1),
-        specificationVersion: z.number().int().min(1),
-        approvedSnapshotId: z.string().min(1),
-      })
-      .strict(),
-    target: z.enum(['working-tree', 'commit']),
-    reviewSnapshotId: z.string().min(1),
-    changedFiles: z.array(z.string()),
-    findings: z.array(reviewFindingSchema),
-    coverage: z.array(requirementCoverageSchema),
-    edgeChanges: z.object({ added: z.array(z.string()), removed: z.array(z.string()) }).strict(),
-    /** §27 rule violations evaluated on the review delta (Story 8.4). */
-    ruleViolations: z.array(ruleViolationSchema),
-    /** True when findings contain missing/unexpected/divergent OR any rule is violated. */
-    discrepanciesFound: z.boolean(),
-    /**
-     * Additive v1 field (item 13): the same review, split by the distinction that decides what a
-     * reader does about each finding — missed existing vs missed new, false strong predictions with
-     * their basis, lexical-only predictions that changed, async/contract/asset/migration changes,
-     * non-goal contradictions, and the analyzed scope. Absent on producers that predate it.
-     */
-    breakdown: cliReviewBreakdownSchema.optional(),
-  })
-  .strict();
-
 export type CliApproveOutput = z.infer<typeof cliApproveOutputSchema>;
-export type CliReviewOutput = z.infer<typeof cliReviewOutputSchema>;
+
+// The §38.2 review report lives in ./review-output.js; re-exported here so every existing
+// consumer keeps its import path (ADR-0009: one schema, no diverging near-duplicate).
+export { cliReviewOutputSchema } from './review-output.js';
+export type { CliReviewOutput } from './review-output.js';
 
 /** `impactgraph export` (§22, §38.1): the implementation context, wrapped for CLI consumers. */
 export const cliExportOutputSchema = z

@@ -7,6 +7,7 @@ import { loadGraphAt, withIndexStore } from './graphs.js';
 import { performIndexRun } from './indexing.js';
 import { appendLearningProposal, reviewCoChangeProposal } from './learning.js';
 import { buildReviewOutput } from './reports/review-output.js';
+import { collectWorkspaceRepositoryContext } from './repository-coverage.js';
 import { persistReviewDocument } from './review-artifacts.js';
 import { evaluateConfiguredRules, loadProjectKnowledge } from './rules.js';
 import { GIT_FAILURES } from './snapshot.js';
@@ -14,6 +15,7 @@ import { loadSpecification } from './specifications.js';
 
 import type { Failable } from './failure.js';
 import type { ReviewBreakdownContext } from './reports/review-output.js';
+import type { ReviewRepositoryScope } from './reports/review-scope.js';
 import type { GitDiffResult, RuleViolation } from '@impactgraph/application';
 import type {
   ImpactAnalysis,
@@ -131,12 +133,14 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
     }
     // Story 11.2: persist the review so accepted-deviation decisions have an artifact to
     // append to (§24.1). A later re-run is a NEW artifact — acceptance never carries over.
+    const repositoryScope = await measureRepositoryScope(rootDir);
     const breakdownContext: ReviewBreakdownContext = {
       specification,
       currentGraph: currentGraph.value,
       addedPaths: diff.changes
         .filter((change) => change.changeType === 'added')
         .map((change) => change.path),
+      ...(repositoryScope === undefined ? {} : { repositoryScope }),
     };
     const persisted = persistReviewDocument(
       rootDir,
@@ -151,6 +155,30 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
       value: { review: review.value, analysis, violations: violations.value, breakdownContext },
     };
   });
+};
+
+/**
+ * Item 7: measure what the review could NOT see — registered repositories missing from the index
+ * and unregistered candidates. Best effort: when the roster is unreadable the scope is omitted and
+ * the breakdown states that as a limitation instead of guessing.
+ */
+const measureRepositoryScope = async (
+  rootDir: string,
+): Promise<ReviewRepositoryScope | undefined> => {
+  const context = await collectWorkspaceRepositoryContext(rootDir);
+  if (!context.ok) {
+    return undefined;
+  }
+  return {
+    // Members have a path relative to the root; the workspace root itself never does.
+    unindexedRegistered: context.value.repositories
+      .filter((state) => state.path !== undefined && !state.indexed)
+      .map((state) => ({
+        name: state.name,
+        ...(state.reason === undefined ? {} : { reason: state.reason }),
+      })),
+    unregisteredCandidates: context.value.candidates.map((candidate) => candidate.path),
+  };
 };
 
 /** §Z9: review outcomes feed the learning-proposal queue — best effort, never blocking. */

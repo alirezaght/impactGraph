@@ -114,6 +114,8 @@ export type { AnalyzeOutputInput } from './reports/analyze-output.js';
 export { buildReviewOutput, applyAcceptedDeviations } from './reports/review-output.js';
 export type { ReviewBreakdownContext } from './reports/review-output.js';
 export { buildReviewBreakdown } from './reports/review-breakdown.js';
+export { deriveReviewConfidence, deriveScopeLimitations } from './reports/review-scope.js';
+export type { ReviewRepositoryScope } from './reports/review-scope.js';
 export { buildReviewMarkdown, reviewSummaryLine } from './reports/review-markdown.js';
 export { buildExportOutput } from './reports/export-output.js';
 export {

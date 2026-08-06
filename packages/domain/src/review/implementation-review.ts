@@ -56,6 +56,10 @@ export type ReviewTarget = (typeof REVIEW_TARGETS)[number];
 export interface EdgeChangeSummary {
   readonly added: readonly string[];
   readonly removed: readonly string[];
+  /** How many added-edge ids were omitted by the report cap — present only when nonzero. */
+  readonly omittedAdded?: number;
+  /** How many removed-edge ids were omitted by the report cap — present only when nonzero. */
+  readonly omittedRemoved?: number;
 }
 
 export interface ImplementationReview {

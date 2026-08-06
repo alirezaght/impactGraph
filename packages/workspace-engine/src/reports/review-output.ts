@@ -2,6 +2,7 @@ import { hasDiscrepancies } from '@impactgraph/domain';
 
 import { buildReviewBreakdown } from './review-breakdown.js';
 
+import type { ReviewRepositoryScope } from './review-scope.js';
 import type { RuleViolation } from '@impactgraph/application';
 import type { AcceptedDeviationDto, CliReviewOutput } from '@impactgraph/contracts';
 import type {
@@ -22,7 +23,34 @@ export interface ReviewBreakdownContext {
   readonly specification: Specification;
   readonly currentGraph: KnowledgeGraph;
   readonly addedPaths?: readonly string[];
+  /** Measured roster state for scope limitations and confidence (item 7). */
+  readonly repositoryScope?: ReviewRepositoryScope;
 }
+
+const edgeChangesDto = (review: ImplementationReview): CliReviewOutput['edgeChanges'] => ({
+  added: [...review.edgeChanges.added],
+  removed: [...review.edgeChanges.removed],
+  ...(review.edgeChanges.omittedAdded === undefined
+    ? {}
+    : { omittedAdded: review.edgeChanges.omittedAdded }),
+  ...(review.edgeChanges.omittedRemoved === undefined
+    ? {}
+    : { omittedRemoved: review.edgeChanges.omittedRemoved }),
+});
+
+const breakdownDto = (
+  review: ImplementationReview,
+  analysis: ImpactAnalysis,
+  context: ReviewBreakdownContext,
+): NonNullable<CliReviewOutput['breakdown']> =>
+  buildReviewBreakdown({
+    review,
+    analysis,
+    specification: context.specification,
+    currentGraph: context.currentGraph,
+    ...(context.addedPaths === undefined ? {} : { addedPaths: context.addedPaths }),
+    ...(context.repositoryScope === undefined ? {} : { repositoryScope: context.repositoryScope }),
+  });
 
 export const buildReviewOutput = (
   review: ImplementationReview,
@@ -56,10 +84,7 @@ export const buildReviewOutput = (
     status: entry.status,
     evidence: entry.evidence.map((line) => ({ marker: line.marker, note: line.note })),
   })),
-  edgeChanges: {
-    added: [...review.edgeChanges.added],
-    removed: [...review.edgeChanges.removed],
-  },
+  edgeChanges: edgeChangesDto(review),
   ruleViolations: violations.map((violation) => ({
     ruleId: violation.ruleId,
     message: violation.message,
@@ -69,17 +94,7 @@ export const buildReviewOutput = (
   discrepanciesFound: hasDiscrepancies(review) || violations.length > 0,
   ...(breakdownContext === undefined
     ? {}
-    : {
-        breakdown: buildReviewBreakdown({
-          review,
-          analysis,
-          specification: breakdownContext.specification,
-          currentGraph: breakdownContext.currentGraph,
-          ...(breakdownContext.addedPaths === undefined
-            ? {}
-            : { addedPaths: breakdownContext.addedPaths }),
-        }),
-      }),
+    : { breakdown: breakdownDto(review, analysis, breakdownContext) }),
 });
 
 /**

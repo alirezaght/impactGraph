@@ -233,6 +233,40 @@ describe('compareImplementation (Stories 11.2/11.3, PRD §24.1/§25)', () => {
     expect(categories.get('file:src/rejected.ts')).toBe('unexpected');
   });
 
+  it('never reports lexical-only or excluded impacts as matched — their files surface as unexpected', () => {
+    const result = review({
+      analysis: analysis([impact('sym:extra', 'lexical-only'), impact('sym:query', 'excluded')]),
+      changes: [
+        { path: 'src/extra.ts', changeType: 'modified' },
+        { path: 'src/query.ts', changeType: 'modified' },
+      ],
+    });
+    const categories = categoriesByNode(result);
+    expect(categories.has('sym:extra')).toBe(false);
+    expect(categories.has('sym:query')).toBe(false);
+    expect(categories.get('file:src/extra.ts')).toBe('unexpected');
+    expect(categories.get('file:src/query.ts')).toBe('unexpected');
+    expect(hasDiscrepancies(result)).toBe(true);
+  });
+
+  it('explains an unexpected change in a non-goal-excluded area as an exclusion contradiction', () => {
+    const result = review({
+      analysis: analysis([impact('sym:query', 'excluded')]),
+      changes: [{ path: 'src/query.ts', changeType: 'modified' }],
+    });
+    const finding = result.findings.find((entry) => entry.nodeId === 'file:src/query.ts');
+    expect(finding?.category).toBe('unexpected');
+    expect(finding?.explanation).toContain('excluded');
+  });
+
+  it('does not classify an unchanged lexical-only or excluded impact at all', () => {
+    const result = review({
+      analysis: analysis([impact('sym:extra', 'lexical-only'), impact('sym:query', 'excluded')]),
+      changes: [],
+    });
+    expect(result.findings).toHaveLength(0);
+  });
+
   it('treats a rename as one change covering both paths — never a missing/unexpected pair', () => {
     const changes: ChangedPath[] = [
       { path: 'src/policy-renamed.ts', changeType: 'renamed', previousPath: 'src/policy.ts' },
@@ -263,6 +297,21 @@ describe('compareImplementation (Stories 11.2/11.3, PRD §24.1/§25)', () => {
     });
     expect(result.edgeChanges.added).toEqual(['e-new']);
     expect(result.edgeChanges.removed).toEqual(['e-old']);
+  });
+
+  it('records how many edge changes the 50-entry cap omitted, instead of truncating silently', () => {
+    const addedEdges = Array.from({ length: 55 }, (_, index) =>
+      edge(`e-add-${String(index)}`, 'sym:policy', 'sym:extra'),
+    );
+    const result = review({
+      analysis: analysis([impact('sym:policy', 'required')]),
+      approvedGraph: graph(approvedNodes(), []),
+      currentGraph: graph(approvedNodes(), addedEdges),
+      changes: [{ path: 'src/policy.ts', changeType: 'modified' }],
+    });
+    expect(result.edgeChanges.added).toHaveLength(50);
+    expect(result.edgeChanges.omittedAdded).toBe(5);
+    expect(result.edgeChanges.omittedRemoved).toBeUndefined();
   });
 
   it('marks partially-implemented coverage when some required impacts are missing (§25)', () => {

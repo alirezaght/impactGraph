@@ -58,6 +58,19 @@ export const cliReviewBreakdownSchema = z
         limitations: z.array(z.string().min(1)),
       })
       .strict(),
+    /**
+     * Additive v1 field (item 7): how much the review's own verdicts can be trusted, derived
+     * DETERMINISTICALLY from measured facts (unverifiable-finding share, unindexed registered
+     * repositories, truncated edge-change lists) — never from a model. Always at least one
+     * human-readable reason: an unexplained confidence level would not explain itself.
+     */
+    confidence: z
+      .object({
+        level: z.enum(['high', 'limited', 'low']),
+        reasons: z.array(z.string().min(1)).min(1),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
