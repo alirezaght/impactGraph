@@ -10,6 +10,8 @@ export type {
   ScanResult,
 } from './scanner/scanner.js';
 export { scanWorkspace } from './scanner/scanner.js';
+export { scanRoots } from './scanner/multi-root.js';
+export type { AdditionalRoot, MultiRootScanResult, RootFileCount } from './scanner/multi-root.js';
 export { DEFAULT_IGNORE_GLOBS, SECRET_FILE_GLOBS, createIgnoreMatcher } from './scanner/ignore.js';
 export type { IgnoreMatcher } from './scanner/ignore.js';
 export type { AssembledGraph } from './assembly/assemble.js';

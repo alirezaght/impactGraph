@@ -13,7 +13,9 @@ import { enrichWithFrameworks } from './assembly/framework-enrichment.js';
 import { createModuleResolver } from './assembly/module-resolvers.js';
 import { buildPackageFacts } from './assembly/package-facts.js';
 import { hashFiles, readForParse } from './hash-files.js';
-import { scanWorkspace } from './scanner/scanner.js';
+import { scanRoots } from './scanner/multi-root.js';
+
+import type { AdditionalRoot, MultiRootScanResult, RootFileCount } from './scanner/multi-root.js';
 
 import type { HashedFile } from './hash-files.js';
 import type { ScanWarning } from './scanner/scanner.js';
@@ -41,6 +43,11 @@ export interface IndexRepositoryRequest {
   /** ISO timestamp from the clock port. */
   readonly createdAt: string;
   readonly ignoreGlobs?: readonly string[];
+  /**
+   * Registered workspace repositories to index into the same snapshot graph, each scanned from
+   * its own directory and rebased under its workspace-relative prefix (config `repositories:`).
+   */
+  readonly additionalRoots?: readonly AdditionalRoot[];
   /** Framework adapters disabled by workspace configuration (Story 3.1). */
   readonly disabledFrameworks?: readonly string[];
   /** Reuse cached parse results for unchanged files (default true, PRD §32). */
@@ -68,6 +75,8 @@ export interface IndexSummary {
   readonly evidenceCount: number;
   readonly scanWarnings: readonly ScanWarning[];
   readonly parseWarnings: readonly ParseWarning[];
+  /** Files contributed per root (`'.'` = the workspace root) when additional roots were scanned. */
+  readonly rootFileCounts?: readonly RootFileCount[];
 }
 
 interface ParsePlan {
@@ -180,7 +189,9 @@ export const indexRepository = async (
 ): Promise<Result<IndexSummary, StorageError | OperationCancelled>> => {
   const startedAt = Date.now();
   request.onProgress?.({ phase: 'scanning', filesProcessed: 0, totalFiles: 0 });
-  const scan = scanWorkspace(request.rootDir, { ignoreGlobs: request.ignoreGlobs ?? [] });
+  const scan = scanRoots(request.rootDir, request.additionalRoots ?? [], {
+    ignoreGlobs: request.ignoreGlobs ?? [],
+  });
   const context: IndexingContext = {
     repositorySnapshotId: request.snapshot.id,
     analysisRunId: request.analysisRunId,
@@ -242,7 +253,7 @@ export const indexRepository = async (
 interface PersistInput {
   readonly request: IndexRepositoryRequest;
   readonly deps: IndexRepositoryDeps;
-  readonly scan: ReturnType<typeof scanWorkspace>;
+  readonly scan: MultiRootScanResult;
   readonly files: readonly HashedFile[];
   readonly plan: ParsePlan;
   readonly graph: Awaited<ReturnType<typeof enrichWithFrameworks>>;
@@ -297,5 +308,6 @@ const persistAndSummarize = async (
     evidenceCount: graph.evidence.length,
     scanWarnings: scan.warnings,
     parseWarnings,
+    rootFileCounts: scan.rootFileCounts,
   });
 };
