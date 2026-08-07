@@ -1,3 +1,4 @@
+import { isViableConcept } from '@impactgraph/application';
 import { extractionResponseSchema } from '@impactgraph/contracts';
 import { err, ok } from '@impactgraph/domain';
 
@@ -21,6 +22,19 @@ const EXTRACTION_SYSTEM_PROMPT = [
 ] as const;
 
 const extractionSchema = schemaFromZod('ExtractionResponseV1', extractionResponseSchema);
+
+/**
+ * Model-authored concepts pass through the SAME noise gate as deterministically mined ones
+ * (statement-analysis): a requirement's candidate set must not depend on which extraction
+ * strategy produced it. Dropped terms are simply not candidates — never an error.
+ */
+const withViableConcepts = (extraction: SpecificationExtraction): SpecificationExtraction => ({
+  ...extraction,
+  requirements: extraction.requirements.map((requirement) => ({
+    ...requirement,
+    concepts: requirement.concepts.filter(isViableConcept),
+  })),
+});
 
 const buildPrompt = (title: string, rawText: string): string =>
   [
@@ -52,7 +66,7 @@ export const createSpecificationExtractor = (
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const response = await provider.generateStructuredOutput(request, extractionSchema);
       if (response.ok) {
-        return ok(response.value.output);
+        return ok(withViableConcepts(response.value.output));
       }
       lastError = response.error;
       if (response.error.code !== 'invalid-output') {

@@ -49,6 +49,7 @@ export type {
   SpecificationExtractionPort,
 } from './analyze-specification/extraction-types.js';
 export { fallbackExtraction } from './analyze-specification/fallback-extractor.js';
+export { isViableConcept } from './analyze-specification/statement-analysis.js';
 export type {
   ExtractSpecificationRequest,
   ExtractSpecificationDeps,

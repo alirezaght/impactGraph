@@ -1,6 +1,7 @@
 import { createGraphEdge, createGraphNode, createKnowledgeGraph } from '@impactgraph/domain';
 import { describe, expect, it } from 'vitest';
 
+import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
 
 import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
@@ -16,6 +17,9 @@ const knowledge = {
 
 const CATEGORY_BY_TYPE: Record<string, string> = {
   test: 'application',
+  controller: 'application',
+  service: 'application',
+  module: 'application',
   'third-party-service': 'integration',
 };
 
@@ -62,23 +66,35 @@ describe('matchConcepts token alignment', () => {
     ),
   ]);
 
-  it('does not match a concept that is only a fragment of a longer identifier', () => {
+  // Pre-ADR-0016, 'TypeScript' seeded 102 impacts by substring-matching every node containing
+  // it. The stem rule stays bounded: only the adapter file — whose whole stem IS the concept —
+  // resolves, and it resolves at name-similarity, which the basis ceiling caps at `likely`.
+  // Fragment containment (`parseTypeScriptFile`, the ADR document) is still rejected.
+  it('matches only the node whose whole stem is the concept, never mere fragments', () => {
     const result = matchConcepts(languageGraph, ['TypeScript']);
 
-    expect(result.matches).toEqual([]);
-    expect(result.unknownConcepts).toEqual(['TypeScript']);
+    expect(result.matches.map((match) => match.nodeId)).toEqual(['file:adapter']);
+    expect(result.matches[0]?.mechanism).toBe('name-similarity');
+    expect(result.unknownConcepts).toEqual([]);
   });
 
-  // A token ratio accepted this pair (2 of 3 tokens) because "TypeScript" splits on its hump
-  // while the kebab-cased spelling of the same word does not.
+  // A token ratio accepted camel and rejected kebab (2 of 3 tokens) because "TypeScript" splits
+  // on its hump while the kebab-cased spelling does not. The stem rule compares characters, so
+  // both spellings of the same word behave identically — both resolve, at name-similarity.
   it('treats a word the same however it is cased', () => {
     const graph = graphOf([
       node('symbol:iface', 'symbol', 'TypeScriptAdapter', 'packages/language-adapters/src/x.ts'),
       node('file:kebab', 'file', 'typescript-adapter.ts', 'packages/language-adapters/src/y.ts'),
     ]);
 
-    expect(matchConcepts(graph, ['TypeScript']).matches).toEqual([]);
-    expect(matchConcepts(graph, ['typescript']).matches).toEqual([]);
+    for (const concept of ['TypeScript', 'typescript']) {
+      const result = matchConcepts(graph, [concept]);
+      expect(result.matches.map((match) => match.nodeId).sort()).toEqual([
+        'file:kebab',
+        'symbol:iface',
+      ]);
+      expect(result.matches.every((match) => match.mechanism === 'name-similarity')).toBe(true);
+    }
   });
 
   it('still matches when the concept covers most of the node name', () => {
@@ -224,6 +240,124 @@ describe('matchConcepts and ubiquitous dependencies', () => {
     const result = matchConcepts(workspaceOf(2, 3), ['typescript']);
 
     expect(result.matches.map((match) => match.nodeId)).toEqual(['dependency:typescript']);
+  });
+});
+
+describe('matchConcepts architectural stem coverage (ADR-0016)', () => {
+  // The dogfooding item-5 case: the specification says "deals", the repository says
+  // `DealsController`. Character coverage alone rejects the pair (0.33); the convention-aware
+  // rule accepts it — as `name-similarity`, so the basis ceiling holds it at `likely`.
+  it('resolves a concept to a conventionally-suffixed component at name-similarity', () => {
+    const graph = graphOf([
+      node('symbol:ctrl', 'controller', 'DealsController', 'src/deals/deals.controller.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['deals']);
+
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0]?.nodeId).toBe('symbol:ctrl');
+    expect(result.matches[0]?.mechanism).toBe('name-similarity');
+  });
+
+  it('still rejects a concept that covers only the suffix of a compound name', () => {
+    const graph = graphOf([
+      node('symbol:secret', 'symbol', 'SecretStorage', 'src/secret-storage.ts'),
+      node('symbol:dto', 'symbol', 'DealDto', 'src/deal.dto.ts'),
+      node('symbol:events', 'service', 'DealEventsService', 'src/deal-events.service.ts'),
+    ]);
+
+    // `Storage` covers no stem (nothing stripped); `Dto`/`service` ARE the suffix and add no
+    // stem token. All three stay unknown — the rule is "be the stem", not "share a token".
+    expect(matchConcepts(graph, ['Storage']).unknownConcepts).toEqual(['Storage']);
+    expect(matchConcepts(graph, ['Dto']).unknownConcepts).toEqual(['Dto']);
+    expect(matchConcepts(graph, ['service']).unknownConcepts).toEqual(['service']);
+  });
+
+  it('matches every conventional variant within the bound, marked ambiguous', () => {
+    const graph = graphOf([
+      node('symbol:ctrl', 'controller', 'DealsController', 'src/deals/deals.controller.ts'),
+      node('symbol:svc', 'service', 'DealsService', 'src/deals/deals.service.ts'),
+      node('symbol:mod', 'module', 'DealsModule', 'src/deals/deals.module.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['deals']);
+
+    expect(result.matches.map((match) => match.nodeId).sort()).toEqual([
+      'symbol:ctrl',
+      'symbol:mod',
+      'symbol:svc',
+    ]);
+    expect(result.matches.every((match) => match.ambiguous)).toBe(true);
+  });
+
+  it('escalates to ambiguous when too many components share the stem', () => {
+    const graph = graphOf([
+      node('symbol:ctrl', 'controller', 'DealsController', 'src/a.ts'),
+      node('symbol:svc', 'service', 'DealsService', 'src/b.ts'),
+      node('symbol:mod', 'module', 'DealsModule', 'src/c.ts'),
+      node('symbol:repo', 'symbol', 'DealsRepository', 'src/d.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['deals']);
+
+    expect(result.matches).toEqual([]);
+    expect(result.ambiguousConcepts).toEqual(['deals']);
+  });
+
+  it('an exact match still short-circuits stem coverage', () => {
+    const graph = graphOf([
+      node('symbol:exact', 'symbol', 'Deals', 'src/deals.ts'),
+      node('symbol:ctrl', 'controller', 'DealsController', 'src/deals.controller.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['deals']);
+
+    expect(result.matches.map((match) => match.nodeId)).toEqual(['symbol:exact']);
+    expect(result.matches[0]?.mechanism).toBe('exact');
+  });
+
+  // The safety valve this rule depends on (ADR-0016): a stem-covered anchor can NEVER claim
+  // `required` — the name-similarity basis caps it at `likely`, auditable via tierCappedBy.
+  it('classifies a stem-covered anchor at likely, capped by the name-similarity basis', () => {
+    const graph = graphOf([
+      node('symbol:ctrl', 'controller', 'DealsController', 'src/deals/deals.controller.ts'),
+    ]);
+    const match = matchConcepts(graph, ['deals']).matches[0];
+    expect(match).toBeDefined();
+    if (match === undefined) {
+      return;
+    }
+    const ctrl = graph.nodes.get('symbol:ctrl' as Parameters<typeof graph.nodes.get>[0]);
+    expect(ctrl).toBeDefined();
+    if (ctrl === undefined) {
+      return;
+    }
+
+    const classified = classifyCandidate(
+      {
+        nodeId: match.nodeId,
+        distance: 0,
+        dependencyPath: [match.nodeId],
+        edgeTypes: [],
+        corroboratingEdgeTypes: [],
+        admissible: true,
+        weakLinkOnly: false,
+        edgeEvidenceIds: [],
+        structuralDepth: 0,
+        chainHops: 0,
+        match,
+      },
+      ctrl,
+      'REQ-1',
+    );
+
+    expect(classified.ok).toBe(true);
+    if (!classified.ok) {
+      return;
+    }
+    expect(classified.value.likelihood).toBe('likely');
+    expect(classified.value.tierCappedBy).toBe('name-similarity');
+    expect(classified.value.evidenceTypes).toEqual(['name-similarity']);
   });
 });
 

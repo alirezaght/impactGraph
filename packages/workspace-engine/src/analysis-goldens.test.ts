@@ -94,9 +94,15 @@ const reviewGolden = (review: ImplementationReview): string =>
  * 70 → 72: adding `CONFIGURES` to the traversal roster (item 8 — configuration and assets are
  * first-class) reaches `Dockerfile` and `tsconfig.json` from the packaging sample, both at the
  * `possible` tier. That is the trial's "configuration was missed" complaint, fixed.
+ *
+ * 72 → 84: ADR-0016 (architecture-aware stem matching). `Base` now resolves to `BaseService` /
+ * `base-service.ts` — the concept IS the stem once the role suffix is stripped — so the
+ * absent-component sample gained 12 candidates, every one on the `name-similarity` basis:
+ * the two anchors capped at `likely` (`tierCappedBy`), nothing at `required`, the rest of the
+ * traversal at `possible`/`likely`. The ground truth was re-judged in evaluation-samples.ts.
  */
 const EXPECTED_CANDIDATE_MOVEMENT: Readonly<Record<string, number>> = {
-  unchanged: 72,
+  unchanged: 84,
 };
 
 describe('impact goldens on the ts-basic reference repository (§42.3)', () => {

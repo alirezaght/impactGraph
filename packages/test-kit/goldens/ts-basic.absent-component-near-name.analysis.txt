@@ -1,6 +1,16 @@
 impacts:
+req-73684d15|BaseService|likely|domain-model|direct|0.35|anchor|8f1848d0|ambiguity+semantic-concept-match|name-similarity|name-similarity
+req-73684d15|DealRepository|possible|domain-model|indirect|0.05|EXTENDS|500484ad|ambiguity+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|DealService|likely|domain-model|indirect|0.10|EXTENDS|f5c1e805|ambiguity+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|Dockerfile|possible|domain-model|indirect|0.05|CONTAINS|48ec99a4|ambiguity+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|Searchable|possible|domain-model|indirect|0.05|EXTENDS|4a49254f|ambiguity+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|base-service.ts|likely|domain-model|direct|0.35|anchor|869867fa|ambiguity+semantic-concept-match|name-similarity|name-similarity
+req-73684d15|buildDealService|possible|domain-model|indirect|0.05|EXTENDS|91799972|ambiguity+direct-function-call+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|deal-service.test.ts|possible|testing|indirect|0.05|IMPORTS|13565da6|ambiguity+direct-import+graph-distance+graph-distance+semantic-concept-match+test-association|name-similarity|-
+req-73684d15|deal-service.ts|possible|domain-model|indirect|0.20|IMPORTS|7aef6b57|ambiguity+direct-import+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|index.ts|possible|domain-model|indirect|0.05|IMPORTS|13565da6|ambiguity+direct-import+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|index.ts|possible|domain-model|indirect|0.05|IMPORTS|13565da6|ambiguity+direct-import+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|ts-basic|likely|domain-model|indirect|0.10|CONTAINS|39c00e85|ambiguity+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|tsconfig.json|possible|domain-model|indirect|0.05|CONTAINS|48ec99a4|ambiguity+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
 
 warnings:
-unknown-concept
-unmatched-requirement
-unresolved-concept

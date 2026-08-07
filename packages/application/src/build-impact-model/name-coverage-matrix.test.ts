@@ -41,14 +41,47 @@ const MATRIX: readonly MatrixCase[] = [
     nodeName: 'SqliteIndexStore',
     verdict: 'match',
   },
-  { group: 'prefix substring', concept: 'Base', nodeName: 'BaseService', verdict: 'reject' },
-  { group: 'prefix substring', concept: 'Deal', nodeName: 'DealRepository', verdict: 'reject' },
+  {
+    group: 'prefix substring',
+    concept: 'Deal',
+    nodeName: 'DealBoard',
+    verdict: 'reject',
+    note: 'the remainder ("Board") is not an architectural suffix, so the prefix stays a fragment',
+  },
+  {
+    group: 'architectural stem',
+    concept: 'Base',
+    nodeName: 'BaseService',
+    verdict: 'match',
+    note: 'ADR-0016: the concept IS the stem once the role suffix is stripped — capped at likely',
+  },
+  {
+    group: 'architectural stem',
+    concept: 'Deal',
+    nodeName: 'DealRepository',
+    verdict: 'match',
+    note: 'ADR-0016: stem-covered convention match, name-similarity basis',
+  },
+  {
+    group: 'architectural stem',
+    concept: 'deals',
+    nodeName: 'DealsController',
+    verdict: 'match',
+    note: 'the dogfooding item-5 case: spec names the domain word, code adds the role suffix',
+  },
   {
     group: 'suffix substring',
     concept: 'Storage',
     nodeName: 'SecretStorage',
     verdict: 'reject',
     note: 'a bare head noun should not claim every compound ending in it',
+  },
+  {
+    group: 'suffix substring',
+    concept: 'Dto',
+    nodeName: 'DealDto',
+    verdict: 'reject',
+    note: 'a concept that is only the architectural suffix adds no stem token — still rejected',
   },
   {
     group: 'acronym',
@@ -264,11 +297,28 @@ describe('name-matching calibration matrix', () => {
     }
   });
 
-  it('never resolves a bare prefix or suffix of a compound name', () => {
+  // ADR-0016 split this gate in two. Suffix-only concepts stay rejected — a concept must BE the
+  // stem, not merely share a token with the name. Stem-covering prefixes now resolve, but only
+  // via `name-similarity`, whose basis ceiling caps them at `likely` — never `required`.
+  it('never resolves a bare suffix, or a prefix whose remainder is not a role suffix', () => {
     for (const { entry, matched } of observed) {
       if (entry.group === 'prefix substring' || entry.group === 'suffix substring') {
         expect(matched, `${entry.concept} → ${entry.nodeName}`).toBe(false);
       }
+    }
+  });
+
+  it('resolves a stem-covering concept, and only as name-similarity (ADR-0016)', () => {
+    for (const entry of MATRIX) {
+      if (entry.group !== 'architectural stem') {
+        continue;
+      }
+      const result = matchConcepts(graphWith(entry.nodeName), [entry.concept]);
+      expect(result.matches, `${entry.concept} → ${entry.nodeName}`).toHaveLength(1);
+      expect(
+        result.matches[0]?.mechanism,
+        `${entry.concept} → ${entry.nodeName} must stay under the likely ceiling`,
+      ).toBe('name-similarity');
     }
   });
 });

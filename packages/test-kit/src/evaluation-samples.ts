@@ -196,20 +196,86 @@ export const SAMPLE_EVALUATIONS: readonly SampleEvaluation[] = [
     },
   },
   {
-    // The name-coverage calibration guard. `Base` matches no component exactly, and the correct
-    // answer is an unknown-concept warning rather than the similarly-named BaseService: a
-    // specification naming something absent must not be quietly resolved to a near-name.
-    // "Base" covers 4 of the 11 characters in "BaseService" (0.36), so loosening the coverage
-    // threshold below that makes both names appear and fails this sample.
+    // The near-name ceiling guard, re-judged under ADR-0016. `Base` matches no component
+    // exactly; it IS the stem of `BaseService` once the role suffix is stripped, so the
+    // convention-aware matcher resolves it — as `name-similarity`, whose basis ceiling caps the
+    // anchor at `likely`. The sample's job changed with the rule: it used to pin "absent stays
+    // unknown"; it now pins BOTH halves of the replacement judgment — the near-name MUST be
+    // surfaced (directImpacts) and MUST NOT be presented as an obligation (requiredTier).
+    // "Base" still covers only 4 of 11 characters (0.36): the ordinary coverage rule alone
+    // rejects this pair, so the sample also proves the stem rule is what resolves it.
     name: 'absent component near-name',
     specFileName: 'sample-absent-base.md',
     specText:
       '# Shared logging\nThe `Base` helper must expose a shared logger for every service.\n',
     groundTruth: {
-      directImpacts: [],
-      minSurprises: 0,
-      allowedImpacts: [],
-      forbiddenImpacts: ['BaseService', 'base-service.ts'],
+      directImpacts: ['BaseService'],
+      // BaseService is a guessed anchor and DealService (which extends it) is named nowhere.
+      minSurprises: 2,
+      // The package node also arrives at likely (one CONTAINS hop from the file anchor) and is
+      // deliberately NOT allowed: a package rollup is not an actionable "will likely change"
+      // claim, consistent with every other sample labelling pure CONTAINS propagation
+      // unsupported. Precision 3/4 is the honest figure, not a gap.
+      allowedImpacts: ['BaseService', 'base-service.ts', 'DealService'],
+      // The ceiling proof at evaluation level: a stem-covered guess may never claim `required`
+      // (ADR-0016 — anything reaching required via the stem path is a bug).
+      requiredTier: {
+        mustNotContain: [
+          'symbol:src/lib/base-service.ts#BaseService',
+          'file:src/lib/base-service.ts',
+          'symbol:src/services/deal-service.ts#DealService',
+        ],
+      },
+      possibleTier: [
+        {
+          nodeId: 'file:src/services/deal-service.ts',
+          verdict: 'plausible',
+          rationale:
+            'contains the service that would start using the inherited shared logger — but only if the requirement means services adopt it, not merely that Base exposes it',
+          reviewNeeded: true,
+        },
+        {
+          nodeId: 'symbol:src/lib/base-service.ts#Searchable',
+          verdict: 'unsupported',
+          rationale: 'a search contract co-located with the base class, unrelated to logging',
+        },
+        {
+          nodeId: 'symbol:src/lib/deal-repository.ts#DealRepository',
+          verdict: 'unsupported',
+          rationale: 'does not extend BaseService; reached only by walking through the graph',
+        },
+        {
+          nodeId: 'symbol:src/services/deal-service.ts#buildDealService',
+          verdict: 'unsupported',
+          rationale: 'a logger inherited from a base class changes no construction signature',
+        },
+        {
+          nodeId: 'file:src/services/deal-service.test.ts',
+          verdict: 'unsupported',
+          rationale:
+            'asserts search behaviour, which an added logger on the base class does not change',
+        },
+        {
+          nodeId: 'file:src/index.ts',
+          verdict: 'unsupported',
+          rationale: 'pure `export *` barrel; an added member is not a new export',
+        },
+        {
+          nodeId: 'file:src/lib/index.ts',
+          verdict: 'unsupported',
+          rationale: 'pure `export *` barrel over the base class — same reasoning',
+        },
+        {
+          nodeId: 'file:Dockerfile',
+          verdict: 'unsupported',
+          rationale: 'packaging configuration, unrelated to a logger on a base class',
+        },
+        {
+          nodeId: 'file:tsconfig.json',
+          verdict: 'unsupported',
+          rationale: 'build configuration, unrelated to a logger on a base class',
+        },
+      ],
     },
   },
   {

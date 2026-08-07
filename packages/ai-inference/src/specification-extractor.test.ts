@@ -49,6 +49,34 @@ describe('specification extractor over ModelProviderPort (Story 5.2/5.3)', () =>
     expect(result.ok).toBe(true);
   });
 
+  it('filters model-authored concepts through the shared noise gate, without erroring', async () => {
+    // The deterministic path never emits these (statement-analysis drops them at the source);
+    // model output gets the SAME hygiene on receipt — a dropped term is not a candidate, and
+    // dropping it is not a provider failure.
+    const noisy = {
+      ...validOutput,
+      requirements: [
+        {
+          ...validOutput.requirements[0],
+          concepts: [
+            'DealService',
+            'e.g',
+            'v1.2.3',
+            'a quoted sentence of far too many words',
+            'x',
+            `p${'x'.repeat(90)}`,
+          ],
+        },
+      ],
+    };
+    const provider = createFakeModelProvider([noisy]);
+    const result = await createSpecificationExtractor(provider).extract(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.requirements[0]?.concepts).toEqual(['DealService']);
+    }
+  });
+
   it('the null provider reports not-configured without retrying (deterministic-only, §8)', async () => {
     const result = await createSpecificationExtractor(createNullProvider()).extract(input);
     expect(result.ok).toBe(false);

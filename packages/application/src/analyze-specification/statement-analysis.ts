@@ -53,6 +53,14 @@ const isNoiseTerm = (term: string): boolean =>
   term.split(/\s+/).length > MAX_CONCEPT_WORDS;
 
 /**
+ * The single concept-hygiene gate, shared by every extraction strategy. Model-authored concepts
+ * go through the SAME filter as deterministically mined ones (a requirement's candidate set must
+ * not depend on which strategy produced it); a dropped term is simply not a candidate — never an
+ * error.
+ */
+export const isViableConcept = (term: string): boolean => term.length > 1 && !isNoiseTerm(term);
+
+/**
  * Concept candidates: backticked terms, multi-humped CamelCase, dotted event names, and
  * snake_case identifiers.
  *
@@ -69,13 +77,7 @@ export const conceptsOf = (statement: string): string[] => {
   const dotted = [...statement.matchAll(/\b([a-z][a-z0-9]*(?:[._][a-z0-9]+){1,4})\b/g)].map(
     (match) => match[1] ?? '',
   );
-  return [
-    ...new Set(
-      [...backticked, ...camelCase, ...dotted].filter(
-        (term) => term.length > 1 && !isNoiseTerm(term),
-      ),
-    ),
-  ];
+  return [...new Set([...backticked, ...camelCase, ...dotted].filter(isViableConcept))];
 };
 
 const BULLET = /^([-*+]|\d+[.)])\s+/;

@@ -1,3 +1,4 @@
+import { coversArchitecturalStem } from './architectural-stem.js';
 import { assessUbiquity } from './dependency-ubiquity.js';
 
 import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
@@ -118,10 +119,14 @@ export const tokensAlign = (concept: string, name: string): boolean => {
 
 /** `minCoverage` is a seam for calibration; production always uses the constant above. */
 const isSimilar = (concept: string, name: string, minCoverage = MIN_NAME_COVERAGE): boolean => {
-  if (!tokensAlign(concept, name)) {
-    return false;
+  if (tokensAlign(concept, name) && nameCoverage(concept, name) >= minCoverage) {
+    return true;
   }
-  return nameCoverage(concept, name) >= minCoverage;
+  // ADR-0016: a concept covering the whole stem of a conventionally-suffixed component name
+  // ("deals" → DealsController) is similarity-grade too. Same mechanism, so the same guards apply
+  // (ambiguity escalation, MAX_SIMILAR_MATCHES, test/ubiquity suppression) and the same
+  // `name-similarity` basis caps it at `likely` — the ceiling is what makes this widening safe.
+  return coversArchitecturalStem(tokensOf(concept), tokensOf(name));
 };
 
 const findByName = (
