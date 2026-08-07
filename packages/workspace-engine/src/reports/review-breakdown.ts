@@ -33,6 +33,8 @@ export interface ReviewBreakdownInput {
   readonly addedPaths?: readonly string[];
   /** Measured roster state (item 7). Absent → the limitation is stated, never assumed away. */
   readonly repositoryScope?: ReviewRepositoryScope;
+  /** Drift entries the drift block's caps cut (item 7) — surfaces as a scope limitation. */
+  readonly driftOmitted?: number;
 }
 
 const ASSET_PATH = /(^|\/)(locales?|i18n|translations?)(\/|$)|\.(json|ya?ml|toml|tf|tfvars)$/i;

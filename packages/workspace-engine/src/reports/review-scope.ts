@@ -21,6 +21,8 @@ export interface ReviewScopeInput {
   readonly addedPaths?: readonly string[];
   /** Undefined when the caller could not read the roster — itself a stated limitation. */
   readonly repositoryScope?: ReviewRepositoryScope;
+  /** Drift entries the per-category caps cut (item 7) — zero/undefined means nothing was cut. */
+  readonly driftOmitted?: number;
 }
 
 const omittedEdgeCount = (review: ImplementationReview): number =>
@@ -54,6 +56,11 @@ export const deriveScopeLimitations = (input: ReviewScopeInput): string[] => {
     ...(omitted > 0
       ? [
           `Architectural edge-change lists were truncated: ${String(omitted)} edge ids were omitted.`,
+        ]
+      : []),
+    ...((input.driftOmitted ?? 0) > 0
+      ? [
+          `Architectural drift lists were truncated: ${String(input.driftOmitted ?? 0)} entries were omitted.`,
         ]
       : []),
     ...(input.addedPaths === undefined

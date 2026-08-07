@@ -1,11 +1,13 @@
 import { compareImplementation } from '@impactgraph/application';
 import { createGitCliAdapter } from '@impactgraph/git';
+import { readArchitectureConfig } from '@impactgraph/persistence';
 
 import { loadApprovedAnalysis } from './analyses.js';
 import { failWith } from './failure.js';
 import { loadGraphAt, withIndexStore } from './graphs.js';
 import { performIndexRun } from './indexing.js';
 import { appendLearningProposal, reviewCoChangeProposal } from './learning.js';
+import { buildReviewDrift } from './reports/review-drift.js';
 import { buildReviewOutput } from './reports/review-output.js';
 import { collectWorkspaceRepositoryContext } from './repository-coverage.js';
 import { persistReviewDocument } from './review-artifacts.js';
@@ -20,6 +22,7 @@ import type { GitDiffResult, RuleViolation } from '@impactgraph/application';
 import type {
   ImpactAnalysis,
   ImplementationReview,
+  KnowledgeGraph,
   ReviewTarget,
   Specification,
 } from '@impactgraph/domain';
@@ -133,15 +136,11 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
     }
     // Story 11.2: persist the review so accepted-deviation decisions have an artifact to
     // append to (§24.1). A later re-run is a NEW artifact — acceptance never carries over.
-    const repositoryScope = await measureRepositoryScope(rootDir);
-    const breakdownContext: ReviewBreakdownContext = {
-      specification,
+    const breakdownContext = await assembleBreakdownContext(inputs, {
+      review: review.value,
+      approvedGraph: approvedGraph.value,
       currentGraph: currentGraph.value,
-      addedPaths: diff.changes
-        .filter((change) => change.changeType === 'added')
-        .map((change) => change.path),
-      ...(repositoryScope === undefined ? {} : { repositoryScope }),
-    };
+    });
     const persisted = persistReviewDocument(
       rootDir,
       buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
@@ -157,27 +156,82 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
   });
 };
 
+interface ComparedGraphs {
+  readonly review: ImplementationReview;
+  readonly approvedGraph: KnowledgeGraph;
+  readonly currentGraph: KnowledgeGraph;
+}
+
+/**
+ * Item 7/13: everything the review document adds around the findings — the breakdown inputs,
+ * the measured repository scope, and the classified drift block. Best effort on the boundary
+ * sources: an unreadable architecture config or roster disables the boundary categories, it
+ * never fails the review.
+ */
+const assembleBreakdownContext = async (
+  inputs: CompareInputs,
+  compared: ComparedGraphs,
+): Promise<ReviewBreakdownContext> => {
+  const workspaceState = await measureWorkspaceState(inputs.rootDir);
+  const architecture = readArchitectureConfig(inputs.rootDir);
+  const drift = buildReviewDrift({
+    review: compared.review,
+    analysis: inputs.analysis,
+    approvedGraph: compared.approvedGraph,
+    currentGraph: compared.currentGraph,
+    ...(architecture.ok && architecture.value !== undefined
+      ? { architecture: architecture.value }
+      : {}),
+    rosterRepositories: workspaceState.rosterRepositories,
+  });
+  return {
+    specification: inputs.specification,
+    currentGraph: compared.currentGraph,
+    addedPaths: inputs.diff.changes
+      .filter((change) => change.changeType === 'added')
+      .map((change) => change.path),
+    ...(workspaceState.repositoryScope === undefined
+      ? {}
+      : { repositoryScope: workspaceState.repositoryScope }),
+    drift,
+  };
+};
+
+interface ReviewWorkspaceState {
+  readonly repositoryScope?: ReviewRepositoryScope;
+  /** Roster members for repository attribution — empty disables `cross-repository` drift. */
+  readonly rosterRepositories: readonly {
+    readonly name: string;
+    readonly path?: string | undefined;
+  }[];
+}
+
 /**
  * Item 7: measure what the review could NOT see — registered repositories missing from the index
- * and unregistered candidates. Best effort: when the roster is unreadable the scope is omitted and
- * the breakdown states that as a limitation instead of guessing.
+ * and unregistered candidates — plus the roster prefixes drift attribution needs. Best effort:
+ * when the roster is unreadable the scope is omitted and the breakdown states that as a
+ * limitation instead of guessing, and drift simply loses its `cross-repository` category.
  */
-const measureRepositoryScope = async (
-  rootDir: string,
-): Promise<ReviewRepositoryScope | undefined> => {
+const measureWorkspaceState = async (rootDir: string): Promise<ReviewWorkspaceState> => {
   const context = await collectWorkspaceRepositoryContext(rootDir);
   if (!context.ok) {
-    return undefined;
+    return { rosterRepositories: [] };
   }
   return {
-    // Members have a path relative to the root; the workspace root itself never does.
-    unindexedRegistered: context.value.repositories
-      .filter((state) => state.path !== undefined && !state.indexed)
-      .map((state) => ({
-        name: state.name,
-        ...(state.reason === undefined ? {} : { reason: state.reason }),
-      })),
-    unregisteredCandidates: context.value.candidates.map((candidate) => candidate.path),
+    repositoryScope: {
+      // Members have a path relative to the root; the workspace root itself never does.
+      unindexedRegistered: context.value.repositories
+        .filter((state) => state.path !== undefined && !state.indexed)
+        .map((state) => ({
+          name: state.name,
+          ...(state.reason === undefined ? {} : { reason: state.reason }),
+        })),
+      unregisteredCandidates: context.value.candidates.map((candidate) => candidate.path),
+    },
+    rosterRepositories: context.value.repositories.map((state) => ({
+      name: state.name,
+      ...(state.path === undefined ? {} : { path: state.path }),
+    })),
   };
 };
 

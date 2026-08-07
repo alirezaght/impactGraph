@@ -97,9 +97,27 @@ implemented" as fact — only what evidence was and was not found.
 
 Architectural drift (PRD §C15.3) = structural change beyond the feature's footprint: new
 cross-context dependencies, rule violations, edge-direction reversals, contexts touched that no
-requirement maps to. Drift findings carry the same record shape as impacts (provenance, evidence,
-snapshot, run IDs) and feed the "Potential architectural violations" and rule-violation report
-sections.
+requirement maps to.
+
+**Implemented** — the review document carries an additive `drift` block that classifies the
+`edgeChanges` ids (added/removed edges touching a changed file) deterministically, with named
+endpoints. Exactly one category per entry, by precedence: `cross-context` (endpoints in
+different configured bounded contexts, via the read-time context overlay), `cross-repository`
+(endpoints attributed to different registered repositories under a multi-root roster),
+`direction-reversal` (removed A→B plus added B→A of the same edge type), `new-dependency`
+(added edge between two nodes that both existed in the approved snapshot), `removed-dependency`
+(removed edge whose endpoints both survive), and `other`. Boundary categories exist only where
+the boundary is KNOWN — no contexts configured or no multi-root roster means those categories
+are simply absent, never guessed from directory names. `drift.unmappedContexts` lists the
+configured contexts the diff touched that no approved predictive impact maps to — absent (not
+empty) when no contexts are configured. Lists are capped per category with counted omissions,
+and truncation is restated in `breakdown.scope.limitations`. Drift entries are planning-review
+signals for a human: they never join the §24.1 finding categories and never affect
+`discrepanciesFound`.
+
+**Still specified, not yet implemented** — drift entries as impact-shaped records carrying the
+full provenance envelope (evidence IDs, snapshot and run IDs per entry), and reversal detection
+beyond the cheap exact-pair case. Rule violations remain their own §27 report section.
 
 ## Report structure (PRD §38.2)
 

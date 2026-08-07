@@ -106,6 +106,48 @@ const scopeSection = (report: CliReviewOutput): string[] => {
   ];
 };
 
+type DriftEntry = NonNullable<CliReviewOutput['drift']>['entries'][number];
+
+const driftEndpoint = (endpoint: DriftEntry['from']): string =>
+  endpoint.context === undefined ? endpoint.nodeName : `${endpoint.nodeName} [${endpoint.context}]`;
+
+const driftLine = (entry: DriftEntry): string => {
+  const repositories =
+    entry.from.repository !== undefined &&
+    entry.to.repository !== undefined &&
+    entry.from.repository !== entry.to.repository
+      ? ` — ${entry.from.repository} → ${entry.to.repository}`
+      : '';
+  return `- **${entry.category}** — ${driftEndpoint(entry.from)} → ${driftEndpoint(entry.to)} (${entry.edgeType}, ${entry.direction})${repositories}`;
+};
+
+/** Item 7: classified drift — a planning-review signal for a human, never a verdict (§43.6). */
+const driftSection = (report: CliReviewOutput): string[] => {
+  const drift = report.drift;
+  if (drift === undefined) {
+    return [];
+  }
+  const lines = ['', '## Architectural Drift (classified — for human judgment, not a verdict)', ''];
+  lines.push(...(drift.entries.length === 0 ? ['_none among the reported edge changes_'] : drift.entries.map(driftLine)));
+  lines.push(
+    ...drift.omitted.map(
+      (entry) => `- _${String(entry.count)} more ${entry.category} entries omitted by the report cap_`,
+    ),
+  );
+  if (drift.unmappedContexts !== undefined) {
+    const { contexts, omitted } = drift.unmappedContexts;
+    lines.push(
+      '',
+      contexts.length === 0
+        ? 'Every context touched by the diff is inside the approved footprint.'
+        : `Contexts touched outside the approved footprint: ${contexts.join(', ')}${
+            omitted === undefined ? '' : ` (${String(omitted)} more omitted)`
+          }`,
+    );
+  }
+  return lines;
+};
+
 const edgeList = (ids: readonly string[], omitted: number | undefined): string => {
   const listed = ids.length > 0 ? ids.join(', ') : 'none';
   return omitted === undefined || omitted === 0
@@ -133,5 +175,6 @@ export const buildReviewMarkdown = (report: CliReviewOutput): string[] => [
   '',
   `Added: ${edgeList(report.edgeChanges.added, report.edgeChanges.omittedAdded)}`,
   `Removed: ${edgeList(report.edgeChanges.removed, report.edgeChanges.omittedRemoved)}`,
+  ...driftSection(report),
   ...scopeSection(report),
 ];

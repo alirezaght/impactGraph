@@ -33,6 +33,41 @@ const scopeLines = (report: CliReviewOutput): string[] => {
   return lines;
 };
 
+type DriftEntry = NonNullable<CliReviewOutput['drift']>['entries'][number];
+
+const driftEndpoint = (endpoint: DriftEntry['from']): string => {
+  const qualifiers = [endpoint.context, endpoint.repository].filter((value) => value !== undefined);
+  return qualifiers.length === 0
+    ? endpoint.nodeName
+    : `${endpoint.nodeName} (${qualifiers.join(', ')})`;
+};
+
+/** Item 7: classified drift — planning-review signal for a human, honest about its bounds. */
+const driftLines = (report: CliReviewOutput): string[] => {
+  const drift = report.drift;
+  if (drift === undefined) {
+    return [];
+  }
+  const lines = ['Architectural drift (classified):'];
+  if (drift.entries.length === 0) {
+    lines.push('  none among the reported edge changes');
+  }
+  for (const entry of drift.entries) {
+    lines.push(
+      `  [${entry.category}] ${driftEndpoint(entry.from)} -> ${driftEndpoint(entry.to)} (${entry.edgeType}, ${entry.direction})`,
+    );
+  }
+  for (const omitted of drift.omitted) {
+    lines.push(`  ${String(omitted.count)} more ${omitted.category} entries omitted.`);
+  }
+  if (drift.unmappedContexts !== undefined && drift.unmappedContexts.contexts.length > 0) {
+    lines.push(
+      `  Contexts touched outside the approved footprint: ${drift.unmappedContexts.contexts.join(', ')}`,
+    );
+  }
+  return lines;
+};
+
 const omittedEdgeLines = (report: CliReviewOutput): string[] => {
   const omitted = (report.edgeChanges.omittedAdded ?? 0) + (report.edgeChanges.omittedRemoved ?? 0);
   return omitted > 0 ? [`  Edge-change lists truncated: ${String(omitted)} edge ids omitted.`] : [];
@@ -47,6 +82,7 @@ const textLines = (report: CliReviewOutput): string[] => {
     lines.push(`  [rule:${violation.ruleId}] ${violation.message}`);
   }
   lines.push(...omittedEdgeLines(report));
+  lines.push(...driftLines(report));
   lines.push('Requirement coverage (estimate):');
   for (const entry of report.coverage) {
     lines.push(`  ${entry.requirementId}: ${entry.status}`);

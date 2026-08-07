@@ -1,10 +1,11 @@
 import { hasDiscrepancies } from '@impactgraph/domain';
 
 import { buildReviewBreakdown } from './review-breakdown.js';
+import { driftOmittedTotal } from './review-drift.js';
 
 import type { ReviewRepositoryScope } from './review-scope.js';
 import type { RuleViolation } from '@impactgraph/application';
-import type { AcceptedDeviationDto, CliReviewOutput } from '@impactgraph/contracts';
+import type { AcceptedDeviationDto, CliReviewDrift, CliReviewOutput } from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
   ImplementationReview,
@@ -25,6 +26,8 @@ export interface ReviewBreakdownContext {
   readonly addedPaths?: readonly string[];
   /** Measured roster state for scope limitations and confidence (item 7). */
   readonly repositoryScope?: ReviewRepositoryScope;
+  /** Classified drift block (item 7) — computed by the pipeline, absent when it could not be. */
+  readonly drift?: CliReviewDrift;
 }
 
 const edgeChangesDto = (review: ImplementationReview): CliReviewOutput['edgeChanges'] => ({
@@ -50,6 +53,7 @@ const breakdownDto = (
     currentGraph: context.currentGraph,
     ...(context.addedPaths === undefined ? {} : { addedPaths: context.addedPaths }),
     ...(context.repositoryScope === undefined ? {} : { repositoryScope: context.repositoryScope }),
+    ...(context.drift === undefined ? {} : { driftOmitted: driftOmittedTotal(context.drift) }),
   });
 
 export const buildReviewOutput = (
@@ -95,6 +99,7 @@ export const buildReviewOutput = (
   ...(breakdownContext === undefined
     ? {}
     : { breakdown: breakdownDto(review, analysis, breakdownContext) }),
+  ...(breakdownContext?.drift === undefined ? {} : { drift: breakdownContext.drift }),
 });
 
 /**

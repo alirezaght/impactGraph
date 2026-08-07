@@ -253,6 +253,13 @@ export type {
 // Item 13: the review breakdown, and item 12: recorded outcomes with their measured accuracy.
 export { cliReviewBreakdownSchema } from './cli/review-breakdown.js';
 export type { CliReviewBreakdown } from './cli/review-breakdown.js';
+// Item 7: classified architectural drift on the review document.
+export {
+  cliDriftCategorySchema,
+  cliDriftEntrySchema,
+  cliReviewDriftSchema,
+} from './cli/review-drift.js';
+export type { CliDriftCategory, CliDriftEntry, CliReviewDrift } from './cli/review-drift.js';
 export {
   OUTCOME_TOOL_CONTRACTS,
   evaluationMetricsSchema,

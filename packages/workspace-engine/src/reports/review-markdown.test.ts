@@ -77,3 +77,44 @@ describe('buildReviewMarkdown scope and confidence (item 7)', () => {
     expect(markdown).toContain('# Implementation Review');
   });
 });
+
+const drift: NonNullable<CliReviewOutput['drift']> = {
+  entries: [
+    {
+      edgeId: 'e-1',
+      edgeType: 'IMPORTS',
+      direction: 'added',
+      category: 'cross-context',
+      from: { nodeId: 'svc:billing', nodeName: 'BillingService', context: 'billing' },
+      to: { nodeId: 'svc:deals', nodeName: 'DealService', context: 'deals' },
+    },
+  ],
+  omitted: [{ category: 'other', count: 2 }],
+  unmappedContexts: { contexts: ['billing'] },
+};
+
+describe('buildReviewMarkdown drift section (item 7)', () => {
+  it('renders classified drift with named endpoints, contexts, and counted omissions', () => {
+    const markdown = buildReviewMarkdown({ ...baseReport, drift }).join('\n');
+    expect(markdown).toContain('## Architectural Drift');
+    expect(markdown).toContain('for human judgment, not a verdict');
+    expect(markdown).toContain(
+      '**cross-context** — BillingService [billing] → DealService [deals] (IMPORTS, added)',
+    );
+    expect(markdown).toContain('2 more other entries omitted');
+    expect(markdown).toContain('Contexts touched outside the approved footprint: billing');
+  });
+
+  it('omits the drift section for documents that predate the block', () => {
+    expect(buildReviewMarkdown(baseReport).join('\n')).not.toContain('## Architectural Drift');
+  });
+
+  it('says so when drift was assessed and nothing was found', () => {
+    const markdown = buildReviewMarkdown({
+      ...baseReport,
+      drift: { entries: [], omitted: [], unmappedContexts: { contexts: [] } },
+    }).join('\n');
+    expect(markdown).toContain('none among the reported edge changes');
+    expect(markdown).toContain('Every context touched by the diff is inside the approved footprint.');
+  });
+});

@@ -91,6 +91,18 @@ export type { RefineOutcome } from './build-impact-model/refine-with-classifier.
 export type { CompareImplementationRequest } from './review-implementation/compare-implementation.js';
 export { compareImplementation } from './review-implementation/compare-implementation.js';
 export { estimateCoverage } from './review-implementation/coverage.js';
+export {
+  classifyDrift,
+  DRIFT_CATEGORIES,
+  DRIFT_ENTRY_LIMIT,
+} from './review-implementation/classify-drift.js';
+export type {
+  ClassifyDriftRequest,
+  DriftCategory,
+  DriftClassification,
+  DriftEndpoint,
+  DriftEntry,
+} from './review-implementation/classify-drift.js';
 export { buildImplementationContext } from './export-context/build-implementation-context.js';
 export type { BuildImplementationContextRequest } from './export-context/build-implementation-context.js';
 export type {

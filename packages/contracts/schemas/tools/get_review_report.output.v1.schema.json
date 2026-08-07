@@ -405,6 +405,107 @@
             "scope"
           ],
           "additionalProperties": false
+        },
+        "drift": {
+          "type": "object",
+          "properties": {
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "edgeId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "edgeType": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": ["added", "removed"]
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "cross-context",
+                      "cross-repository",
+                      "direction-reversal",
+                      "new-dependency",
+                      "removed-dependency",
+                      "other"
+                    ]
+                  },
+                  "from": {
+                    "type": "object",
+                    "properties": {
+                      "nodeId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "nodeName": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "context": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "repository": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["nodeId", "nodeName"],
+                    "additionalProperties": false
+                  },
+                  "to": {
+                    "$ref": "#/definitions/Tool_get_review_report_OutputV1/properties/drift/properties/entries/items/properties/from"
+                  }
+                },
+                "required": ["edgeId", "edgeType", "direction", "category", "from", "to"],
+                "additionalProperties": false
+              }
+            },
+            "omitted": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "$ref": "#/definitions/Tool_get_review_report_OutputV1/properties/drift/properties/entries/items/properties/category"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": ["category", "count"],
+                "additionalProperties": false
+              }
+            },
+            "unmappedContexts": {
+              "type": "object",
+              "properties": {
+                "contexts": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "omitted": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": ["contexts"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["entries", "omitted"],
+          "additionalProperties": false
         }
       },
       "required": [

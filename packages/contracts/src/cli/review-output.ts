@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cliReviewBreakdownSchema } from './review-breakdown.js';
+import { cliReviewDriftSchema } from './review-drift.js';
 
 // The §38.2 review report as machine-readable CLI output (PRD §20). Split out of outputs.ts by
 // responsibility: everything here describes ONE document — the review report shared verbatim by
@@ -98,6 +99,12 @@ export const cliReviewOutputSchema = z
      * Absent on producers that predate it.
      */
     breakdown: cliReviewBreakdownSchema.optional(),
+    /**
+     * Additive v1 field (item 7): the `edgeChanges` ids classified into drift categories with
+     * named endpoints — a planning-review signal that never feeds finding categories or
+     * `discrepanciesFound`. Absent on producers that predate it.
+     */
+    drift: cliReviewDriftSchema.optional(),
   })
   .strict();
 
