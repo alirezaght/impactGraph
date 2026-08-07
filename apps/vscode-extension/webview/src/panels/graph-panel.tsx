@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { planDisclosure } from '../graph/disclosure.js';
 import { buildElements } from '../graph/elements.js';
-import { DEFAULT_FILTERS, applyNodeFilters } from '../graph/filters.js';
+import { DEFAULT_FILTERS, applyNodeFilters, evidenceBasesPresent } from '../graph/filters.js';
 import { currentNodes, findProposal, structureNodes } from '../graph/proposed.js';
 
 import { GraphCanvas } from './graph-canvas.js';
@@ -68,6 +68,8 @@ interface ViewModel {
   readonly plan: DisclosurePlan;
   readonly elements: ReturnType<typeof buildElements>;
   readonly impactTypes: readonly string[];
+  /** ADR-0015: bases present in the data — the evidence-basis facet's option list. */
+  readonly evidenceBases: readonly string[];
 }
 
 const useGraphView = (
@@ -88,6 +90,7 @@ const useGraphView = (
       ].sort(),
     [graph.nodes],
   );
+  const evidenceBases = useMemo(() => evidenceBasesPresent(graph.nodes), [graph.nodes]);
   const plan = useMemo(
     () =>
       planDisclosure({
@@ -104,7 +107,7 @@ const useGraphView = (
     () => buildElements({ graph, plan, filters, requirementLabels }),
     [graph, plan, filters, requirementLabels],
   );
-  return { plan, elements, impactTypes };
+  return { plan, elements, impactTypes, evidenceBases };
 };
 
 /**
@@ -143,7 +146,7 @@ export const GraphPanel = ({
 }: Props): JSX.Element => {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [expanded, setExpanded] = useState<readonly string[]>([]);
-  const { plan, elements, impactTypes } = useGraphView(graph, filters, expanded);
+  const { plan, elements, impactTypes, evidenceBases } = useGraphView(graph, filters, expanded);
 
   const selectElement = selectHandler({ graph, plan, onSelect, onSelectProposal });
 
@@ -165,7 +168,12 @@ export const GraphPanel = ({
           );
         }}
       />
-      <GraphControls filters={filters} impactTypes={impactTypes} onChange={setFilters} />
+      <GraphControls
+        filters={filters}
+        impactTypes={impactTypes}
+        evidenceTypes={evidenceBases}
+        onChange={setFilters}
+      />
       <GraphCanvas
         elements={elements}
         reducedMotion={reducedMotion}

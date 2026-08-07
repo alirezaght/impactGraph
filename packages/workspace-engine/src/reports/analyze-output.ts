@@ -1,4 +1,6 @@
-import { computeReadiness } from '@impactgraph/domain';
+import { computeReadiness, evidenceTypesOf } from '@impactgraph/domain';
+
+import { unmatchedRequirements } from './impact-summary-facts.js';
 
 import type { CliAnalyzeOutput } from '@impactgraph/contracts';
 import type { ImpactAnalysis, KnowledgeGraph, NodeId, Specification } from '@impactgraph/domain';
@@ -125,18 +127,11 @@ const impactBlock = (
   ...(applicationByNodeId?.get(impact.nodeId) === undefined
     ? {}
     : { application: applicationByNodeId.get(impact.nodeId) }),
+  // ADR-0015: the basis is part of the answer. Absence in a stored analysis is read through
+  // `evidenceTypesOf` as the weakest basis — never omitted as "unclassified but fine".
+  evidenceTypes: [...evidenceTypesOf(impact)],
+  ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
 });
-
-/** §C10: a requirement no impact points at is not covered by the analysis. */
-const unmatchedRequirementIds = (
-  specification: Specification,
-  analysis: ImpactAnalysis,
-): string[] => {
-  const covered = new Set(analysis.requirementImpacts.map((impact) => impact.requirementId));
-  return specification.requirements
-    .filter((requirement) => !covered.has(requirement.id))
-    .map((requirement) => requirement.id);
-};
 
 export const buildAnalyzeOutput = ({
   specification,
@@ -154,8 +149,12 @@ export const buildAnalyzeOutput = ({
     version: specification.version,
     title: specification.title,
     extractionMode,
+    // ADR-0015 coverage semantics, shared with the bounded summary: a requirement is covered
+    // only by a predictive, non-lexical impact — a text coincidence is not coverage.
     readiness: computeReadiness(specification, {
-      unmatchedRequirementIds: unmatchedRequirementIds(specification, analysis),
+      unmatchedRequirementIds: unmatchedRequirements(specification, analysis).map(
+        (requirement) => requirement.id,
+      ),
     }),
   },
   analysis: {

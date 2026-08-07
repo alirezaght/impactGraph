@@ -4,7 +4,13 @@ import { presentationForCategory } from '../provenance.js';
 
 import { MAX_VISIBLE_NODES, disclosureSummary, planDisclosure } from './disclosure.js';
 import { buildElements } from './elements.js';
-import { DEFAULT_FILTERS, applyEdgeFilters, applyNodeFilters, groupFor } from './filters.js';
+import {
+  DEFAULT_FILTERS,
+  applyEdgeFilters,
+  applyNodeFilters,
+  evidenceBasesPresent,
+  groupFor,
+} from './filters.js';
 
 import type { ImpactGraphDto, ImpactGraphNodeDto } from '@impactgraph/contracts';
 
@@ -94,6 +100,45 @@ describe('filters (PRD §18.4)', () => {
       },
     ];
     expect(applyEdgeFilters(edges, new Set(['a', 'b'])).map((edge) => edge.id)).toEqual(['e1']);
+  });
+
+  it('defaults the evidence-basis facet to all — nothing is hidden until the user narrows', () => {
+    expect(DEFAULT_FILTERS.evidenceTypes).toEqual([]);
+    expect(applyNodeFilters(nodes, DEFAULT_FILTERS).map((n) => n.id)).toEqual(['a', 'b', 'hop:c']);
+  });
+
+  it('filters by evidence basis: any overlap keeps the node, no basis fails the selection', () => {
+    const based = [
+      node({ id: 'strong', evidenceTypes: ['direct-structural'] }),
+      node({ id: 'fuzzy', evidenceTypes: ['name-similarity', 'lexical-only'] }),
+      node({ id: 'unreported' }),
+      node({ id: 'hop:d', kind: 'dependency', name: 'd', likelihood: undefined }),
+    ];
+    const filtered = applyNodeFilters(based, {
+      ...DEFAULT_FILTERS,
+      evidenceTypes: ['direct-structural', 'async-event'],
+    });
+    // dependency hops carry no basis and stay — the facet speaks only about impacts
+    expect(filtered.map((n) => n.id)).toEqual(['strong', 'hop:d']);
+    expect(
+      applyNodeFilters(based, { ...DEFAULT_FILTERS, evidenceTypes: ['lexical-only'] }).map(
+        (n) => n.id,
+      ),
+    ).toEqual(['fuzzy', 'hop:d']);
+  });
+
+  it('lists the bases present in the data, in the contract vocabulary order', () => {
+    const based = [
+      node({ id: 'x', evidenceTypes: ['lexical-only', 'name-similarity'] }),
+      node({ id: 'y', evidenceTypes: ['direct-structural'] }),
+      node({ id: 'z' }),
+    ];
+    expect(evidenceBasesPresent(based)).toEqual([
+      'direct-structural',
+      'name-similarity',
+      'lexical-only',
+    ]);
+    expect(evidenceBasesPresent([node({ id: 'z' })])).toEqual([]);
   });
 
   it('defaults to the §18.4 context → component level', () => {

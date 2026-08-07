@@ -49,3 +49,25 @@ export const SeverityText = ({ severity }: { readonly severity: string }): JSX.E
 export const Absent = ({ what }: { readonly what: string }): JSX.Element => (
   <p className="absent">{what} — not reported by the analysis.</p>
 );
+
+/**
+ * ADR-0015: the likelihood tier was reduced because its strongest basis did not support a
+ * stronger one — stated as TEXT wherever likelihood is shown (§37, never colour-only).
+ * Deliberately NOT a `.badge`: the badge system is reserved for the three knowledge categories
+ * (§3), and the tier cap is an attribute WITHIN deterministic knowledge.
+ */
+export const TierCapMarker = ({
+  cappedBy,
+}: {
+  readonly cappedBy?: string | undefined;
+}): JSX.Element | null =>
+  cappedBy === undefined ? null : (
+    <span
+      className="tier-cap"
+      data-tier-capped-by={cappedBy}
+      title={`Likelihood tier capped by ${cappedBy} evidence`}
+      aria-label={`Likelihood tier capped: the ${cappedBy} basis does not support a stronger tier`}
+    >
+      TIER CAPPED: {cappedBy}
+    </span>
+  );

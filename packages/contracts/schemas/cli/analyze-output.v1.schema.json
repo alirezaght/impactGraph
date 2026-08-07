@@ -170,6 +170,27 @@
                     "application": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "evidenceTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "direct-structural",
+                          "transitive-structural",
+                          "async-event",
+                          "external-contract",
+                          "field-data-flow",
+                          "configuration-asset",
+                          "name-similarity",
+                          "semantic-match",
+                          "lexical-only"
+                        ]
+                      },
+                      "minItems": 1
+                    },
+                    "tierCappedBy": {
+                      "$ref": "#/definitions/CliAnalyzeOutputV1/properties/requirements/items/properties/impacts/items/properties/evidenceTypes/items"
                     }
                   },
                   "required": [

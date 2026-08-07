@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { nodeExplanationSchema } from '../artifacts/explanation.js';
+import { impactEvidenceTypeSchema } from '../cli/evidence-basis.js';
 import { readinessSchema } from '../cli/outputs.js';
 
 // The three §18 review surfaces the webview renders, as versioned DTOs. The webview renders and
@@ -97,6 +98,14 @@ export const impactGraphNodeSchema = z
     context: z.string().min(1).optional(),
     /** §18.4: owning package/workspace. Absent = owned by no declared application. */
     application: z.string().min(1).optional(),
+    /**
+     * Additive v1 (ADR-0015): WHY the impact was selected — the evidence-basis set, strongest
+     * first. An attribute WITHIN deterministic knowledge, never a fourth knowledge category:
+     * it must not restyle the §3 provenance rendering.
+     */
+    evidenceTypes: z.array(impactEvidenceTypeSchema).min(1).optional(),
+    /** Additive v1 (ADR-0015): the basis that reduced the likelihood tier. Absent = not capped. */
+    tierCappedBy: impactEvidenceTypeSchema.optional(),
   })
   .strict();
 
@@ -250,6 +259,10 @@ export const evidencePanelStateSchema = z
         evidenceFiles: z.array(z.string()),
         /** Evidence files that are test files — the same files, grouped by path, no new claims. */
         relatedTests: z.array(z.string()),
+        /** Additive v1 (ADR-0015): the evidence-basis set, strongest first. Absent = not reported. */
+        evidenceTypes: z.array(impactEvidenceTypeSchema).min(1).optional(),
+        /** Additive v1 (ADR-0015): the basis that reduced the likelihood tier. Absent = not capped. */
+        tierCappedBy: impactEvidenceTypeSchema.optional(),
       })
       .strict()
       .optional(),

@@ -229,6 +229,23 @@ node nor a surviving proposed node is dropped rather than rendered dangling. `to
 counts current **and** proposed components, so the webview's "showing N of M" cannot understate the
 graph, and proposed elements count against the §33 200-node budget like any other element.
 
+### Evidence basis on the analyze document and the webview DTOs (ADR-0015)
+
+The full analyze document (`cli/analyze-output.v1`, the `--full` CLI surface and the extension's
+engine result) carries two **additive, optional** fields per impact, sharing the ADR-0015
+vocabulary (`cli/evidence-basis.ts`, re-exported through `impact-summary.ts`): `evidenceTypes`
+(WHY the impact was selected, strongest basis first — the builder reads a stored analysis's
+absence as `lexical-only`, the weakest reading) and `tierCappedBy` (set when the likelihood tier
+was reduced because the basis did not support the stronger one). The same pair rides additively on
+`contracts/webview`'s `impactGraphNodeSchema` (inside `host/graph`) and on the evidence panel's
+`impact` block (inside `host/evidence`) — validated on both ends as before, no protocol-version
+bump owed (ADR-0009). The document's readiness block also adopts the ADR-0015 coverage semantics:
+a requirement whose only findings are `lexical-only` or `excluded` counts as **unmatched**, the
+same rule the bounded summary applies. In the UI the basis is an attribute **within**
+deterministic knowledge: it renders as text beside likelihood (plus a `TIER CAPPED: <basis>` text
+marker, §37 colour-independent) and as a graph facet, and it never restyles the three §3
+knowledge-category badges.
+
 AI response DTOs (`ai/extraction.ts`, `ai/classification.ts`)
 are under `schemas/ai/`. Clarification ADRs (`clarification.v1`, PRD §C9) are domain-serialized
 artifacts under `.impactgraph/artifacts/clarifications/`; the MCP tool roster is 30 tools

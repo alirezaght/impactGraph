@@ -137,6 +137,102 @@ describe('analyze document context projection (§18.4)', () => {
   });
 });
 
+describe('analyze document evidence basis (ADR-0015, dogfooding item 4)', () => {
+  it('carries the evidence-basis set and the tier cap through to each impact', () => {
+    const output = buildAnalyzeOutput({
+      specification: specification(),
+      analysis: {
+        ...analysis(),
+        requirementImpacts: [
+          {
+            ...impact('sym:deal'),
+            likelihood: 'likely',
+            evidenceTypes: ['name-similarity', 'lexical-only'],
+            tierCappedBy: 'name-similarity',
+          },
+        ],
+      },
+      graph: graph(),
+      evidenceFileById: new Map(),
+      extractionMode: 'deterministic-fallback',
+    });
+    const entry = output.requirements[0]?.impacts[0];
+    expect(entry?.evidenceTypes).toEqual(['name-similarity', 'lexical-only']);
+    expect(entry?.tierCappedBy).toBe('name-similarity');
+  });
+
+  it('reads an absent basis as lexical-only — the weakest reading, never "fine"', () => {
+    const output = build();
+    const entry = output.requirements[0]?.impacts[0];
+    expect(entry?.evidenceTypes).toEqual(['lexical-only']);
+    expect(entry?.tierCappedBy).toBeUndefined();
+    expect(Object.hasOwn(entry ?? {}, 'tierCappedBy')).toBe(false);
+  });
+});
+
+describe('analyze document requirement coverage (ADR-0015 semantics)', () => {
+  const twoRequirementSpec = (): Specification => {
+    const base = specification();
+    return {
+      ...base,
+      requirements: [
+        ...base.requirements,
+        {
+          id: 'req-2',
+          statement: 'Expired deals disappear from search.',
+          type: 'functional',
+          concepts: ['search'],
+          actors: [],
+          status: 'draft',
+        },
+      ],
+    };
+  };
+
+  const buildWith = (impacts: ImpactAnalysis['requirementImpacts']) =>
+    buildAnalyzeOutput({
+      specification: twoRequirementSpec(),
+      analysis: { ...analysis(), requirementImpacts: impacts },
+      graph: graph(),
+      evidenceFileById: new Map(),
+      extractionMode: 'deterministic-fallback',
+    });
+
+  it('a requirement whose ONLY finding is lexical-only is NOT covered', () => {
+    const output = buildWith([
+      impact('sym:deal'),
+      {
+        ...impact('sym:mail'),
+        requirementId: 'req-2',
+        likelihood: 'lexical-only',
+        evidenceTypes: ['lexical-only'],
+      },
+    ]);
+    expect(output.specification.readiness?.unmatchedRequirements).toBe(1);
+  });
+
+  it('a predictive, non-lexical impact still covers its requirement', () => {
+    const output = buildWith([
+      impact('sym:deal'),
+      {
+        ...impact('sym:mail'),
+        requirementId: 'req-2',
+        likelihood: 'possible',
+        evidenceTypes: ['transitive-structural'],
+      },
+    ]);
+    expect(output.specification.readiness?.unmatchedRequirements).toBe(0);
+  });
+
+  it('an excluded impact never counts as coverage', () => {
+    const output = buildWith([
+      impact('sym:deal'),
+      { ...impact('sym:mail'), requirementId: 'req-2', likelihood: 'excluded' },
+    ]);
+    expect(output.specification.readiness?.unmatchedRequirements).toBe(1);
+  });
+});
+
 const proposedRelationship = {
   id: 'proposed-rel-1',
   sourceId: 'sym:deal',

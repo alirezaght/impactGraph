@@ -42,6 +42,7 @@ const analyzeDocument: CliAnalyzeOutput = {
           dependencyPath: ['DealController', 'DealService'],
           evidenceFiles: ['src/deal/policy.ts', 'src/deal/policy.test.ts'],
           provenance: 'static-analysis',
+          evidenceTypes: ['direct-structural'],
         },
         {
           nodeId: 'node-search',
@@ -53,6 +54,8 @@ const analyzeDocument: CliAnalyzeOutput = {
           dependencyPath: ['DealService'],
           evidenceFiles: [],
           provenance: 'llm-inferred',
+          evidenceTypes: ['name-similarity', 'lexical-only'],
+          tierCappedBy: 'name-similarity',
         },
       ],
     },
@@ -116,6 +119,16 @@ describe('impact graph mapping (§18.4)', () => {
   it('reports the pre-cap total so the webview can say "showing N of M"', () => {
     expect(graph.totalNodeCount).toBe(graph.nodes.length);
     expect(graph.warnings).toContain('index is 3 commits behind HEAD');
+  });
+
+  it('carries the evidence basis and the tier cap through, and never invents them (ADR-0015)', () => {
+    const byId = new Map(graph.nodes.map((node) => [node.id, node]));
+    expect(byId.get('node-policy')?.evidenceTypes).toEqual(['direct-structural']);
+    expect(byId.get('node-policy')?.tierCappedBy).toBeUndefined();
+    expect(byId.get('node-search')?.evidenceTypes).toEqual(['name-similarity', 'lexical-only']);
+    expect(byId.get('node-search')?.tierCappedBy).toBe('name-similarity');
+    // a dependency hop carries no basis — nothing is defaulted for it
+    expect(byId.get('DealService')?.evidenceTypes).toBeUndefined();
   });
 
   it('never emits an edge with an endpoint outside the node set', () => {
@@ -269,6 +282,15 @@ describe('evidence mapping (§18.5)', () => {
     expect(state.impact?.expectedChange).toBe('logic-change');
     expect(state.impact?.dependencyPath).toEqual(['DealController', 'DealService']);
     expect(state.impact?.relatedTests).toEqual(['src/deal/policy.test.ts']);
+  });
+
+  it('carries the evidence basis and tier cap into the panel state (ADR-0015)', () => {
+    const capped = buildEvidenceState({ document: analyzeDocument, nodeId: 'node-search' });
+    expect(evidencePanelStateSchema.parse(capped)).toEqual(capped);
+    expect(capped.impact?.evidenceTypes).toEqual(['name-similarity', 'lexical-only']);
+    expect(capped.impact?.tierCappedBy).toBe('name-similarity');
+    const uncapped = buildEvidenceState({ document: analyzeDocument, nodeId: 'node-policy' });
+    expect(uncapped.impact?.tierCappedBy).toBeUndefined();
   });
 
   it('warns instead of guessing when the node is not in the analysis', () => {

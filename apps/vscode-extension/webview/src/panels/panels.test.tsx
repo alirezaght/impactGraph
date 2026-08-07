@@ -147,6 +147,7 @@ const evidenceState: EvidencePanelStateDto = {
     dependencyPath: ['DealController', 'DealService'],
     evidenceFiles: ['src/deal/policy.ts', 'src/deal/policy.test.ts'],
     relatedTests: ['src/deal/policy.test.ts'],
+    evidenceTypes: ['direct-structural'],
   },
   explanation: {
     nodeId: 'node-1',
@@ -256,6 +257,7 @@ describe('node list (§37 tree parity, §3 provenance)', () => {
       provenance: 'static-analysis',
       knowledgeCategory: 'deterministic',
       filePath: 'src/deal/service.ts',
+      evidenceTypes: ['direct-structural'],
     },
     {
       id: 'n2',
@@ -268,6 +270,8 @@ describe('node list (§37 tree parity, §3 provenance)', () => {
       confidence: 0.4,
       provenance: 'llm-inferred',
       knowledgeCategory: 'ai-inferred',
+      evidenceTypes: ['name-similarity', 'lexical-only'],
+      tierCappedBy: 'name-similarity',
     },
   ];
 

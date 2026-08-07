@@ -71,6 +71,9 @@ const findImpact = (
       dependencyPath: [...impact.dependencyPath],
       evidenceFiles: [...impact.evidenceFiles],
       relatedTests: relatedTestFiles(impact.evidenceFiles),
+      // ADR-0015: basis and tier cap pass through untouched — absence stays absence.
+      ...(impact.evidenceTypes === undefined ? {} : { evidenceTypes: [...impact.evidenceTypes] }),
+      ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
     };
   }
   return undefined;

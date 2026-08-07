@@ -11,6 +11,8 @@ import type { JSX } from 'react';
 interface Props {
   readonly filters: GraphFilters;
   readonly impactTypes: readonly string[];
+  /** ADR-0015: bases present in the data. Empty = the analysis reported none = no facet. */
+  readonly evidenceTypes: readonly string[];
   readonly onChange: (filters: GraphFilters) => void;
 }
 
@@ -75,7 +77,10 @@ const Toggle = ({
   </label>
 );
 
-const SearchAndScale = ({ filters, onChange }: Omit<Props, 'impactTypes'>): JSX.Element => (
+const SearchAndScale = ({
+  filters,
+  onChange,
+}: Pick<Props, 'filters' | 'onChange'>): JSX.Element => (
   <>
     <label htmlFor="graph-search">Search nodes</label>
     <input
@@ -101,7 +106,7 @@ const SearchAndScale = ({ filters, onChange }: Omit<Props, 'impactTypes'>): JSX.
   </>
 );
 
-const Selectors = ({ filters, onChange }: Omit<Props, 'impactTypes'>): JSX.Element => (
+const Selectors = ({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>): JSX.Element => (
   <>
     <label htmlFor="graph-directness">Directness</label>
     <select
@@ -147,7 +152,12 @@ const Selectors = ({ filters, onChange }: Omit<Props, 'impactTypes'>): JSX.Eleme
   </>
 );
 
-export const GraphControls = ({ filters, impactTypes, onChange }: Props): JSX.Element => (
+export const GraphControls = ({
+  filters,
+  impactTypes,
+  evidenceTypes,
+  onChange,
+}: Props): JSX.Element => (
   <form className="graph-controls" aria-label="Graph filters and grouping">
     <SearchAndScale filters={filters} onChange={onChange} />
     <Selectors filters={filters} onChange={onChange} />
@@ -169,6 +179,19 @@ export const GraphControls = ({ filters, impactTypes, onChange }: Props): JSX.El
         onChange({ ...filters, impactTypes: toggle(filters.impactTypes, value) });
       }}
     />
+    {/* ADR-0015 evidence-basis facet: WHY an impact was selected, from the closed vocabulary.
+        Only the bases present in the data are offered; none checked = all shown. */}
+    {evidenceTypes.length === 0 ? null : (
+      <CheckboxSet
+        legend="Evidence basis"
+        idPrefix="evidence-basis"
+        options={evidenceTypes}
+        selected={filters.evidenceTypes}
+        onToggle={(value) => {
+          onChange({ ...filters, evidenceTypes: toggle(filters.evidenceTypes, value) });
+        }}
+      />
+    )}
     <Toggle
       id="graph-inferred-only"
       label="Show AI-inferred impacts only"

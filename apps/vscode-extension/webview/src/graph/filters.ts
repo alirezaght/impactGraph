@@ -1,3 +1,5 @@
+import { impactEvidenceTypeSchema } from '@impactgraph/contracts';
+
 import { PROPOSED_GROUP, isProposedNode } from './proposed.js';
 
 import type { GraphViewNode, StructureView } from './proposed.js';
@@ -15,6 +17,11 @@ export interface GraphFilters {
   /** Empty = every impact type. */
   readonly impactTypes: readonly string[];
   readonly likelihoods: readonly string[];
+  /**
+   * ADR-0015 evidence-basis facet. Empty = every basis. An attribute WITHIN deterministic
+   * knowledge — it narrows impacts by WHY they were selected, never by knowledge category.
+   */
+  readonly evidenceTypes: readonly string[];
   readonly minConfidence: number;
   /** §18.4 "show inferred relationships only". */
   readonly inferredOnly: boolean;
@@ -36,6 +43,7 @@ export const DEFAULT_FILTERS: GraphFilters = {
   search: '',
   impactTypes: [],
   likelihoods: [],
+  evidenceTypes: [],
   minConfidence: 0,
   inferredOnly: false,
   directness: 'all',
@@ -50,11 +58,22 @@ const matchesSearch = (node: GraphViewNode, search: string): boolean =>
   node.name.toLowerCase().includes(search.toLowerCase()) ||
   (node.filePath?.toLowerCase().includes(search.toLowerCase()) ?? false);
 
+/** Empty selection = every value; an absent value fails an ACTIVE selection — never assumed. */
+const matchesSelection = (selected: readonly string[], value: string | undefined): boolean =>
+  selected.length === 0 || (value !== undefined && selected.includes(value));
+
+/** An impact with NO reported basis fails an active basis selection — never assumed to match. */
+const matchesEvidenceBasis = (node: GraphViewNode, selected: readonly string[]): boolean =>
+  selected.length === 0 || (node.evidenceTypes ?? []).some((type) => selected.includes(type));
+
 const matchesFacets = (node: GraphViewNode, filters: GraphFilters): boolean => {
-  if (filters.impactTypes.length > 0 && !filters.impactTypes.includes(node.impactType ?? '')) {
+  if (!matchesSelection(filters.impactTypes, node.impactType)) {
     return false;
   }
-  if (filters.likelihoods.length > 0 && !filters.likelihoods.includes(node.likelihood ?? '')) {
+  if (!matchesSelection(filters.likelihoods, node.likelihood)) {
+    return false;
+  }
+  if (!matchesEvidenceBasis(node, filters.evidenceTypes)) {
     return false;
   }
   if (filters.directness !== 'all' && node.directness !== filters.directness) {
@@ -85,6 +104,16 @@ export const applyNodeFilters = (
     }
     return matchesSearch(node, filters.search) && matchesFacets(node, filters);
   });
+
+/**
+ * The evidence bases present in the data — the facet's option list — in the contract
+ * vocabulary's declared order, so the strongest structural bases lead. Empty when no node
+ * reports a basis: the control is then not rendered rather than shown empty.
+ */
+export const evidenceBasesPresent = (nodes: readonly GraphViewNode[]): string[] => {
+  const present = new Set(nodes.flatMap((node) => node.evidenceTypes ?? []));
+  return impactEvidenceTypeSchema.options.filter((option) => present.has(option));
+};
 
 /** An edge survives only when both endpoints do — the graph never dangles (§18.4). */
 export const applyEdgeFilters = (

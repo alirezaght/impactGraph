@@ -1,4 +1,4 @@
-import { Absent, ConfidenceText, KnowledgeBadge } from '../components/badges.js';
+import { Absent, ConfidenceText, KnowledgeBadge, TierCapMarker } from '../components/badges.js';
 
 import type { WebviewRequest } from '../messaging.js';
 import type {
@@ -26,7 +26,17 @@ export const ImpactSummary = ({
       <dt>Expected change</dt>
       <dd>{impact.expectedChange}</dd>
       <dt>Likelihood</dt>
-      <dd>{impact.likelihood}</dd>
+      <dd>
+        {impact.likelihood} <TierCapMarker cappedBy={impact.tierCappedBy} />
+      </dd>
+      <dt>Evidence basis</dt>
+      {/* ADR-0015: WHY the impact was selected, strongest first. Absence is stated, never
+          defaulted — and it stays apart from the §3 provenance row below. */}
+      <dd className="evidence-basis">
+        {impact.evidenceTypes === undefined
+          ? 'not reported by the analysis'
+          : impact.evidenceTypes.join(', ')}
+      </dd>
       <dt>Directness</dt>
       <dd data-directness={impact.directness}>{impact.directness}</dd>
       <dt>Confidence</dt>

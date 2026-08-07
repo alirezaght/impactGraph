@@ -1,4 +1,4 @@
-import { ConfidenceText, KnowledgeBadge } from '../components/badges.js';
+import { ConfidenceText, KnowledgeBadge, TierCapMarker } from '../components/badges.js';
 
 import type { WebviewRequest } from '../messaging.js';
 import type { ImpactGraphNodeDto } from '@impactgraph/contracts';
@@ -47,6 +47,38 @@ const DecisionButtons = ({
   </span>
 );
 
+/**
+ * ADR-0015: WHY the impact was selected, as compact TEXT — the primary (strongest-first) basis
+ * plus a count, with the full set on the accessible label. An absent basis is said out loud,
+ * never defaulted. Rendered apart from the §3 knowledge badge: basis is an attribute WITHIN
+ * deterministic knowledge, not a fourth category.
+ */
+const EvidenceBasisText = ({
+  types,
+}: {
+  readonly types?: readonly string[] | undefined;
+}): JSX.Element => {
+  if (types === undefined || types.length === 0) {
+    return (
+      <span className="node-row__basis" aria-label="Evidence basis not reported by the analysis">
+        basis: not reported
+      </span>
+    );
+  }
+  const rest = types.length - 1;
+  return (
+    <span
+      className="node-row__basis"
+      data-evidence-types={types.join(' ')}
+      title={types.join(', ')}
+      aria-label={`Evidence basis: ${types.join(', ')}`}
+    >
+      basis: {types[0]}
+      {rest > 0 ? ` +${String(rest)}` : ''}
+    </span>
+  );
+};
+
 const summaryOf = (node: ImpactGraphNodeDto): string =>
   node.kind === 'impact'
     ? `${node.likelihood ?? 'no likelihood'} · ${node.impactType ?? 'no impact type'} · ${node.directness ?? 'directness not reported'}`
@@ -83,6 +115,12 @@ const NodeRow = ({
     </button>
     <KnowledgeBadge provenance={node.provenance} category={node.knowledgeCategory} />
     <span className="node-row__meta">{summaryOf(node)}</span>
+    {node.kind === 'impact' ? (
+      <>
+        <EvidenceBasisText types={node.evidenceTypes} />
+        <TierCapMarker cappedBy={node.tierCappedBy} />
+      </>
+    ) : null}
     <ConfidenceText confidence={node.confidence} />
     {node.filePath === undefined ? null : (
       <button

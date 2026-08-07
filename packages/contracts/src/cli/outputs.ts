@@ -4,6 +4,7 @@ import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
+import { impactEvidenceTypeSchema } from './evidence-basis.js';
 import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
 
@@ -236,6 +237,17 @@ const analyzeImpactSchema = z
      * application"). Absent when no declared package owns it — never derived from the path.
      */
     application: z.string().min(1).optional(),
+    /**
+     * Additive v1 field (ADR-0015): WHY this impact was selected — the evidence-basis set,
+     * strongest first. Absent only from documents produced before the taxonomy existed; a
+     * consumer reads absence as the weakest basis, never as "unclassified but fine".
+     */
+    evidenceTypes: z.array(impactEvidenceTypeSchema).min(1).optional(),
+    /**
+     * Additive v1 field (ADR-0015): set when the likelihood tier was reduced because this basis
+     * did not support the stronger one — the cap must be visible wherever likelihood is.
+     */
+    tierCappedBy: impactEvidenceTypeSchema.optional(),
   })
   .strict();
 

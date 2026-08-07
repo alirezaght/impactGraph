@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { impactEvidenceTypeSchema } from './evidence-basis.js';
 import { impactLikelihoodSchema } from './impact-export.js';
 import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 import { readinessSchema } from './outputs.js';
@@ -34,18 +35,10 @@ export const queryOutcomeSchema = z
   })
   .strict();
 
-export const impactEvidenceTypeSchema = z.enum([
-  'direct-structural',
-  'transitive-structural',
-  'async-event',
-  'external-contract',
-  'field-data-flow',
-  'configuration-asset',
-  /** Additive v1: deterministic fuzzy name match — capped at `likely`, never `required`. */
-  'name-similarity',
-  'semantic-match',
-  'lexical-only',
-]);
+// Moved to ./evidence-basis.js so the full analyze document (`outputs.ts`) can share the
+// vocabulary without an import cycle; re-exported here so every existing consumer keeps its
+// import path (ADR-0009: one schema, no diverging near-duplicate).
+export { impactEvidenceTypeSchema } from './evidence-basis.js';
 
 // Moved to ./index-health.js so the status document can share them; re-exported here so every
 // existing consumer keeps its import path (ADR-0009: one schema, no diverging near-duplicate).

@@ -49,6 +49,9 @@ const impactNode = (impact: ImpactDto, requirementId: string): ImpactGraphNodeDt
     ...(file === undefined ? {} : { filePath: file }),
     ...(impact.context === undefined ? {} : { context: impact.context }),
     ...(impact.application === undefined ? {} : { application: impact.application }),
+    // ADR-0015: basis and tier cap pass through untouched — absence stays absence.
+    ...(impact.evidenceTypes === undefined ? {} : { evidenceTypes: [...impact.evidenceTypes] }),
+    ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
   };
 };
 
