@@ -93,6 +93,47 @@ export const cliStatusOutputSchema = z
   })
   .strict();
 
+/** One declared bounded context with its structural membership (item 6). Additive v1. */
+const architectureContextSchema = z
+  .object({
+    name: z.string().min(1),
+    /** File/package nodes matching the context's declared globs. */
+    memberCount: z.number().int().min(0),
+    /** Bounded sample of member paths; absent when the context matches nothing. */
+    samplePaths: z.array(z.string().min(1)).optional(),
+  })
+  .strict();
+
+/** Per-repository slice of the graph, derived from the roster's prefixes (item 6). */
+const architectureRepositorySchema = z
+  .object({
+    name: z.string().min(1),
+    nodeCount: z.number().int().min(0),
+    fileCount: z.number().int().min(0),
+  })
+  .strict();
+
+/** One edge whose endpoints live in different registered repositories. */
+const crossRepositoryEdgeSampleSchema = z
+  .object({
+    /** Source node id — feed it to explain_node for the full picture. */
+    from: z.string().min(1),
+    to: z.string().min(1),
+    type: z.string().min(1),
+    /** The two owning repositories, source first. */
+    repositories: z.array(z.string().min(1)).length(2),
+  })
+  .strict();
+
+/** A declared contract document: an OpenAPI document or a generated contract (item 6). */
+const architectureContractSchema = z
+  .object({
+    name: z.string().min(1),
+    type: z.string().min(1),
+    path: z.string().min(1).optional(),
+  })
+  .strict();
+
 export const cliArchitectureOutputSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -124,6 +165,25 @@ export const cliArchitectureOutputSchema = z
           .strict(),
       )
       .optional(),
+    /**
+     * Item 6 — the boundary blocks, all additive v1 and all derived at answer time. Absent means
+     * "nothing declared/registered", never "unknown": contexts require `.impactgraph/
+     * architecture.yml` entries, the repository blocks require registered related repositories,
+     * and the integration/contract blocks require matching nodes in the graph.
+     */
+    contexts: z.array(architectureContextSchema).optional(),
+    repositories: z.array(architectureRepositorySchema).optional(),
+    crossRepositoryEdges: z
+      .object({
+        count: z.number().int().min(0),
+        /** Bounded, deterministic sample; the full set stays queryable via explain_edge. */
+        samples: z.array(crossRepositoryEdgeSampleSchema),
+      })
+      .strict()
+      .optional(),
+    /** Counts by node type over the integration/contract families (topic, webhook, …). */
+    integrationPoints: z.record(z.number().int().min(0)).optional(),
+    contracts: z.array(architectureContractSchema).optional(),
   })
   .strict();
 

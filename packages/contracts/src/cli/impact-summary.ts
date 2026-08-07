@@ -195,6 +195,12 @@ const impactCountsSchema = z
     componentCount: z.number().int().min(0),
     byLikelihood: z.record(z.number().int().min(0)),
     byEvidenceType: z.record(z.number().int().min(0)),
+    /**
+     * Additive v1 (item 6): distinct impacted components per registered repository — the plan
+     * states which repositories the change spans. Present only when more than one repository is
+     * registered; absent otherwise, because "all in this one" is noise for a single repo.
+     */
+    byRepository: z.record(z.number().int().min(0)).optional(),
   })
   .strict();
 

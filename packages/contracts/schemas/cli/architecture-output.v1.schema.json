@@ -141,6 +141,124 @@
             "required": ["edgeId", "level"],
             "additionalProperties": false
           }
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "memberCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "samplePaths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["name", "memberCount"],
+            "additionalProperties": false
+          }
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nodeCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "fileCount": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": ["name", "nodeCount", "fileCount"],
+            "additionalProperties": false
+          }
+        },
+        "crossRepositoryEdges": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "to": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "repositories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                },
+                "required": ["from", "to", "type", "repositories"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["count", "samples"],
+          "additionalProperties": false
+        },
+        "integrationPoints": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["name", "type"],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

@@ -266,6 +266,14 @@ const paginationBlock = (
   appliedFilters: selection.appliedFilters,
 });
 
+/** Item 6: the repository dimension — computed only when a workspace roster is in hand. */
+const repositoryAttributionOf = (
+  input: ImpactSummaryInput,
+): Parameters<typeof summaryCounts>[1] =>
+  input.workspace === undefined
+    ? undefined
+    : { graph: input.graph, repositories: input.workspace.repositories };
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -297,7 +305,7 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     ),
     freshness: { ...input.freshness, reasons: [...input.freshness.reasons] },
     coverage: coverageBlock(input, unmatched.length),
-    counts: summaryCounts(analysis),
+    counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
     topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
     unmatchedRequirements: unmatched.map((requirement) => ({

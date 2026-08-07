@@ -1,12 +1,43 @@
 import { evidenceTypesOf, primaryEvidenceType } from '@impactgraph/domain';
 
+import { attributionPrefixes, componentsByRepository } from '../repository-attribution.js';
+
 import type { CliImpactSummary } from '@impactgraph/contracts';
-import type { ImpactAnalysis, Requirement, Specification } from '@impactgraph/domain';
+import type { ImpactAnalysis, KnowledgeGraph, Requirement, Specification } from '@impactgraph/domain';
 
 // Counting and coverage facts for the bounded summary. Separate from the assembler so both stay
 // under the effective-LOC budget and each can be tested on its own.
 
-export const summaryCounts = (analysis: ImpactAnalysis): CliImpactSummary['counts'] => {
+/** Roster-shaped input for the per-repository dimension (item 6). */
+export interface RepositoryAttributionInput {
+  readonly graph: KnowledgeGraph;
+  /** Roster entries: the workspace root plus every registered repository (`path` = prefix). */
+  readonly repositories: readonly { readonly name: string; readonly path?: string | undefined }[];
+}
+
+/**
+ * Distinct impacted components per repository — "which repositories does this change span".
+ * Only computed when more than one repository is registered: for a single-repository workspace
+ * the answer is trivially "this one" and printing it would be noise.
+ */
+const byRepositoryOf = (
+  analysis: ImpactAnalysis,
+  attribution: RepositoryAttributionInput | undefined,
+): Record<string, number> | undefined => {
+  if (attribution === undefined || attribution.repositories.length <= 1) {
+    return undefined;
+  }
+  return componentsByRepository(
+    analysis.requirementImpacts.map((impact) => impact.nodeId),
+    attribution.graph,
+    attributionPrefixes(attribution.repositories),
+  );
+};
+
+export const summaryCounts = (
+  analysis: ImpactAnalysis,
+  attribution?: RepositoryAttributionInput,
+): CliImpactSummary['counts'] => {
   const byLikelihood: Record<string, number> = {};
   const byEvidenceType: Record<string, number> = {};
   const nodes = new Set<string>();
@@ -16,11 +47,13 @@ export const summaryCounts = (analysis: ImpactAnalysis): CliImpactSummary['count
     byEvidenceType[primary] = (byEvidenceType[primary] ?? 0) + 1;
     nodes.add(impact.nodeId);
   }
+  const byRepository = byRepositoryOf(analysis, attribution);
   return {
     totalImpacts: analysis.requirementImpacts.length,
     componentCount: nodes.size,
     byLikelihood,
     byEvidenceType,
+    ...(byRepository === undefined ? {} : { byRepository }),
   };
 };
 

@@ -136,6 +136,12 @@ describe('MCP workspace coverage workflow', () => {
     expect(specification['readiness']).toBeDefined();
     const actions = summary['requiredActions'] as { action: string }[];
     expect(actions.map((action) => action.action)).toContain('register-missing-repositories');
+    // Item 6: the plan states which repositories the change spans — present because more than
+    // one repository is registered, keyed by roster name.
+    const counts = asRecord(summary['counts']);
+    const byRepository = counts['byRepository'] as Record<string, number>;
+    expect(byRepository).toBeDefined();
+    expect(byRepository['(workspace root)']).toBeGreaterThan(0);
   });
 
   it('withholds readiness and demands next actions when coverage is insufficient', async () => {
@@ -188,5 +194,38 @@ describe('MCP workspace coverage workflow', () => {
     expect(coverage['status']).toBe('adequate');
     const specification = asRecord(summary['specification']);
     expect(specification['readiness']).toBeDefined();
+  });
+
+  it('query_architecture answers the boundary questions: contexts, repositories, cross-repo edges (item 6)', async () => {
+    writeFileSync(
+      join(repoDir, '.impactgraph', 'architecture.yml'),
+      [
+        'schemaVersion: 1',
+        'contexts:',
+        '  - name: deals',
+        "    paths: ['src/**']",
+        '  - name: billing',
+        "    paths: ['billing/**']",
+        '',
+      ].join('\n'),
+    );
+    const architecture = await tool('query_architecture');
+    // Declared contexts are graph knowledge now: nodes, membership edges, and the census block.
+    const nodeCounts = asRecord(architecture['nodeCountsByType']);
+    expect(nodeCounts['bounded-context']).toBe(2);
+    const edgeCounts = asRecord(architecture['edgeCountsByType']);
+    expect(edgeCounts['BELONGS_TO_CONTEXT'] as number).toBeGreaterThan(0);
+    const contexts = architecture['contexts'] as { name: string; memberCount: number }[];
+    expect(contexts.map((context) => context.name)).toEqual(['deals', 'billing']);
+    expect(contexts[0]?.memberCount).toBeGreaterThan(0);
+    // Per-repository breakdown from the roster prefixes; absent members attribute nothing.
+    const repositories = architecture['repositories'] as { name: string; fileCount: number }[];
+    const names = repositories.map((repo) => repo.name);
+    expect(names[0]).toBe('(workspace root)');
+    expect(names).toContain('billing');
+    expect(repositories.find((repo) => repo.name === 'billing')?.fileCount).toBeGreaterThan(0);
+    const crossRepo = asRecord(architecture['crossRepositoryEdges']);
+    expect(typeof crossRepo['count']).toBe('number');
+    expect(Array.isArray(crossRepo['samples'])).toBe(true);
   });
 });

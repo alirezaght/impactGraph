@@ -249,7 +249,8 @@ export const MCP_TOOL_CONTRACTS = {
     output: cliReviewOutputSchema,
   },
   query_architecture: {
-    description: 'Summarize the indexed architecture: workspaces, packages, node/edge composition.',
+    description:
+      'Summarize the indexed architecture: workspaces, packages, node/edge composition — plus the architectural boundaries: declared bounded contexts with membership, per-repository breakdown and cross-repository edges (when related repositories are registered), integration points (topics, queues, webhooks, external APIs, unresolved boundaries), and declared contract documents. Use it to answer "what parts of the architecture will this change touch" and "what am I forgetting" before planning.',
     input: emptyInputSchema,
     output: cliArchitectureOutputSchema,
   },
