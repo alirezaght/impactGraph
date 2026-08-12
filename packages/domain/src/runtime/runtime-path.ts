@@ -84,9 +84,20 @@ export interface RuntimeGap {
   readonly evidenceIds: readonly string[];
 }
 
-/** The process hops of a path — the ones that can be given, or denied, configuration. */
-export const processHops = (path: RuntimePath): readonly RuntimeHop[] =>
-  path.hops.filter((hop) => hop.kind === 'process' || hop.kind === 'runtime-resource');
+/**
+ * The hops of a path that can be given, or denied, configuration.
+ *
+ * Containers win over the resources that wrap them: a Cloud Run service does not hold environment
+ * variables, its containers do, so reporting a gap on both would file the same missing variable
+ * twice and point the reader at the hop that cannot be fixed. The resource is used only when no
+ * container was modelled — the best available answer, not an extra one.
+ */
+export const processHops = (path: RuntimePath): readonly RuntimeHop[] => {
+  const processes = path.hops.filter((hop) => hop.kind === 'process');
+  return processes.length > 0
+    ? processes
+    : path.hops.filter((hop) => hop.kind === 'runtime-resource');
+};
 
 /** True when every hop was read rather than inferred, and the chain reached a handler. */
 export const isFullyResolved = (path: RuntimePath): boolean =>
