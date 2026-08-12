@@ -43,7 +43,10 @@
                     "minLength": 1
                   }
                 },
-                "required": ["id", "type"],
+                "required": [
+                  "id",
+                  "type"
+                ],
                 "additionalProperties": false
               },
               {
@@ -69,7 +72,12 @@
                     "minLength": 1
                   }
                 },
-                "required": ["id", "type", "whenChanged", "requireChanged"],
+                "required": [
+                  "id",
+                  "type",
+                  "whenChanged",
+                  "requireChanged"
+                ],
                 "additionalProperties": false
               }
             ]
@@ -89,7 +97,9 @@
               },
               "language": {
                 "type": "string",
-                "enum": ["typescript"]
+                "enum": [
+                  "typescript"
+                ]
               },
               "match": {
                 "type": "object",
@@ -118,7 +128,9 @@
                     }
                   }
                 },
-                "required": ["imports"],
+                "required": [
+                  "imports"
+                ],
                 "additionalProperties": false
               },
               "produces": {
@@ -141,16 +153,26 @@
                     "minLength": 1
                   }
                 },
-                "required": ["nodeCategory", "nodeType"],
+                "required": [
+                  "nodeCategory",
+                  "nodeType"
+                ],
                 "additionalProperties": false
               }
             },
-            "required": ["id", "language", "match", "produces"],
+            "required": [
+              "id",
+              "language",
+              "match",
+              "produces"
+            ],
             "additionalProperties": false
           }
         }
       },
-      "required": ["schemaVersion"],
+      "required": [
+        "schemaVersion"
+      ],
       "additionalProperties": false
     }
   },

@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+import {
+  evidenceIndependenceSchema,
+  planAssessmentSchema,
+  preflightFindingSchema,
+  requirementClassificationSchema,
+} from './plan-assessment.js';
+
 import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/overlay.js';
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
@@ -379,6 +386,24 @@ export const cliAnalyzeOutputSchema = z
      * readers of the prior shape keep their exact meaning (ADR-0009).
      */
     proposedStructure: proposedStructureSchema.optional(),
+    /**
+     * Additive v1 fields (ADR-0017) — the preflight pass. Absent means the pass did not run for
+     * this analysis, never that it ran and found nothing: the counts inside `planAssessment` carry
+     * "found nothing", and the difference matters to anyone deciding whether to trust a clean
+     * result.
+     */
+    planAssessment: planAssessmentSchema.optional(),
+    preflightFindings: z.array(preflightFindingSchema).optional(),
+    requirementClassifications: z.array(requirementClassificationSchema).optional(),
+    evidenceIndependence: evidenceIndependenceSchema.optional(),
+    constraintCoverage: z
+      .object({
+        indexedConstraintCount: z.number().int().min(0),
+        /** Guards seen whose rule could not be read — a known limit, stated rather than hidden. */
+        opaqueGuardPaths: z.array(z.string().min(1)),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

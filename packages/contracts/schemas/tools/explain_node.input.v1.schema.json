@@ -9,7 +9,9 @@
           "minLength": 1
         }
       },
-      "required": ["nodeId"],
+      "required": [
+        "nodeId"
+      ],
       "additionalProperties": false
     }
   },

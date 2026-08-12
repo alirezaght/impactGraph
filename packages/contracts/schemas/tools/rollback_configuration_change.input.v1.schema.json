@@ -13,7 +13,9 @@
           "const": true
         }
       },
-      "required": ["confirmedByUser"],
+      "required": [
+        "confirmedByUser"
+      ],
       "additionalProperties": false
     }
   },

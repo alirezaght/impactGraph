@@ -29,7 +29,12 @@
               "maximum": 1
             }
           },
-          "required": ["kind", "from", "to", "reason"],
+          "required": [
+            "kind",
+            "from",
+            "to",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -54,7 +59,12 @@
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "context", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "context",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -79,7 +89,12 @@
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "role", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "role",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -95,7 +110,12 @@
             },
             "marker": {
               "type": "string",
-              "enum": ["generated", "ignored", "infrastructure", "shared"]
+              "enum": [
+                "generated",
+                "ignored",
+                "infrastructure",
+                "shared"
+              ]
             },
             "reason": {
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/reason"
@@ -104,7 +124,12 @@
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "marker", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "marker",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -130,7 +155,12 @@
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "component", "owner", "reason"],
+          "required": [
+            "kind",
+            "component",
+            "owner",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -154,7 +184,12 @@
               "$ref": "#/definitions/ComponentCorrectionV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "edgeId", "confirmed", "reason"],
+          "required": [
+            "kind",
+            "edgeId",
+            "confirmed",
+            "reason"
+          ],
           "additionalProperties": false
         }
       ]

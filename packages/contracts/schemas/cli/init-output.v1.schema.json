@@ -22,7 +22,12 @@
           "type": "boolean"
         }
       },
-      "required": ["schemaVersion", "command", "created", "alreadyInitialized"],
+      "required": [
+        "schemaVersion",
+        "command",
+        "created",
+        "alreadyInitialized"
+      ],
       "additionalProperties": false
     }
   },

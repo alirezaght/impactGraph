@@ -6,7 +6,10 @@
       "properties": {
         "classification": {
           "type": "string",
-          "enum": ["safe", "material"]
+          "enum": [
+            "safe",
+            "material"
+          ]
         },
         "file": {
           "type": "string",
@@ -17,7 +20,11 @@
           "additionalProperties": {}
         }
       },
-      "required": ["classification", "file", "newDocument"],
+      "required": [
+        "classification",
+        "file",
+        "newDocument"
+      ],
       "additionalProperties": false
     }
   },

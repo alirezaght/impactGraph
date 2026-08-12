@@ -275,3 +275,19 @@ export {
   memberPrefix,
 } from './repository-coverage.js';
 export type { EnsureIndexedOutcome, WorkspaceRepositoryContext } from './repository-coverage.js';
+
+// ADR-0017 — the adversarial preflight pass and the constraint layer it reads.
+export type { PreflightContext, PreflightOutcome } from './preflight.js';
+export { runPreflightForAnalysis } from './preflight.js';
+export type { LoadedConstraints } from './preflight-guards.js';
+export { collectGuardFiles, loadConstraints } from './preflight-guards.js';
+export { buildWorkspaceCoverage } from './reports/workspace-coverage-block.js';
+export {
+  SUMMARY_FINDING_LIMIT,
+  toFindingDto,
+  toAssessmentDto,
+  toClassificationDtos,
+  toIndependenceDto,
+  summaryFindings,
+  toConstraintSummary,
+} from './reports/preflight-block.js';

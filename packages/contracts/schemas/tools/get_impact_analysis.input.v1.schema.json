@@ -9,7 +9,9 @@
           "minLength": 1
         }
       },
-      "required": ["analysisId"],
+      "required": [
+        "analysisId"
+      ],
       "additionalProperties": false
     }
   },

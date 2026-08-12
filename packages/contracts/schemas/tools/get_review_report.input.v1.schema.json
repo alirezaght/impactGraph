@@ -6,7 +6,10 @@
       "properties": {
         "target": {
           "type": "string",
-          "enum": ["working-tree", "commit"]
+          "enum": [
+            "working-tree",
+            "commit"
+          ]
         },
         "reviewId": {
           "type": "string",

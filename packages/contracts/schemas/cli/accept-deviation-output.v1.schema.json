@@ -22,7 +22,11 @@
         },
         "category": {
           "type": "string",
-          "enum": ["missing", "unexpected", "divergent"]
+          "enum": [
+            "missing",
+            "unexpected",
+            "divergent"
+          ]
         },
         "reason": {
           "type": "string",

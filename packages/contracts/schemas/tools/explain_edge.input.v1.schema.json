@@ -9,7 +9,9 @@
           "minLength": 1
         }
       },
-      "required": ["edgeId"],
+      "required": [
+        "edgeId"
+      ],
       "additionalProperties": false
     }
   },

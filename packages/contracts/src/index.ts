@@ -265,3 +265,23 @@ export {
   evaluationMetricsSchema,
   outcomeAggregateSchema,
 } from './tools/outcome-tools.js';
+
+// ADR-0017 — decision-oriented plan assessment, preflight findings, evidence independence.
+export type {
+  PreflightFindingDto,
+  PlanAssessmentDto,
+  RequirementClassificationDto,
+  EvidenceIndependenceDto,
+  ConstraintSummaryDto,
+} from './cli/plan-assessment.js';
+export {
+  FEASIBILITY_VALUES,
+  PREFLIGHT_FINDING_KIND_VALUES,
+  UNMATCHED_CLASS_VALUES,
+  EVIDENCE_PROVENANCE_VALUES,
+  preflightFindingSchema,
+  planAssessmentSchema,
+  requirementClassificationSchema,
+  evidenceIndependenceSchema,
+  constraintSummarySchema,
+} from './cli/plan-assessment.js';

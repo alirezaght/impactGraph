@@ -21,7 +21,12 @@
           "const": "human-confirmed"
         }
       },
-      "required": ["rollbackId", "file", "kind", "source"],
+      "required": [
+        "rollbackId",
+        "file",
+        "kind",
+        "source"
+      ],
       "additionalProperties": false
     }
   },

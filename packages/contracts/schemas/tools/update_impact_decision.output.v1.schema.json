@@ -17,7 +17,11 @@
           "minimum": 0
         }
       },
-      "required": ["analysisId", "status", "decisionCount"],
+      "required": [
+        "analysisId",
+        "status",
+        "decisionCount"
+      ],
       "additionalProperties": false
     }
   },

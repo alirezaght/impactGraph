@@ -13,7 +13,10 @@
           "const": "approved"
         }
       },
-      "required": ["analysisId", "status"],
+      "required": [
+        "analysisId",
+        "status"
+      ],
       "additionalProperties": false
     }
   },

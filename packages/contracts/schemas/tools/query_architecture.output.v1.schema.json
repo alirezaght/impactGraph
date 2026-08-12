@@ -36,7 +36,10 @@
                 "minimum": 0
               }
             },
-            "required": ["name", "fileCount"],
+            "required": [
+              "name",
+              "fileCount"
+            ],
             "additionalProperties": false
           }
         },
@@ -138,7 +141,10 @@
                 ]
               }
             },
-            "required": ["edgeId", "level"],
+            "required": [
+              "edgeId",
+              "level"
+            ],
             "additionalProperties": false
           }
         },
@@ -163,7 +169,10 @@
                 }
               }
             },
-            "required": ["name", "memberCount"],
+            "required": [
+              "name",
+              "memberCount"
+            ],
             "additionalProperties": false
           }
         },
@@ -185,7 +194,11 @@
                 "minimum": 0
               }
             },
-            "required": ["name", "nodeCount", "fileCount"],
+            "required": [
+              "name",
+              "nodeCount",
+              "fileCount"
+            ],
             "additionalProperties": false
           }
         },
@@ -223,12 +236,20 @@
                     "maxItems": 2
                   }
                 },
-                "required": ["from", "to", "type", "repositories"],
+                "required": [
+                  "from",
+                  "to",
+                  "type",
+                  "repositories"
+                ],
                 "additionalProperties": false
               }
             }
           },
-          "required": ["count", "samples"],
+          "required": [
+            "count",
+            "samples"
+          ],
           "additionalProperties": false
         },
         "integrationPoints": {
@@ -256,7 +277,10 @@
                 "minLength": 1
               }
             },
-            "required": ["name", "type"],
+            "required": [
+              "name",
+              "type"
+            ],
             "additionalProperties": false
           }
         }

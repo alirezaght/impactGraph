@@ -25,7 +25,11 @@
               "maximum": 1
             }
           },
-          "required": ["kind", "glob", "reason"],
+          "required": [
+            "kind",
+            "glob",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -46,7 +50,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "glob", "reason"],
+          "required": [
+            "kind",
+            "glob",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -71,7 +79,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "alias", "canonical", "reason"],
+          "required": [
+            "kind",
+            "alias",
+            "canonical",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -92,7 +105,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "alias", "reason"],
+          "required": [
+            "kind",
+            "alias",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -113,7 +130,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "component", "reason"],
+          "required": [
+            "kind",
+            "component",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -134,7 +155,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "component", "reason"],
+          "required": [
+            "kind",
+            "component",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -166,7 +191,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "name", "paths", "reason"],
+          "required": [
+            "kind",
+            "name",
+            "paths",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -195,7 +225,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -238,7 +272,10 @@
                       "minLength": 1
                     }
                   },
-                  "required": ["id", "type"],
+                  "required": [
+                    "id",
+                    "type"
+                  ],
                   "additionalProperties": false
                 },
                 {
@@ -264,7 +301,12 @@
                       "minLength": 1
                     }
                   },
-                  "required": ["id", "type", "whenChanged", "requireChanged"],
+                  "required": [
+                    "id",
+                    "type",
+                    "whenChanged",
+                    "requireChanged"
+                  ],
                   "additionalProperties": false
                 }
               ]
@@ -276,7 +318,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "rule", "reason"],
+          "required": [
+            "kind",
+            "rule",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -297,7 +343,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "ruleId", "reason"],
+          "required": [
+            "kind",
+            "ruleId",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -309,7 +359,12 @@
             },
             "mode": {
               "type": "string",
-              "enum": ["local-only", "selected-snippets", "full-context", "external-agent"]
+              "enum": [
+                "local-only",
+                "selected-snippets",
+                "full-context",
+                "external-agent"
+              ]
             },
             "reason": {
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/reason"
@@ -318,7 +373,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "mode", "reason"],
+          "required": [
+            "kind",
+            "mode",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -330,7 +389,11 @@
             },
             "mode": {
               "type": "string",
-              "enum": ["autonomous", "review", "manual"]
+              "enum": [
+                "autonomous",
+                "review",
+                "manual"
+              ]
             },
             "reason": {
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/reason"
@@ -339,7 +402,11 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "mode", "reason"],
+          "required": [
+            "kind",
+            "mode",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -351,7 +418,15 @@
             },
             "subjectKind": {
               "type": "string",
-              "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
+              "enum": [
+                "context",
+                "component",
+                "alias",
+                "exclusion",
+                "rule",
+                "detection",
+                "ignore"
+              ]
             },
             "subject": {
               "type": "string",
@@ -364,7 +439,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "subjectKind", "subject", "reason"],
+          "required": [
+            "kind",
+            "subjectKind",
+            "subject",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -389,7 +469,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "from", "to", "reason"],
+          "required": [
+            "kind",
+            "from",
+            "to",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -414,7 +499,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "context", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "context",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -439,7 +529,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "role", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "role",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -455,7 +550,12 @@
             },
             "marker": {
               "type": "string",
-              "enum": ["generated", "ignored", "infrastructure", "shared"]
+              "enum": [
+                "generated",
+                "ignored",
+                "infrastructure",
+                "shared"
+              ]
             },
             "reason": {
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/reason"
@@ -464,7 +564,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "path", "marker", "reason"],
+          "required": [
+            "kind",
+            "path",
+            "marker",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -490,7 +595,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "component", "owner", "reason"],
+          "required": [
+            "kind",
+            "component",
+            "owner",
+            "reason"
+          ],
           "additionalProperties": false
         },
         {
@@ -514,7 +624,12 @@
               "$ref": "#/definitions/ConfigOperationV1/anyOf/0/properties/confidence"
             }
           },
-          "required": ["kind", "edgeId", "confirmed", "reason"],
+          "required": [
+            "kind",
+            "edgeId",
+            "confirmed",
+            "reason"
+          ],
           "additionalProperties": false
         }
       ]

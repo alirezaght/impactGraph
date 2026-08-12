@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+import {
+  evidenceIndependenceSchema,
+  planAssessmentSchema,
+  preflightFindingSchema,
+  UNMATCHED_CLASS_VALUES,
+} from './plan-assessment.js';
+
 import { impactEvidenceTypeSchema } from './evidence-basis.js';
 import { impactLikelihoodSchema } from './impact-export.js';
 import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
@@ -83,6 +90,14 @@ const unmatchedRequirementSchema = z
     label: z.string().min(1).optional(),
     statement: z.string().min(1),
     origin: z.string().min(1),
+    /**
+     * ADR-0017 — WHY nothing matched. Additive: absent means the preflight pass did not classify
+     * this requirement, never that it was classified as ordinary. The distinction it carries is
+     * the whole value of the field — "this creates new surface" and "we did not index the code"
+     * are opposite planning decisions that used to arrive as the same sentence.
+     */
+    classification: z.enum(UNMATCHED_CLASS_VALUES).optional(),
+    classificationRationale: z.string().min(1).optional(),
   })
   .strict();
 
@@ -285,6 +300,22 @@ export const cliImpactSummarySchema = z
     topImpacts: z.array(summaryImpactSchema),
     unmatchedRequirements: z.array(unmatchedRequirementSchema),
     unresolvedConcepts: z.array(unresolvedConceptSchema),
+    /**
+     * ADR-0017 — the decision-oriented headline. Present whenever the preflight pass ran; a
+     * consumer that finds it should read it INSTEAD of the readiness score, not alongside.
+     */
+    planAssessment: planAssessmentSchema.optional(),
+    /** The strongest findings, bounded. Full detail via `list_preflight_findings`. */
+    preflightFindings: z.array(preflightFindingSchema).optional(),
+    /** How much of the evidence was discovered rather than supplied by the specification. */
+    evidenceIndependence: evidenceIndependenceSchema.optional(),
+    constraintCoverage: z
+      .object({
+        indexedConstraintCount: z.number().int().min(0),
+        opaqueGuardPaths: z.array(z.string().min(1)),
+      })
+      .strict()
+      .optional(),
     blockingQuestions: z.array(
       z
         .object({

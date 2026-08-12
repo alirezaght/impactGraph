@@ -21,7 +21,12 @@
           "const": "approved"
         }
       },
-      "required": ["schemaVersion", "command", "analysisId", "status"],
+      "required": [
+        "schemaVersion",
+        "command",
+        "analysisId",
+        "status"
+      ],
       "additionalProperties": false
     }
   },

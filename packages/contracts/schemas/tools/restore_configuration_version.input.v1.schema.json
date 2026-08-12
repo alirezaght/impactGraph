@@ -13,7 +13,10 @@
           "const": true
         }
       },
-      "required": ["rollbackId", "confirmedByUser"],
+      "required": [
+        "rollbackId",
+        "confirmedByUser"
+      ],
       "additionalProperties": false
     }
   },

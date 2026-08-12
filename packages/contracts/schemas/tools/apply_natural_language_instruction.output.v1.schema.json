@@ -33,7 +33,11 @@
                         "maximum": 1
                       }
                     },
-                    "required": ["kind", "glob", "reason"],
+                    "required": [
+                      "kind",
+                      "glob",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -54,7 +58,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "glob", "reason"],
+                    "required": [
+                      "kind",
+                      "glob",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -79,7 +87,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "alias", "canonical", "reason"],
+                    "required": [
+                      "kind",
+                      "alias",
+                      "canonical",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -100,7 +113,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "alias", "reason"],
+                    "required": [
+                      "kind",
+                      "alias",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -121,7 +138,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "component", "reason"],
+                    "required": [
+                      "kind",
+                      "component",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -142,7 +163,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "component", "reason"],
+                    "required": [
+                      "kind",
+                      "component",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -174,7 +199,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "name", "paths", "reason"],
+                    "required": [
+                      "kind",
+                      "name",
+                      "paths",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -203,7 +233,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "path", "reason"],
+                    "required": [
+                      "kind",
+                      "path",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -246,7 +280,10 @@
                                 "minLength": 1
                               }
                             },
-                            "required": ["id", "type"],
+                            "required": [
+                              "id",
+                              "type"
+                            ],
                             "additionalProperties": false
                           },
                           {
@@ -272,7 +309,12 @@
                                 "minLength": 1
                               }
                             },
-                            "required": ["id", "type", "whenChanged", "requireChanged"],
+                            "required": [
+                              "id",
+                              "type",
+                              "whenChanged",
+                              "requireChanged"
+                            ],
                             "additionalProperties": false
                           }
                         ]
@@ -284,7 +326,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "rule", "reason"],
+                    "required": [
+                      "kind",
+                      "rule",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -305,7 +351,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "ruleId", "reason"],
+                    "required": [
+                      "kind",
+                      "ruleId",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -331,7 +381,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "mode", "reason"],
+                    "required": [
+                      "kind",
+                      "mode",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -343,7 +397,11 @@
                       },
                       "mode": {
                         "type": "string",
-                        "enum": ["autonomous", "review", "manual"]
+                        "enum": [
+                          "autonomous",
+                          "review",
+                          "manual"
+                        ]
                       },
                       "reason": {
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/reason"
@@ -352,7 +410,11 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "mode", "reason"],
+                    "required": [
+                      "kind",
+                      "mode",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -385,7 +447,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "subjectKind", "subject", "reason"],
+                    "required": [
+                      "kind",
+                      "subjectKind",
+                      "subject",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -410,7 +477,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "from", "to", "reason"],
+                    "required": [
+                      "kind",
+                      "from",
+                      "to",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -435,7 +507,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "path", "context", "reason"],
+                    "required": [
+                      "kind",
+                      "path",
+                      "context",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -460,7 +537,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "path", "role", "reason"],
+                    "required": [
+                      "kind",
+                      "path",
+                      "role",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -476,7 +558,12 @@
                       },
                       "marker": {
                         "type": "string",
-                        "enum": ["generated", "ignored", "infrastructure", "shared"]
+                        "enum": [
+                          "generated",
+                          "ignored",
+                          "infrastructure",
+                          "shared"
+                        ]
                       },
                       "reason": {
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/reason"
@@ -485,7 +572,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "path", "marker", "reason"],
+                    "required": [
+                      "kind",
+                      "path",
+                      "marker",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -511,7 +603,12 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "component", "owner", "reason"],
+                    "required": [
+                      "kind",
+                      "component",
+                      "owner",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   },
                   {
@@ -535,25 +632,41 @@
                         "$ref": "#/definitions/Tool_apply_natural_language_instruction_OutputV1/properties/results/items/properties/operation/anyOf/0/properties/confidence"
                       }
                     },
-                    "required": ["kind", "edgeId", "confirmed", "reason"],
+                    "required": [
+                      "kind",
+                      "edgeId",
+                      "confirmed",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   }
                 ]
               },
               "classification": {
                 "type": "string",
-                "enum": ["safe", "material"]
+                "enum": [
+                  "safe",
+                  "material"
+                ]
               },
               "status": {
                 "type": "string",
-                "enum": ["applied", "rejected"]
+                "enum": [
+                  "applied",
+                  "rejected"
+                ]
               },
               "detail": {
                 "type": "string",
                 "minLength": 1
               }
             },
-            "required": ["operation", "classification", "status", "detail"],
+            "required": [
+              "operation",
+              "classification",
+              "status",
+              "detail"
+            ],
             "additionalProperties": false
           }
         },
@@ -562,7 +675,9 @@
           "minLength": 1
         }
       },
-      "required": ["results"],
+      "required": [
+        "results"
+      ],
       "additionalProperties": false
     }
   },

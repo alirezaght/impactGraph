@@ -22,7 +22,11 @@
           "maxLength": 2000
         }
       },
-      "required": ["analysisId", "optionId", "confirmedByUser"],
+      "required": [
+        "analysisId",
+        "optionId",
+        "confirmedByUser"
+      ],
       "additionalProperties": false
     }
   },

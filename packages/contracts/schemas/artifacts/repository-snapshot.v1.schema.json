@@ -34,7 +34,11 @@
                   "pattern": "^[0-9a-f]{4,40}$"
                 }
               },
-              "required": ["kind", "branch", "commitSha"],
+              "required": [
+                "kind",
+                "branch",
+                "commitSha"
+              ],
               "additionalProperties": false
             },
             {
@@ -49,7 +53,10 @@
                   "pattern": "^[0-9a-f]{4,40}$"
                 }
               },
-              "required": ["kind", "commitSha"],
+              "required": [
+                "kind",
+                "commitSha"
+              ],
               "additionalProperties": false
             }
           ]

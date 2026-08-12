@@ -6,7 +6,11 @@
       "properties": {
         "group": {
           "type": "string",
-          "enum": ["context", "application", "package"]
+          "enum": [
+            "context",
+            "application",
+            "package"
+          ]
         },
         "analysisId": {
           "type": "string",

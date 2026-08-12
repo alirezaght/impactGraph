@@ -11,10 +11,20 @@
         },
         "subjectKind": {
           "type": "string",
-          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
+          "enum": [
+            "context",
+            "component",
+            "alias",
+            "exclusion",
+            "rule",
+            "detection",
+            "ignore"
+          ]
         }
       },
-      "required": ["subject"],
+      "required": [
+        "subject"
+      ],
       "additionalProperties": false
     }
   },

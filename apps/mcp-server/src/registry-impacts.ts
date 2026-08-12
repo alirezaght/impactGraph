@@ -12,6 +12,8 @@ import {
   loadGraphForSnapshot,
   loadSpecification,
   recordActualImpact,
+  runPreflightForAnalysis,
+  buildWorkspaceCoverage,
 } from '@impactgraph/workspace-engine';
 
 import type { ToolHandler } from './handler-types.js';
@@ -54,13 +56,34 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   if (!workspace.ok) {
     return workspace;
   }
+  const coverage = buildWorkspaceCoverage({
+    specification: spec.value,
+    analysis: built.value.analysis,
+    context: workspace.value,
+  });
+  // The adversarial pass runs here, unconditionally. Making it a separate tool would recreate the
+  // failure this whole change exists to fix: the questions were always answerable, and nobody knew
+  // to ask them (ADR-0017).
+  const preflight = runPreflightForAnalysis({
+    rootDir,
+    specification: spec.value,
+    specificationText: spec.value.rawText,
+    analysis: built.value.analysis,
+    graph: built.value.graph,
+    snapshotId: built.value.snapshotId,
+    // Coverage is computed first, because every downstream judgement — "this is new surface",
+    // "this symbol does not exist" — is unfounded over code that was never searched.
+    coverageInsufficient: coverage.status === 'insufficient-coverage',
+    coverageAffectedRequirementIds: coverage.affectedRequirementIds ?? [],
+  });
   return {
     ok: true,
     value: buildImpactSummary({
       specification: spec.value,
-      analysis: built.value.analysis,
+      analysis: preflight.analysis,
       graph: built.value.graph,
       workspace: workspace.value,
+      preflight,
       // Freshness is compared at ANSWER time, not index time: the tree can move between the two,
       // and a conclusion drawn from a stale index has to say so (item 10).
       freshness: await assessWorkspaceFreshness({

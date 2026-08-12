@@ -16,7 +16,14 @@
               },
               "likelihood": {
                 "type": "string",
-                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+                "enum": [
+                  "required",
+                  "likely",
+                  "possible",
+                  "lexical-only",
+                  "unlikely",
+                  "excluded"
+                ]
               },
               "impactType": {
                 "type": "string",
@@ -54,13 +61,21 @@
                 "maxItems": 20
               }
             },
-            "required": ["nodeId", "likelihood", "impactType", "explanation", "expectedChanges"],
+            "required": [
+              "nodeId",
+              "likelihood",
+              "impactType",
+              "explanation",
+              "expectedChanges"
+            ],
             "additionalProperties": false
           },
           "maxItems": 200
         }
       },
-      "required": ["classifications"],
+      "required": [
+        "classifications"
+      ],
       "additionalProperties": false
     }
   },

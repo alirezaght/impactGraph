@@ -38,7 +38,13 @@
               }
             }
           },
-          "required": ["id", "snapshotId", "status", "provisional", "provisionalReasons"],
+          "required": [
+            "id",
+            "snapshotId",
+            "status",
+            "provisional",
+            "provisionalReasons"
+          ],
           "additionalProperties": false
         },
         "specification": {
@@ -58,14 +64,22 @@
             },
             "extractionMode": {
               "type": "string",
-              "enum": ["provider", "deterministic-fallback", "unchanged"]
+              "enum": [
+                "provider",
+                "deterministic-fallback",
+                "unchanged"
+              ]
             },
             "extractionQuality": {
               "type": "object",
               "properties": {
                 "strategy": {
                   "type": "string",
-                  "enum": ["structured", "partially-structured", "prose-fallback"]
+                  "enum": [
+                    "structured",
+                    "partially-structured",
+                    "prose-fallback"
+                  ]
                 },
                 "structuredRequirementCount": {
                   "type": "integer",
@@ -146,7 +160,12 @@
               "minLength": 1
             }
           },
-          "required": ["id", "version", "title", "extractionMode"],
+          "required": [
+            "id",
+            "version",
+            "title",
+            "extractionMode"
+          ],
           "additionalProperties": false
         },
         "freshness": {
@@ -190,7 +209,11 @@
               "minLength": 1
             }
           },
-          "required": ["state", "stale", "reasons"],
+          "required": [
+            "state",
+            "stale",
+            "reasons"
+          ],
           "additionalProperties": false
         },
         "coverage": {
@@ -257,7 +280,12 @@
                         "type": "boolean"
                       }
                     },
-                    "required": ["category", "count", "examplePaths", "affectsPredictedArea"],
+                    "required": [
+                      "category",
+                      "count",
+                      "examplePaths",
+                      "affectsPredictedArea"
+                    ],
                     "additionalProperties": false
                   }
                 },
@@ -269,11 +297,20 @@
                   "minimum": 0
                 }
               },
-              "required": ["totalCount", "coverageLosingCount", "affectsPredictedArea", "groups"],
+              "required": [
+                "totalCount",
+                "coverageLosingCount",
+                "affectsPredictedArea",
+                "groups"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["requirementCount", "requirementsWithStructuralImpact", "indexWarnings"],
+          "required": [
+            "requirementCount",
+            "requirementsWithStructuralImpact",
+            "indexWarnings"
+          ],
           "additionalProperties": false
         },
         "counts": {
@@ -309,7 +346,12 @@
               }
             }
           },
-          "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
+          "required": [
+            "totalImpacts",
+            "componentCount",
+            "byLikelihood",
+            "byEvidenceType"
+          ],
           "additionalProperties": false
         },
         "evidenceQuality": {
@@ -317,7 +359,11 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["evidence-backed", "mixed", "weak"]
+              "enum": [
+                "evidence-backed",
+                "mixed",
+                "weak"
+              ]
             },
             "reasons": {
               "type": "array",
@@ -365,7 +411,11 @@
               "additionalProperties": false
             }
           },
-          "required": ["status", "reasons", "counts"],
+          "required": [
+            "status",
+            "reasons",
+            "counts"
+          ],
           "additionalProperties": false
         },
         "topImpacts": {
@@ -387,7 +437,14 @@
               },
               "likelihood": {
                 "type": "string",
-                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+                "enum": [
+                  "required",
+                  "likely",
+                  "possible",
+                  "lexical-only",
+                  "unlikely",
+                  "excluded"
+                ]
               },
               "evidenceType": {
                 "type": "string",
@@ -473,9 +530,28 @@
               "origin": {
                 "type": "string",
                 "minLength": 1
+              },
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "NEW_SURFACE",
+                  "COVERAGE_GAP",
+                  "INVALID_ASSUMPTION",
+                  "AMBIGUOUS",
+                  "NO_EVIDENCE",
+                  "EXTERNAL_DEPENDENCY"
+                ]
+              },
+              "classificationRationale": {
+                "type": "string",
+                "minLength": 1
               }
             },
-            "required": ["id", "statement", "origin"],
+            "required": [
+              "id",
+              "statement",
+              "origin"
+            ],
             "additionalProperties": false
           }
         },
@@ -497,9 +573,280 @@
                 "minLength": 1
               }
             },
-            "required": ["concept", "note"],
+            "required": [
+              "concept",
+              "note"
+            ],
             "additionalProperties": false
           }
+        },
+        "planAssessment": {
+          "type": "object",
+          "properties": {
+            "feasibility": {
+              "type": "string",
+              "enum": [
+                "READY",
+                "READY_WITH_WARNINGS",
+                "NEEDS_CLARIFICATION",
+                "INSUFFICIENT_COVERAGE",
+                "BLOCKED"
+              ]
+            },
+            "decision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "blockingViolations": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "invalidAssumptions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "runtimeTopologyGaps": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "configSemanticsRisks": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "newSurfaces": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "coverageGaps": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unresolvedArchitecturalQuestions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "constraintWarnings": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "missingConsumers": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "expectedChangeSurfaces": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "blockingViolations",
+                "invalidAssumptions",
+                "runtimeTopologyGaps",
+                "configSemanticsRisks",
+                "newSurfaces",
+                "coverageGaps",
+                "unresolvedArchitecturalQuestions",
+                "constraintWarnings",
+                "missingConsumers",
+                "expectedChangeSurfaces"
+              ],
+              "additionalProperties": false
+            },
+            "decidingFindingIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "scoreWithheldReason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "feasibility",
+            "decision",
+            "counts",
+            "decidingFindingIds"
+          ],
+          "additionalProperties": false
+        },
+        "preflightFindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "blocking-constraint-violation",
+                  "constraint-warning",
+                  "runtime-topology-gap",
+                  "invalid-assumption",
+                  "config-semantics-risk",
+                  "new-surface",
+                  "coverage-gap",
+                  "unresolved-architectural-question",
+                  "missing-consumer",
+                  "guard-not-updated"
+                ]
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "blocking",
+                  "warning",
+                  "informational"
+                ]
+              },
+              "requirementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recommendation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "analyzer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "constraintId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "proposedRelationship": {
+                "type": "object",
+                "properties": {
+                  "sourceRef": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "relation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "sourceRef",
+                  "relation",
+                  "targetRef"
+                ],
+                "additionalProperties": false
+              },
+              "runtimePathId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "assumedSymbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nodeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "filePaths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "severity",
+              "requirementIds",
+              "statement",
+              "recommendation",
+              "confidence",
+              "analyzer"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "evidenceIndependence": {
+          "type": "object",
+          "properties": {
+            "independentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "confirmationCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "weightedIndependence": {
+              "type": "number",
+              "minimum": 0
+            },
+            "totalCount": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "independentCount",
+            "confirmationCount",
+            "weightedIndependence",
+            "totalCount"
+          ],
+          "additionalProperties": false
+        },
+        "constraintCoverage": {
+          "type": "object",
+          "properties": {
+            "indexedConstraintCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "opaqueGuardPaths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "indexedConstraintCount",
+            "opaqueGuardPaths"
+          ],
+          "additionalProperties": false
         },
         "blockingQuestions": {
           "type": "array",
@@ -519,7 +866,11 @@
                 "minLength": 1
               }
             },
-            "required": ["id", "question", "severity"],
+            "required": [
+              "id",
+              "question",
+              "severity"
+            ],
             "additionalProperties": false
           }
         },
@@ -558,7 +909,11 @@
                 }
               }
             },
-            "required": ["category", "reason", "examplePaths"],
+            "required": [
+              "category",
+              "reason",
+              "examplePaths"
+            ],
             "additionalProperties": false
           }
         },
@@ -574,7 +929,10 @@
               "minimum": 0
             }
           },
-          "required": ["nodeCount", "relationshipCount"],
+          "required": [
+            "nodeCount",
+            "relationshipCount"
+          ],
           "additionalProperties": false
         },
         "warnings": {
@@ -591,7 +949,10 @@
                 "minLength": 1
               }
             },
-            "required": ["code", "message"],
+            "required": [
+              "code",
+              "message"
+            ],
             "additionalProperties": false
           }
         },
@@ -653,7 +1014,11 @@
               "additionalProperties": false
             }
           },
-          "required": ["returned", "totalMatching", "appliedFilters"],
+          "required": [
+            "returned",
+            "totalMatching",
+            "appliedFilters"
+          ],
           "additionalProperties": false
         },
         "impactQuery": {
@@ -690,7 +1055,12 @@
               "minLength": 1
             }
           },
-          "required": ["status", "scope", "limitations", "resultCount"],
+          "required": [
+            "status",
+            "scope",
+            "limitations",
+            "resultCount"
+          ],
           "additionalProperties": false
         },
         "workspaceCoverage": {
@@ -698,7 +1068,10 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": ["adequate", "insufficient-coverage"]
+              "enum": [
+                "adequate",
+                "insufficient-coverage"
+              ]
             },
             "reasons": {
               "type": "array",
@@ -728,7 +1101,10 @@
                         "minimum": 0
                       }
                     },
-                    "required": ["name", "fileCount"],
+                    "required": [
+                      "name",
+                      "fileCount"
+                    ],
                     "additionalProperties": false
                   }
                 },
@@ -746,7 +1122,10 @@
                         "minLength": 1
                       }
                     },
-                    "required": ["name", "reason"],
+                    "required": [
+                      "name",
+                      "reason"
+                    ],
                     "additionalProperties": false
                   }
                 },
@@ -768,12 +1147,20 @@
                         "minLength": 1
                       }
                     },
-                    "required": ["name", "path", "hint"],
+                    "required": [
+                      "name",
+                      "path",
+                      "hint"
+                    ],
                     "additionalProperties": false
                   }
                 }
               },
-              "required": ["indexed", "registeredButMissing", "candidates"],
+              "required": [
+                "indexed",
+                "registeredButMissing",
+                "candidates"
+              ],
               "additionalProperties": false
             },
             "affectedRequirementIds": {
@@ -832,7 +1219,11 @@
                 }
               }
             },
-            "required": ["action", "reason", "instruction"],
+            "required": [
+              "action",
+              "reason",
+              "instruction"
+            ],
             "additionalProperties": false
           }
         },

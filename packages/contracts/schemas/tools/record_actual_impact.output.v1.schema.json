@@ -89,7 +89,14 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
+                "enum": [
+                  "required",
+                  "likely",
+                  "possible",
+                  "lexical-only",
+                  "unlikely",
+                  "excluded"
+                ]
               }
             },
             "falsePositiveBases": {
@@ -147,7 +154,10 @@
                   "minimum": 1
                 }
               },
-              "required": ["mean", "sampleSize"],
+              "required": [
+                "mean",
+                "sampleSize"
+              ],
               "additionalProperties": false
             },
             "recall": {
@@ -182,7 +192,10 @@
                     "minimum": 1
                   }
                 },
-                "required": ["value", "count"],
+                "required": [
+                  "value",
+                  "count"
+                ],
                 "additionalProperties": false
               }
             },

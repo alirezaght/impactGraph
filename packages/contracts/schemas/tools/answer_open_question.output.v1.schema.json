@@ -55,7 +55,12 @@
           "additionalProperties": false
         }
       },
-      "required": ["specificationId", "version", "clarificationId", "readiness"],
+      "required": [
+        "specificationId",
+        "version",
+        "clarificationId",
+        "readiness"
+      ],
       "additionalProperties": false
     }
   },

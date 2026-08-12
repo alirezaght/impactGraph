@@ -17,9 +17,15 @@ import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impa
 import { toIndexWarningReportDto } from './index-health-dto.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
 import { buildRequiredActions } from './required-actions.js';
+import {
+  summaryFindings,
+  toAssessmentDto,
+  toIndependenceDto,
+} from './preflight-block.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
 import type { GroupedImpact } from './impact-selection.js';
+import type { PreflightOutcome } from '../preflight.js';
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
 import type {
   CliImpactSummary,
@@ -33,6 +39,7 @@ import type {
   KnowledgeGraph,
   NodeId,
   RawIndexWarning,
+  RequirementClassification,
   Specification,
 } from '@impactgraph/domain';
 
@@ -57,6 +64,12 @@ export interface ImpactSummaryInput {
   /** Repository roster + discovery state; absent when the caller has no workspace on disk. */
   readonly workspace?: WorkspaceRepositoryContext;
   readonly filters?: ImpactFilters;
+  /**
+   * ADR-0017 — the preflight pass. Absent means it did not run for this analysis (an older stored
+   * artifact, or a caller that has no repository on disk to read guards from); the fields it
+   * populates stay absent rather than reporting zero findings, because zero findings is a claim.
+   */
+  readonly preflight?: PreflightOutcome;
 }
 
 /** Warnings a reader must see. Everything else is counted, not printed (item 9). */
@@ -274,6 +287,34 @@ const repositoryAttributionOf = (
     ? undefined
     : { graph: input.graph, repositories: input.workspace.repositories };
 
+const classificationOf = (
+  input: ImpactSummaryInput,
+  requirementKey: string,
+): RequirementClassification | undefined =>
+  input.preflight?.classifications.find((entry) => entry.requirementId === requirementKey);
+
+/** Present only when the pass ran, so absence never reads as "checked, found nothing". */
+const preflightBlock = (
+  input: ImpactSummaryInput,
+): Pick<
+  CliImpactSummary,
+  'planAssessment' | 'preflightFindings' | 'evidenceIndependence' | 'constraintCoverage'
+> => {
+  const preflight = input.preflight;
+  if (preflight === undefined) {
+    return {};
+  }
+  return {
+    planAssessment: toAssessmentDto(preflight),
+    preflightFindings: [...summaryFindings(preflight)],
+    evidenceIndependence: toIndependenceDto(preflight),
+    constraintCoverage: {
+      indexedConstraintCount: preflight.constraintCount,
+      opaqueGuardPaths: [...preflight.opaqueGuardPaths],
+    },
+  };
+};
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -308,13 +349,24 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
     topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
-    unmatchedRequirements: unmatched.map((requirement) => ({
-      id: requirement.id,
-      ...(requirement.label === undefined ? {} : { label: requirement.label }),
-      statement: requirement.statement,
-      origin: originOf(requirement),
-    })),
+    unmatchedRequirements: unmatched.map((requirement) => {
+      // Classifications are keyed by the label a reader sees (R9), falling back to the internal id.
+      const classified = classificationOf(input, requirement.label ?? requirement.id);
+      return {
+        id: requirement.id,
+        ...(requirement.label === undefined ? {} : { label: requirement.label }),
+        statement: requirement.statement,
+        origin: originOf(requirement),
+        ...(classified === undefined
+          ? {}
+          : {
+              classification: classified.classification,
+              classificationRationale: classified.rationale,
+            }),
+      };
+    }),
     unresolvedConcepts: unresolvedConcepts(analysis),
+    ...preflightBlock(input),
     ...blockersBlock(input),
     warnings: warnings.kept,
     omittedWarningCount: warnings.omitted,

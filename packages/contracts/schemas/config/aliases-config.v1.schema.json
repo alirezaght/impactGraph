@@ -29,12 +29,16 @@
                 "minLength": 1
               }
             },
-            "required": ["component"],
+            "required": [
+              "component"
+            ],
             "additionalProperties": false
           }
         }
       },
-      "required": ["schemaVersion"],
+      "required": [
+        "schemaVersion"
+      ],
       "additionalProperties": false
     }
   },

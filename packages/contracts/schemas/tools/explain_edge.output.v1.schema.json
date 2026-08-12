@@ -24,7 +24,10 @@
               "minLength": 1
             }
           },
-          "required": ["nodeId", "name"],
+          "required": [
+            "nodeId",
+            "name"
+          ],
           "additionalProperties": false
         },
         "target": {
@@ -39,7 +42,10 @@
               "minLength": 1
             }
           },
-          "required": ["nodeId", "name"],
+          "required": [
+            "nodeId",
+            "name"
+          ],
           "additionalProperties": false
         },
         "knowledge": {
@@ -71,7 +77,10 @@
                     "type": "number"
                   }
                 },
-                "required": ["type", "contribution"],
+                "required": [
+                  "type",
+                  "contribution"
+                ],
                 "additionalProperties": false
               }
             },
@@ -108,11 +117,19 @@
                         "minimum": 0
                       }
                     },
-                    "required": ["startLine", "startColumn", "endLine", "endColumn"],
+                    "required": [
+                      "startLine",
+                      "startColumn",
+                      "endLine",
+                      "endColumn"
+                    ],
                     "additionalProperties": false
                   }
                 },
-                "required": ["id", "source"],
+                "required": [
+                  "id",
+                  "source"
+                ],
                 "additionalProperties": false
               }
             },
@@ -145,7 +162,11 @@
             },
             "status": {
               "type": "string",
-              "enum": ["confirmed", "rejected", "undecided"]
+              "enum": [
+                "confirmed",
+                "rejected",
+                "undecided"
+              ]
             },
             "excluded": {
               "type": "boolean"
@@ -179,11 +200,25 @@
               "minLength": 1
             }
           },
-          "required": ["edgeId", "status", "excluded", "level", "rank", "provenance", "detail"],
+          "required": [
+            "edgeId",
+            "status",
+            "excluded",
+            "level",
+            "rank",
+            "provenance",
+            "detail"
+          ],
           "additionalProperties": false
         }
       },
-      "required": ["edgeId", "type", "source", "target", "knowledge"],
+      "required": [
+        "edgeId",
+        "type",
+        "source",
+        "target",
+        "knowledge"
+      ],
       "additionalProperties": false
     }
   },

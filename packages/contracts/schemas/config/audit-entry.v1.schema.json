@@ -21,7 +21,10 @@
           "properties": {
             "kind": {
               "type": "string",
-              "enum": ["user", "agent"]
+              "enum": [
+                "user",
+                "agent"
+              ]
             },
             "agentId": {
               "type": "string",
@@ -32,7 +35,9 @@
               "minLength": 1
             }
           },
-          "required": ["kind"],
+          "required": [
+            "kind"
+          ],
           "additionalProperties": false
         },
         "operation": {
@@ -41,11 +46,17 @@
         },
         "classification": {
           "type": "string",
-          "enum": ["safe", "material"]
+          "enum": [
+            "safe",
+            "material"
+          ]
         },
         "approval": {
           "type": "string",
-          "enum": ["auto", "approved"]
+          "enum": [
+            "auto",
+            "approved"
+          ]
         },
         "file": {
           "type": "string",

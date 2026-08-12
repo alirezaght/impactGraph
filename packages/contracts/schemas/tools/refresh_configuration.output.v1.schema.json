@@ -22,7 +22,11 @@
                 "minLength": 1
               }
             },
-            "required": ["kind", "subject", "detail"],
+            "required": [
+              "kind",
+              "subject",
+              "detail"
+            ],
             "additionalProperties": false
           }
         },
@@ -48,7 +52,12 @@
           "minimum": 0
         }
       },
-      "required": ["applied", "needsReview", "changedFiles", "changeCountBefore"],
+      "required": [
+        "applied",
+        "needsReview",
+        "changedFiles",
+        "changeCountBefore"
+      ],
       "additionalProperties": false
     }
   },

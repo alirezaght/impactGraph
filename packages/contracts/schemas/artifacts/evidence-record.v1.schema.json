@@ -49,7 +49,12 @@
                       "minimum": 1
                     }
                   },
-                  "required": ["startLine", "startColumn", "endLine", "endColumn"],
+                  "required": [
+                    "startLine",
+                    "startColumn",
+                    "endLine",
+                    "endColumn"
+                  ],
                   "additionalProperties": false
                 },
                 "symbolName": {
@@ -57,7 +62,10 @@
                   "minLength": 1
                 }
               },
-              "required": ["kind", "filePath"],
+              "required": [
+                "kind",
+                "filePath"
+              ],
               "additionalProperties": false
             },
             {
@@ -76,7 +84,11 @@
                   "minLength": 1
                 }
               },
-              "required": ["kind", "filePath", "configKey"],
+              "required": [
+                "kind",
+                "filePath",
+                "configKey"
+              ],
               "additionalProperties": false
             },
             {
@@ -91,7 +103,10 @@
                   "minLength": 1
                 }
               },
-              "required": ["kind", "commitSha"],
+              "required": [
+                "kind",
+                "commitSha"
+              ],
               "additionalProperties": false
             }
           ]
@@ -140,14 +155,25 @@
                 },
                 "resolution": {
                   "type": "string",
-                  "enum": ["static", "dynamic"]
+                  "enum": [
+                    "static",
+                    "dynamic"
+                  ]
                 }
               },
-              "required": ["literalPath", "attribute", "resolution"],
+              "required": [
+                "literalPath",
+                "attribute",
+                "resolution"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["mechanism", "relationship", "producer"],
+          "required": [
+            "mechanism",
+            "relationship",
+            "producer"
+          ],
           "additionalProperties": false
         },
         "repositorySnapshotId": {
@@ -159,7 +185,14 @@
           "minLength": 1
         }
       },
-      "required": ["schemaVersion", "id", "kind", "source", "repositorySnapshotId", "createdAt"],
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "source",
+        "repositorySnapshotId",
+        "createdAt"
+      ],
       "additionalProperties": false
     }
   },

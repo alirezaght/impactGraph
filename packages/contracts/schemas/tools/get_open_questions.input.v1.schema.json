@@ -9,7 +9,9 @@
           "minLength": 1
         }
       },
-      "required": ["specificationId"],
+      "required": [
+        "specificationId"
+      ],
       "additionalProperties": false
     }
   },

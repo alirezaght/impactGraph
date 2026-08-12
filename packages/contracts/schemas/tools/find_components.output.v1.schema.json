@@ -35,7 +35,13 @@
               },
               "matchKind": {
                 "type": "string",
-                "enum": ["exact", "normalized-name", "conceptual", "related", "lexical"]
+                "enum": [
+                  "exact",
+                  "normalized-name",
+                  "conceptual",
+                  "related",
+                  "lexical"
+                ]
               },
               "score": {
                 "type": "number",
@@ -50,7 +56,13 @@
                 }
               }
             },
-            "required": ["nodeId", "name", "category", "type", "provenance"],
+            "required": [
+              "nodeId",
+              "name",
+              "category",
+              "type",
+              "provenance"
+            ],
             "additionalProperties": false
           }
         },
@@ -95,11 +107,18 @@
               "minLength": 1
             }
           },
-          "required": ["status", "scope", "limitations", "resultCount"],
+          "required": [
+            "status",
+            "scope",
+            "limitations",
+            "resultCount"
+          ],
           "additionalProperties": false
         }
       },
-      "required": ["components"],
+      "required": [
+        "components"
+      ],
       "additionalProperties": false
     }
   },

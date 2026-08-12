@@ -210,3 +210,12 @@ export type {
   PreflightResult,
 } from './preflight/run-preflight.js';
 export { runPreflight } from './preflight/run-preflight.js';
+export type {
+  AssignProvenanceInput,
+  ProvenanceAssignment,
+} from './build-impact-model/assign-evidence-provenance.js';
+export {
+  assignEvidenceProvenance,
+  suppliedIdentifiers,
+  isUserSupplied,
+} from './build-impact-model/assign-evidence-provenance.js';

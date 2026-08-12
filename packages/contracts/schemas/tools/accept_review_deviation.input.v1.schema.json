@@ -14,7 +14,11 @@
         },
         "category": {
           "type": "string",
-          "enum": ["missing", "unexpected", "divergent"]
+          "enum": [
+            "missing",
+            "unexpected",
+            "divergent"
+          ]
         },
         "reason": {
           "type": "string",
@@ -26,7 +30,11 @@
           "const": true
         }
       },
-      "required": ["nodeId", "reason", "confirmedByUser"],
+      "required": [
+        "nodeId",
+        "reason",
+        "confirmedByUser"
+      ],
       "additionalProperties": false
     }
   },

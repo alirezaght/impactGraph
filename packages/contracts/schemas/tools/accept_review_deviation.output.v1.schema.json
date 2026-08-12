@@ -14,14 +14,23 @@
         },
         "category": {
           "type": "string",
-          "enum": ["missing", "unexpected", "divergent"]
+          "enum": [
+            "missing",
+            "unexpected",
+            "divergent"
+          ]
         },
         "acceptedDeviationCount": {
           "type": "integer",
           "minimum": 1
         }
       },
-      "required": ["reviewId", "nodeId", "category", "acceptedDeviationCount"],
+      "required": [
+        "reviewId",
+        "nodeId",
+        "category",
+        "acceptedDeviationCount"
+      ],
       "additionalProperties": false
     }
   },

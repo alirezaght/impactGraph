@@ -22,7 +22,11 @@
                 "minLength": 1
               }
             },
-            "required": ["kind", "subject", "detail"],
+            "required": [
+              "kind",
+              "subject",
+              "detail"
+            ],
             "additionalProperties": false
           }
         },
@@ -33,7 +37,10 @@
           }
         }
       },
-      "required": ["applied", "needsReview"],
+      "required": [
+        "applied",
+        "needsReview"
+      ],
       "additionalProperties": false
     }
   },

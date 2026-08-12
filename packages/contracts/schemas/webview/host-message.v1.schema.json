@@ -26,7 +26,10 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["empty", "loaded"]
+                      "enum": [
+                        "empty",
+                        "loaded"
+                      ]
                     },
                     "specification": {
                       "type": "object",
@@ -48,14 +51,23 @@
                         },
                         "extractionMode": {
                           "type": "string",
-                          "enum": ["provider", "deterministic-fallback", "unchanged"]
+                          "enum": [
+                            "provider",
+                            "deterministic-fallback",
+                            "unchanged"
+                          ]
                         },
                         "updatedAt": {
                           "type": "string",
                           "minLength": 1
                         }
                       },
-                      "required": ["id", "version", "title", "rawText"],
+                      "required": [
+                        "id",
+                        "version",
+                        "title",
+                        "rawText"
+                      ],
                       "additionalProperties": false
                     },
                     "draft": {
@@ -69,7 +81,10 @@
                           "type": "string"
                         }
                       },
-                      "required": ["name", "text"],
+                      "required": [
+                        "name",
+                        "text"
+                      ],
                       "additionalProperties": false
                     },
                     "requirements": {
@@ -110,7 +125,14 @@
                             "minLength": 1
                           }
                         },
-                        "required": ["id", "statement", "type", "status", "concepts", "actors"],
+                        "required": [
+                          "id",
+                          "statement",
+                          "type",
+                          "status",
+                          "concepts",
+                          "actors"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -223,11 +245,17 @@
                   "additionalProperties": false
                 }
               },
-              "required": ["state"],
+              "required": [
+                "state"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["protocolVersion", "type", "payload"],
+          "required": [
+            "protocolVersion",
+            "type",
+            "payload"
+          ],
           "additionalProperties": false
         },
         {
@@ -253,7 +281,10 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["empty", "loaded"]
+                      "enum": [
+                        "empty",
+                        "loaded"
+                      ]
                     },
                     "analysisId": {
                       "type": "string",
@@ -281,7 +312,10 @@
                             "minLength": 1
                           }
                         },
-                        "required": ["id", "statement"],
+                        "required": [
+                          "id",
+                          "statement"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -300,7 +334,10 @@
                           },
                           "kind": {
                             "type": "string",
-                            "enum": ["impact", "dependency"]
+                            "enum": [
+                              "impact",
+                              "dependency"
+                            ]
                           },
                           "requirementIds": {
                             "type": "array",
@@ -326,7 +363,10 @@
                           },
                           "directness": {
                             "type": "string",
-                            "enum": ["direct", "indirect"]
+                            "enum": [
+                              "direct",
+                              "indirect"
+                            ]
                           },
                           "confidence": {
                             "type": "number",
@@ -375,7 +415,12 @@
                             "$ref": "#/definitions/WebviewHostMessageV1/anyOf/1/properties/payload/properties/graph/properties/nodes/items/properties/evidenceTypes/items"
                           }
                         },
-                        "required": ["id", "name", "kind", "requirementIds"],
+                        "required": [
+                          "id",
+                          "name",
+                          "kind",
+                          "requirementIds"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -402,14 +447,23 @@
                           },
                           "directness": {
                             "type": "string",
-                            "enum": ["direct", "indirect"]
+                            "enum": [
+                              "direct",
+                              "indirect"
+                            ]
                           },
                           "knowledgeCategory": {
                             "type": "string",
                             "minLength": 1
                           }
                         },
-                        "required": ["id", "sourceId", "targetId", "label", "directness"],
+                        "required": [
+                          "id",
+                          "sourceId",
+                          "targetId",
+                          "label",
+                          "directness"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -490,7 +544,10 @@
                                       "minLength": 1
                                     }
                                   },
-                                  "required": ["type", "contribution"],
+                                  "required": [
+                                    "type",
+                                    "contribution"
+                                  ],
                                   "additionalProperties": false
                                 }
                               }
@@ -529,11 +586,17 @@
                               },
                               "sourceKind": {
                                 "type": "string",
-                                "enum": ["existing", "proposed"]
+                                "enum": [
+                                  "existing",
+                                  "proposed"
+                                ]
                               },
                               "targetKind": {
                                 "type": "string",
-                                "enum": ["existing", "proposed"]
+                                "enum": [
+                                  "existing",
+                                  "proposed"
+                                ]
                               },
                               "type": {
                                 "type": "string",
@@ -587,7 +650,10 @@
                           }
                         }
                       },
-                      "required": ["nodes", "relationships"],
+                      "required": [
+                        "nodes",
+                        "relationships"
+                      ],
                       "additionalProperties": false
                     },
                     "warnings": {
@@ -609,11 +675,17 @@
                   "additionalProperties": false
                 }
               },
-              "required": ["graph"],
+              "required": [
+                "graph"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["protocolVersion", "type", "payload"],
+          "required": [
+            "protocolVersion",
+            "type",
+            "payload"
+          ],
           "additionalProperties": false
         },
         {
@@ -639,7 +711,12 @@
                     },
                     "status": {
                       "type": "string",
-                      "enum": ["empty", "loading", "loaded", "unavailable"]
+                      "enum": [
+                        "empty",
+                        "loading",
+                        "loaded",
+                        "unavailable"
+                      ]
                     },
                     "message": {
                       "type": "string",
@@ -661,7 +738,10 @@
                           "minLength": 1
                         }
                       },
-                      "required": ["nodeId", "name"],
+                      "required": [
+                        "nodeId",
+                        "name"
+                      ],
                       "additionalProperties": false
                     },
                     "impact": {
@@ -689,7 +769,10 @@
                         },
                         "directness": {
                           "type": "string",
-                          "enum": ["direct", "indirect"]
+                          "enum": [
+                            "direct",
+                            "indirect"
+                          ]
                         },
                         "confidence": {
                           "type": "number",
@@ -796,7 +879,10 @@
                                     "type": "number"
                                   }
                                 },
-                                "required": ["type", "contribution"],
+                                "required": [
+                                  "type",
+                                  "contribution"
+                                ],
                                 "additionalProperties": false
                               }
                             },
@@ -842,7 +928,10 @@
                                     "additionalProperties": false
                                   }
                                 },
-                                "required": ["id", "source"],
+                                "required": [
+                                  "id",
+                                  "source"
+                                ],
                                 "additionalProperties": false
                               }
                             },
@@ -888,7 +977,12 @@
                                 "minLength": 1
                               }
                             },
-                            "required": ["edgeId", "type", "from", "fromName"],
+                            "required": [
+                              "edgeId",
+                              "type",
+                              "from",
+                              "fromName"
+                            ],
                             "additionalProperties": false
                           }
                         },
@@ -914,7 +1008,12 @@
                                 "minLength": 1
                               }
                             },
-                            "required": ["edgeId", "type", "to", "toName"],
+                            "required": [
+                              "edgeId",
+                              "type",
+                              "to",
+                              "toName"
+                            ],
                             "additionalProperties": false
                           }
                         },
@@ -961,7 +1060,12 @@
                                   "minLength": 1
                                 }
                               },
-                              "required": ["level", "rank", "provenance", "detail"],
+                              "required": [
+                                "level",
+                                "rank",
+                                "provenance",
+                                "detail"
+                              ],
                               "additionalProperties": false
                             },
                             "role": {
@@ -980,7 +1084,12 @@
                                 "properties": {
                                   "marker": {
                                     "type": "string",
-                                    "enum": ["generated", "ignored", "infrastructure", "shared"]
+                                    "enum": [
+                                      "generated",
+                                      "ignored",
+                                      "infrastructure",
+                                      "shared"
+                                    ]
                                   },
                                   "level": {
                                     "$ref": "#/definitions/WebviewHostMessageV1/anyOf/2/properties/payload/properties/state/properties/explanation/properties/effective/properties/name/properties/level"
@@ -995,7 +1104,13 @@
                                     "$ref": "#/definitions/WebviewHostMessageV1/anyOf/2/properties/payload/properties/state/properties/explanation/properties/effective/properties/name/properties/detail"
                                   }
                                 },
-                                "required": ["marker", "level", "rank", "provenance", "detail"],
+                                "required": [
+                                  "marker",
+                                  "level",
+                                  "rank",
+                                  "provenance",
+                                  "detail"
+                                ],
                                 "additionalProperties": false
                               }
                             },
@@ -1037,7 +1152,11 @@
                         "properties": {
                           "decision": {
                             "type": "string",
-                            "enum": ["accepted", "rejected", "manually-added"]
+                            "enum": [
+                              "accepted",
+                              "rejected",
+                              "manually-added"
+                            ]
                           },
                           "reason": {
                             "type": "string",
@@ -1048,7 +1167,9 @@
                             "minLength": 1
                           }
                         },
-                        "required": ["decision"],
+                        "required": [
+                          "decision"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -1059,15 +1180,26 @@
                       }
                     }
                   },
-                  "required": ["schemaVersion", "status", "humanDecisions", "warnings"],
+                  "required": [
+                    "schemaVersion",
+                    "status",
+                    "humanDecisions",
+                    "warnings"
+                  ],
                   "additionalProperties": false
                 }
               },
-              "required": ["state"],
+              "required": [
+                "state"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["protocolVersion", "type", "payload"],
+          "required": [
+            "protocolVersion",
+            "type",
+            "payload"
+          ],
           "additionalProperties": false
         },
         {
@@ -1096,11 +1228,17 @@
                   "minLength": 1
                 }
               },
-              "required": ["busy"],
+              "required": [
+                "busy"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["protocolVersion", "type", "payload"],
+          "required": [
+            "protocolVersion",
+            "type",
+            "payload"
+          ],
           "additionalProperties": false
         },
         {
@@ -1126,11 +1264,18 @@
                   "minLength": 1
                 }
               },
-              "required": ["code", "message"],
+              "required": [
+                "code",
+                "message"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["protocolVersion", "type", "payload"],
+          "required": [
+            "protocolVersion",
+            "type",
+            "payload"
+          ],
           "additionalProperties": false
         }
       ]
