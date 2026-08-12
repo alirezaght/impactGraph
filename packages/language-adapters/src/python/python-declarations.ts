@@ -5,6 +5,7 @@ import { fieldNode, namedChildrenOf } from '../tree-sitter/syntax.js';
 import { collectBodyCalls } from './python-calls.js';
 import { declarationEvidence } from './python-context.js';
 import { collectDecorators } from './python-decorators.js';
+import { addEnumMembers } from './python-members.js';
 
 import type { PythonParseState } from './python-context.js';
 import type { Node } from 'web-tree-sitter';
@@ -173,6 +174,8 @@ export const addClass = (
   }
   collectDecorators(state, decorators, nodeId);
   addBaseClasses(state, declaration, nodeId);
+  // ADR-0017 — an enum's members, so a specification asserting one can be contradicted.
+  addEnumMembers(state, declaration, name, nodeId);
   for (const member of classMembers(declaration)) {
     const inner = member.type === 'decorated_definition' ? fieldNode(member, 'definition') : member;
     if (inner?.type === 'function_definition') {

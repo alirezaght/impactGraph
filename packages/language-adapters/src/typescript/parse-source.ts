@@ -11,6 +11,7 @@ import {
   handleVariables,
 } from './parse-declarations.js';
 import { collectEnvReferences } from './parse-env.js';
+import { collectSymbolMembers } from './parse-members.js';
 import { emitFieldFlows } from './parse-field-flow.js';
 import { collectHttpCallFacts } from './parse-http-calls.js';
 import { collectPubSubFacts } from './parse-pubsub.js';
@@ -161,6 +162,7 @@ export const parseTypeScriptFile = (
     visitStatement(state, statement, flow);
   }
   collectEnvReferences(state);
+  collectSymbolMembers(state);
   collectPubSubFacts(state);
   collectHttpCallFacts(state);
   // Item 7: field flow is resolved LAST, once every shape declared in this file is known — an object
