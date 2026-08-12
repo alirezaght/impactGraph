@@ -6,15 +6,7 @@
       "properties": {
         "subjectKind": {
           "type": "string",
-          "enum": [
-            "context",
-            "component",
-            "alias",
-            "exclusion",
-            "rule",
-            "detection",
-            "ignore"
-          ]
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
         },
         "subject": {
           "type": "string",
@@ -31,12 +23,7 @@
           "const": true
         }
       },
-      "required": [
-        "subjectKind",
-        "subject",
-        "reason",
-        "confirmedByUser"
-      ],
+      "required": ["subjectKind", "subject", "reason", "confirmedByUser"],
       "additionalProperties": false
     }
   },

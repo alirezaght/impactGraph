@@ -13,9 +13,7 @@
           "minimum": 1
         }
       },
-      "required": [
-        "specificationId"
-      ],
+      "required": ["specificationId"],
       "additionalProperties": false
     }
   },

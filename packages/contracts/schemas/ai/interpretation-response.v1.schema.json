@@ -30,19 +30,13 @@
                 "maxItems": 8
               }
             },
-            "required": [
-              "title",
-              "assumption",
-              "concepts"
-            ],
+            "required": ["title", "assumption", "concepts"],
             "additionalProperties": false
           },
           "maxItems": 4
         }
       },
-      "required": [
-        "interpretations"
-      ],
+      "required": ["interpretations"],
       "additionalProperties": false
     }
   },

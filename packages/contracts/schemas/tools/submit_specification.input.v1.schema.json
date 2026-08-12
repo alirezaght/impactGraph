@@ -13,10 +13,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "name",
-        "content"
-      ],
+      "required": ["name", "content"],
       "additionalProperties": false
     }
   },

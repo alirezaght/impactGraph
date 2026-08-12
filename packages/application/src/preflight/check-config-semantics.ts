@@ -45,7 +45,11 @@ export interface ConfigDeclaration {
 /** Literals that are truthy to a presence check yet carry no configuration. */
 const EMPTY_BUT_TRUTHY = new Set(['{}', '[]', '""', "''", '" "', '{ }', '[ ]']);
 
-const normalise = (literal: string): string => literal.trim().replace(/^["'](.*)["']$/s, '$1').trim();
+const normalise = (literal: string): string =>
+  literal
+    .trim()
+    .replace(/^["'](.*)["']$/s, '$1')
+    .trim();
 
 export const classifyConfig = (declaration: ConfigDeclaration): ConfigSemantic => {
   const literal = declaration.defaultLiteral;

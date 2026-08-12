@@ -26,12 +26,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "kind",
-              "subject",
-              "file",
-              "rollbackId"
-            ],
+            "required": ["kind", "subject", "file", "rollbackId"],
             "additionalProperties": false
           }
         },
@@ -53,19 +48,12 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "kind",
-              "subject",
-              "reason"
-            ],
+            "required": ["kind", "subject", "reason"],
             "additionalProperties": false
           }
         }
       },
-      "required": [
-        "removed",
-        "skipped"
-      ],
+      "required": ["removed", "skipped"],
       "additionalProperties": false
     }
   },

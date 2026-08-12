@@ -78,6 +78,39 @@ const GOVERNABLE_EDGES = new Set([
  * plan can be approved clean and the implementation can still introduce the forbidden edge — which
  * is precisely how the original failure reached CI.
  */
+/** True when this constraint forbids relationships out of this path, with no exemption for it. */
+const governsAndForbids = (constraint: RepositoryConstraint, sourcePath: string): boolean =>
+  (constraint.kind === 'forbidden-dependency' || constraint.kind === 'forbidden-runtime-call') &&
+  matchesAnyGlob(sourcePath, constraint.scope.pathGlobs) &&
+  !isExempt(constraint, sourcePath);
+
+const forbiddenFinding = (
+  input: CheckPlanContractInput,
+  edge: ActualChange['addedEdges'][number],
+  constraint: RepositoryConstraint,
+  sourcePath: string,
+): PreflightFinding | undefined => {
+  const targetName = input.actual.graph.nodes.get(edge.targetId as NodeId)?.name ?? edge.targetId;
+  const result = createPreflightFinding({
+    id: input.nextId(`drift:${edge.sourceId}:${edge.targetId}:${constraint.id}`),
+    kind: 'blocking-constraint-violation',
+    severity: constraint.severity === 'blocking' ? 'blocking' : 'warning',
+    requirementIds: [],
+    statement: `The implementation added ${edge.type} from ${sourcePath} to ${targetName}, which ${constraint.source.filePath} forbids: ${constraint.rule.statement}.`,
+    recommendation: `Remove the relationship, or add an explicit exemption to ${constraint.source.filePath} and say why.`,
+    subject: {
+      constraintId: constraint.id,
+      nodeIds: [edge.sourceId, edge.targetId],
+      filePaths: [sourcePath, constraint.source.filePath],
+    },
+    evidenceIds: edge.evidenceIds.length > 0 ? [...edge.evidenceIds] : [...constraint.evidenceIds],
+    confidence: 0.85,
+    provenance: 'static-analysis',
+    analyzer: 'check-plan-contract',
+  });
+  return result.ok ? result.value : undefined;
+};
+
 const forbiddenRelationships = (input: CheckPlanContractInput): readonly PreflightFinding[] => {
   const findings: PreflightFinding[] = [];
   for (const edge of input.actual.addedEdges) {
@@ -89,36 +122,12 @@ const forbiddenRelationships = (input: CheckPlanContractInput): readonly Preflig
       continue;
     }
     for (const constraint of input.plan.constraints) {
-      if (constraint.kind !== 'forbidden-dependency' && constraint.kind !== 'forbidden-runtime-call') {
+      if (!governsAndForbids(constraint, sourcePath)) {
         continue;
       }
-      if (!matchesAnyGlob(sourcePath, constraint.scope.pathGlobs)) {
-        continue;
-      }
-      if (isExempt(constraint, sourcePath)) {
-        continue;
-      }
-      const targetName = input.actual.graph.nodes.get(edge.targetId as NodeId)?.name ?? edge.targetId;
-      const result = createPreflightFinding({
-        id: input.nextId(`drift:${edge.sourceId}:${edge.targetId}:${constraint.id}`),
-        kind: 'blocking-constraint-violation',
-        severity: constraint.severity === 'blocking' ? 'blocking' : 'warning',
-        requirementIds: [],
-        statement: `The implementation added ${edge.type} from ${sourcePath} to ${targetName}, which ${constraint.source.filePath} forbids: ${constraint.rule.statement}.`,
-        recommendation: `Remove the relationship, or add an explicit exemption to ${constraint.source.filePath} and say why.`,
-        subject: {
-          constraintId: constraint.id,
-          nodeIds: [edge.sourceId, edge.targetId],
-          filePaths: [sourcePath, constraint.source.filePath],
-        },
-        evidenceIds:
-          edge.evidenceIds.length > 0 ? [...edge.evidenceIds] : [...constraint.evidenceIds],
-        confidence: 0.85,
-        provenance: 'static-analysis',
-        analyzer: 'check-plan-contract',
-      });
-      if (result.ok) {
-        findings.push(result.value);
+      const finding = forbiddenFinding(input, edge, constraint, sourcePath);
+      if (finding !== undefined) {
+        findings.push(finding);
       }
     }
   }
@@ -171,9 +180,7 @@ const staleGuards = (input: CheckPlanContractInput): readonly PreflightFinding[]
  * The 503 was exactly this shape after the fact: the plan said configuration had to reach the
  * serving process, and nothing in the change touched it.
  */
-const missingDeploymentChanges = (
-  input: CheckPlanContractInput,
-): readonly PreflightFinding[] => {
+const missingDeploymentChanges = (input: CheckPlanContractInput): readonly PreflightFinding[] => {
   if (input.plan.requiredConfigNames.length === 0 || input.plan.runtimeProcessNodeIds.size === 0) {
     return [];
   }
@@ -222,6 +229,8 @@ export const checkPlanContract = (input: CheckPlanContractInput): PlanContractRe
     unplannedPaths: input.actual.changedPaths
       .filter((path) => !input.plan.expectedPaths.has(path))
       .sort(),
-    unchangedExpectedPaths: [...input.plan.expectedPaths].filter((path) => !changed.has(path)).sort(),
+    unchangedExpectedPaths: [...input.plan.expectedPaths]
+      .filter((path) => !changed.has(path))
+      .sort(),
   };
 };

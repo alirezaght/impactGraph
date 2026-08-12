@@ -105,9 +105,7 @@ export const MCP_TOOL_CONTRACTS = {
   index_workspace: {
     description:
       'Index the workspace into the local knowledge graph (deterministic, offline): the workspace root plus every registered, present, enabled repository from `repositories:` in .impactgraph/config.yml — one graph spanning all of them. Rebuilds the disposable cache. Register related repositories before indexing when a feature spans them. Returns a COMPACT summary: counts plus a grouped warning report with a small sample of lines. Pass warningDetail:"full" only when you intend to read every warning.',
-    input: z
-      .object({ warningDetail: z.enum(['summary', 'full']).optional() })
-      .strict(),
+    input: z.object({ warningDetail: z.enum(['summary', 'full']).optional() }).strict(),
     output: cliIndexOutputSchema,
   },
   submit_specification: {

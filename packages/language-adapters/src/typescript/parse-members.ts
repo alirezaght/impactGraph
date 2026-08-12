@@ -30,24 +30,20 @@ interface MemberFact {
 }
 
 /** `enum ItemType { GESUCH = 'gesuch' }` — the closed, declared case. */
-const enumMembers = (declaration: ts.EnumDeclaration): readonly MemberFact[] =>
-  declaration.members
-    .map((member) => {
-      const name = ts.isIdentifier(member.name)
-        ? member.name.text
-        : ts.isStringLiteral(member.name)
-          ? member.name.text
-          : undefined;
-      return name === undefined
-        ? undefined
-        : ({
-            containerName: declaration.name.text,
-            containerKind: 'enum' as const,
-            memberName: name,
-            node: member,
-          } satisfies MemberFact);
-    })
-    .filter((fact): fact is MemberFact => fact !== undefined);
+const enumMembers = (declaration: ts.EnumDeclaration): readonly MemberFact[] => {
+  const facts: MemberFact[] = [];
+  for (const member of declaration.members) {
+    if (ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)) {
+      facts.push({
+        containerName: declaration.name.text,
+        containerKind: 'enum',
+        memberName: member.name.text,
+        node: member,
+      });
+    }
+  }
+  return facts;
+};
 
 /** `type ItemType = 'GESUCH' | 'ANGEBOT'` — a union of string literals, and nothing else. */
 const unionMembers = (declaration: ts.TypeAliasDeclaration): readonly MemberFact[] => {
@@ -63,44 +59,63 @@ const unionMembers = (declaration: ts.TypeAliasDeclaration): readonly MemberFact
   if (literals.length !== declaration.type.types.length || literals.length === 0) {
     return [];
   }
-  return literals.map((member) => ({
-    containerName: declaration.name.text,
-    containerKind: 'union' as const,
-    memberName: (member.literal as ts.StringLiteral).text,
-    node: member,
-  }));
+  const facts: MemberFact[] = [];
+  for (const member of literals) {
+    if (ts.isStringLiteral(member.literal)) {
+      facts.push({
+        containerName: declaration.name.text,
+        containerKind: 'union',
+        memberName: member.literal.text,
+        node: member,
+      });
+    }
+  }
+  return facts;
 };
 
-/** `const ItemType = { GESUCH: 'gesuch' } as const` — the enum-shaped object. */
-const constObjectMembers = (declaration: ts.VariableDeclaration): readonly MemberFact[] => {
+/**
+ * The object literal a `const X = { … } as const` declares, when the whole thing is readable.
+ *
+ * Undefined for a spread, a computed key, or a non-object initialiser — all cases where the member
+ * set is not closed, and where emitting the readable half would let the checker report a member as
+ * missing from a set it never fully read.
+ */
+const closedObjectLiteral = (
+  declaration: ts.VariableDeclaration,
+): ts.ObjectLiteralExpression | undefined => {
   const initializer = declaration.initializer;
   const object =
     initializer !== undefined && ts.isAsExpression(initializer)
       ? initializer.expression
       : initializer;
-  if (
-    object === undefined ||
-    !ts.isObjectLiteralExpression(object) ||
-    !ts.isIdentifier(declaration.name)
-  ) {
+  if (object === undefined || !ts.isObjectLiteralExpression(object)) {
+    return undefined;
+  }
+  const assignments = object.properties.filter(ts.isPropertyAssignment);
+  return assignments.length === object.properties.length && assignments.length > 0
+    ? object
+    : undefined;
+};
+
+/** `const ItemType = { GESUCH: 'gesuch' } as const` — the enum-shaped object. */
+const constObjectMembers = (declaration: ts.VariableDeclaration): readonly MemberFact[] => {
+  const object = closedObjectLiteral(declaration);
+  if (object === undefined || !ts.isIdentifier(declaration.name)) {
     return [];
   }
-  const properties = object.properties.filter(ts.isPropertyAssignment);
-  if (properties.length !== object.properties.length || properties.length === 0) {
-    return [];
+  const containerName = declaration.name.text;
+  const facts: MemberFact[] = [];
+  for (const property of object.properties.filter(ts.isPropertyAssignment)) {
+    if (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) {
+      facts.push({
+        containerName,
+        containerKind: 'const-object',
+        memberName: property.name.text,
+        node: property,
+      });
+    }
   }
-  return properties
-    .map((property) =>
-      ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)
-        ? ({
-            containerName: declaration.name.text,
-            containerKind: 'const-object' as const,
-            memberName: property.name.text,
-            node: property,
-          } satisfies MemberFact)
-        : undefined,
-    )
-    .filter((fact): fact is MemberFact => fact !== undefined);
+  return facts;
 };
 
 const collect = (source: ts.SourceFile): readonly MemberFact[] => {
@@ -131,42 +146,55 @@ const MEMBER_TYPE = {
   'const-object': 'union-literal',
 } as const;
 
+const emitContainer = (
+  state: ParseState,
+  fact: MemberFact,
+  containerId: string,
+  evidenceId: string,
+): void => {
+  state.builder.addNode(
+    {
+      id: containerId,
+      category: 'application',
+      type: CONTAINER_TYPE[fact.containerKind],
+      name: fact.containerName,
+      path: state.filePath,
+      knowledge: deterministicEnvelope(state.context, [evidenceId]),
+    },
+    state.filePath,
+  );
+};
+
+const memberEvidence = (state: ParseState, fact: MemberFact): string | undefined => {
+  const range = rangeOf(state.source, fact.node);
+  return state.builder.addEvidence(
+    {
+      id: evidenceIdFor(state, 'symbol-declaration', range),
+      kind: 'symbol-declaration',
+      source: {
+        kind: 'file',
+        filePath: state.filePath,
+        range,
+        symbolName: `${fact.containerName}.${fact.memberName}`,
+      },
+      repositorySnapshotId: state.context.repositorySnapshotId,
+      createdAt: state.context.createdAt,
+    },
+    state.filePath,
+  );
+};
+
 export const collectSymbolMembers = (state: ParseState): void => {
   const containers = new Set<string>();
   for (const fact of collect(state.source)) {
-    const range = rangeOf(state.source, fact.node);
-    const evidenceId = state.builder.addEvidence(
-      {
-        id: evidenceIdFor(state, 'symbol-declaration', range),
-        kind: 'symbol-declaration',
-        source: {
-          kind: 'file',
-          filePath: state.filePath,
-          range,
-          symbolName: `${fact.containerName}.${fact.memberName}`,
-        },
-        repositorySnapshotId: state.context.repositorySnapshotId,
-        createdAt: state.context.createdAt,
-      },
-      state.filePath,
-    );
+    const evidenceId = memberEvidence(state, fact);
     if (evidenceId === undefined) {
       continue;
     }
     const containerId = `member-container:${state.filePath}#${fact.containerName}`;
     if (!containers.has(containerId)) {
       containers.add(containerId);
-      state.builder.addNode(
-        {
-          id: containerId,
-          category: 'application',
-          type: CONTAINER_TYPE[fact.containerKind],
-          name: fact.containerName,
-          path: state.filePath,
-          knowledge: deterministicEnvelope(state.context, [evidenceId]),
-        },
-        state.filePath,
-      );
+      emitContainer(state, fact, containerId, evidenceId);
     }
     const memberId = `${containerId}.${fact.memberName}`;
     state.builder.addNode(

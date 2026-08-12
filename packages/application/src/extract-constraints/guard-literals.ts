@@ -36,7 +36,9 @@ export const readCollectionLiterals = (content: string): readonly CollectionLite
     const values = [...body.matchAll(/["']([^"'\n]+)["']/g)].map((entry) => entry[1] ?? '');
     // A collection whose body contains non-literal members is only partly readable. Recording the
     // literals anyway would silently narrow an allowlist, so the whole collection is skipped.
-    const nonLiteral = /[A-Za-z_][A-Za-z0-9_]*\s*(?:\(|\.)/.test(body.replace(/["'][^"'\n]*["']/g, ''));
+    const nonLiteral = /[A-Za-z_][A-Za-z0-9_]*\s*(?:\(|\.)/.test(
+      body.replace(/["'][^"'\n]*["']/g, ''),
+    );
     if (values.length > 0 && !nonLiteral) {
       results.push({ name, values, line: lineOf(content, match.index) });
     }

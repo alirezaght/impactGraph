@@ -6,11 +6,7 @@
       "properties": {
         "severity": {
           "type": "string",
-          "enum": [
-            "blocking",
-            "warning",
-            "advisory"
-          ]
+          "enum": ["blocking", "warning", "advisory"]
         },
         "kind": {
           "type": "string",

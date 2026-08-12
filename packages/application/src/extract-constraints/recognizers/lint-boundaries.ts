@@ -13,11 +13,9 @@ import type { ConstraintRecognizer, ExtractedConstraint, GuardFile } from '../ty
 const CONFIG_PATH = /(^|\/)(eslint\.config\.(m?js|cjs|ts)|\.eslintrc(\.\w+)?)$/;
 
 /** `{ from: 'application', allow: ['domain'] }` — an element may only reach the listed elements. */
-const readElementTypeRules = (content: string, path: string): readonly ExtractedConstraint[] => {
+const readElementTypeRules = (content: string): readonly ExtractedConstraint[] => {
   const rules = [
-    ...content.matchAll(
-      /\{\s*from:\s*['"]([\w-]+)['"]\s*,\s*allow:\s*\[([^\]]*)\]\s*\}/g,
-    ),
+    ...content.matchAll(/\{\s*from:\s*['"]([\w-]+)['"]\s*,\s*allow:\s*\[([^\]]*)\]\s*\}/g),
   ];
   return rules.map((match) => {
     const from = match[1] ?? '';
@@ -47,7 +45,7 @@ const readElementTypeRules = (content: string, path: string): readonly Extracted
  * restricted specifier is the forbidden dependency — "no `vscode` outside the extension shell"
  * expressed exactly as the repository already expresses it.
  */
-const readRestrictedImports = (content: string, path: string): readonly ExtractedConstraint[] => {
+const readRestrictedImports = (content: string): readonly ExtractedConstraint[] => {
   const results: ExtractedConstraint[] = [];
   const blocks = [
     ...content.matchAll(
@@ -55,7 +53,9 @@ const readRestrictedImports = (content: string, path: string): readonly Extracte
     ),
   ];
   for (const block of blocks) {
-    const globs = [...(block[1] ?? '').matchAll(/['"]([^'"]+)['"]/g)].map((entry) => entry[1] ?? '');
+    const globs = [...(block[1] ?? '').matchAll(/['"]([^'"]+)['"]/g)].map(
+      (entry) => entry[1] ?? '',
+    );
     const specifiers = [...(block[3] ?? '').matchAll(/name:\s*['"]([^'"]+)['"]/g)].map(
       (entry) => entry[1] ?? '',
     );
@@ -85,7 +85,7 @@ export const lintBoundariesRecognizer: ConstraintRecognizer = {
   id: 'lint-boundaries',
   appliesTo: (path) => CONFIG_PATH.test(path),
   recognize: (file: GuardFile) => [
-    ...readElementTypeRules(file.content, file.path),
-    ...readRestrictedImports(file.content, file.path),
+    ...readElementTypeRules(file.content),
+    ...readRestrictedImports(file.content),
   ],
 };

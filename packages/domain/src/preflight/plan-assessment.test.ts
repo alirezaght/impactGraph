@@ -70,7 +70,8 @@ describe('assessPlan', () => {
       id: 'finding-2',
       kind: 'runtime-topology-gap',
       severity: 'warning',
-      statement: 'admin traffic reaches newsletter-service through an aggregator lacking the config',
+      statement:
+        'admin traffic reaches newsletter-service through an aggregator lacking the config',
     });
     const assessment = assessPlan(input({ findings: [gap] }));
     expect(assessment.feasibility).toBe('READY_WITH_WARNINGS');

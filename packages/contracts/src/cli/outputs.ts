@@ -1,32 +1,22 @@
 import { z } from 'zod';
 
-import {
-  evidenceIndependenceSchema,
-  planAssessmentSchema,
-  preflightFindingSchema,
-  requirementClassificationSchema,
-} from './plan-assessment.js';
-
 import { configPrecedenceLevelSchema, correctionSummarySchema } from '../config/overlay.js';
 import { workspaceConfigSchema } from '../config/workspace-config.js';
 import { implementationContextSchema } from '../export/implementation-context.js';
 
 import { impactEvidenceTypeSchema } from './evidence-basis.js';
 import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
+import { cliIndexOutputSchema, snapshotSummarySchema } from './index-output.js';
+import {
+  evidenceIndependenceSchema,
+  planAssessmentSchema,
+  preflightFindingSchema,
+  requirementClassificationSchema,
+} from './plan-assessment.js';
 import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
 
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
 // validated by the CLI before printing; consumers validate again before trusting.
-
-const snapshotSummarySchema = z
-  .object({
-    id: z.string().min(1),
-    branch: z.string().optional(),
-    commitSha: z.string().min(1),
-    dirtyWorkingTree: z.boolean(),
-    createdAt: z.string().min(1),
-  })
-  .strict();
 
 export const cliInitOutputSchema = z
   .object({
@@ -34,49 +24,6 @@ export const cliInitOutputSchema = z
     command: z.literal('init'),
     created: z.array(z.string()),
     alreadyInitialized: z.boolean(),
-  })
-  .strict();
-
-export const cliIndexOutputSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    command: z.literal('index'),
-    snapshot: snapshotSummarySchema,
-    fileCount: z.number().int().min(0),
-    changedFileCount: z.number().int().min(0),
-    reusedFileCount: z.number().int().min(0),
-    ignoredCount: z.number().int().min(0),
-    nodeCount: z.number().int().min(0),
-    edgeCount: z.number().int().min(0),
-    /**
-     * A BOUNDED sample, not the run's full warning list (ADR-0017).
-     *
-     * This field used to carry every line: an index of a mid-sized repository returned 792 strings
-     * and roughly 91 KB, which exceeded an agent's token budget outright — the tool's answer was
-     * unreadable, so the tool was useless however correct it was. The count that matters now lives
-     * in `warningSummary`, and the lines are a sample unless `warningDetail: 'full'` was asked for.
-     */
-    warnings: z.array(z.string()),
-    /** Additive v1 (ADR-0017): the true totals, grouped, so a sample is never mistaken for all. */
-    warningSummary: z
-      .object({
-        totalCount: z.number().int().min(0),
-        returnedCount: z.number().int().min(0),
-        omittedCount: z.number().int().min(0),
-        byCategory: z.array(
-          z
-            .object({
-              category: z.string().min(1),
-              count: z.number().int().min(0),
-              exampleMessage: z.string().min(1).optional(),
-            })
-            .strict(),
-        ),
-      })
-      .strict()
-      .optional(),
-    /** Additive v1: which registered repositories this run indexed. */
-    repositories: z.array(repositoryIndexStateSchema).optional(),
   })
   .strict();
 
@@ -499,6 +446,7 @@ export const cliErrorOutputSchema = z
   .strict();
 
 export type CliInitOutput = z.infer<typeof cliInitOutputSchema>;
+export { cliIndexOutputSchema };
 export type CliIndexOutput = z.infer<typeof cliIndexOutputSchema>;
 export type CliStatusOutput = z.infer<typeof cliStatusOutputSchema>;
 export type CliArchitectureOutput = z.infer<typeof cliArchitectureOutputSchema>;

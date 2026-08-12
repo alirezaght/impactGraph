@@ -28,17 +28,11 @@
               "minLength": 1
             }
           },
-          "required": [
-            "category",
-            "message"
-          ],
+          "required": ["category", "message"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "error"
-      ],
+      "required": ["schemaVersion", "error"],
       "additionalProperties": false
     }
   },

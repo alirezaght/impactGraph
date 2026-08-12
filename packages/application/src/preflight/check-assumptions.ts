@@ -1,12 +1,6 @@
 import { createPreflightFinding } from '@impactgraph/domain';
 
-import type {
-  EdgeId,
-  GraphNode,
-  KnowledgeGraph,
-  NodeId,
-  PreflightFinding,
-} from '@impactgraph/domain';
+import type { GraphNode, KnowledgeGraph, PreflightFinding } from '@impactgraph/domain';
 
 /**
  * Check that the members a specification asserts actually exist.
@@ -53,16 +47,17 @@ const QUALIFIED_MEMBER = /\b([A-Z][A-Za-z0-9_]{2,})\.([A-Z][A-Z0-9_]{2,}|[a-z][A
  */
 const ASSERTION_CONTEXT =
   /\b(uses?|using|references?|reads?|checks?|matches?|equals?|is set to|returns?|when|if|existing|already)\b/i;
-const CREATION_CONTEXT = /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|extend|extends)\b/i;
+const CREATION_CONTEXT =
+  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|extend|extends)\b/i;
 
 const declaredMembers = (graph: KnowledgeGraph, container: GraphNode): ReadonlySet<string> => {
   const members = new Set<string>();
   for (const edgeId of graph.outgoing.get(container.id) ?? []) {
-    const edge = graph.edges.get(edgeId as EdgeId);
+    const edge = graph.edges.get(edgeId);
     if (edge === undefined || (edge.type !== 'DECLARES_MEMBER' && edge.type !== 'CONTAINS')) {
       continue;
     }
-    const target = graph.nodes.get(edge.targetId as NodeId);
+    const target = graph.nodes.get(edge.targetId);
     if (target !== undefined && MEMBER_TYPES.has(target.type)) {
       members.add(target.name);
     }
@@ -95,6 +90,57 @@ const sentenceAround = (statement: string, index: number): string => {
  * gap in the extractor, not a defect in the plan, and reporting it would be the fabricated finding
  * this system exists to avoid.
  */
+/**
+ * The container a reference should be judged against, or undefined when no judgement is possible.
+ *
+ * Undefined is returned for three distinct reasons, and all three must stay silent: the qualifier
+ * is not indexed, the sentence CREATES the member rather than asserting it, or the container's
+ * members were never extracted for that language.
+ */
+const judgeableContainer = (
+  input: AssumptionCheckInput,
+  qualifier: string,
+  matchIndex: number,
+): GraphNode | undefined => {
+  const containers = containersNamed(input.graph, qualifier);
+  if (containers.length === 0) {
+    return undefined;
+  }
+  const sentence = sentenceAround(input.statement, matchIndex);
+  if (CREATION_CONTEXT.test(sentence) && !ASSERTION_CONTEXT.test(sentence)) {
+    return undefined;
+  }
+  return containers.find((container) => declaredMembers(input.graph, container).size > 0);
+};
+
+const invalidAssumption = (
+  input: AssumptionCheckInput,
+  container: GraphNode,
+  qualifier: string,
+  member: string,
+): PreflightFinding | undefined => {
+  const key = `${qualifier}.${member}`;
+  const available = [...declaredMembers(input.graph, container)].sort();
+  const result = createPreflightFinding({
+    id: input.nextId(`${input.requirementId}:${key}`),
+    kind: 'invalid-assumption',
+    severity: 'blocking',
+    requirementIds: [input.requirementId],
+    statement: `Requirement ${input.requirementId} references ${key}, but ${member} is not a ${MEMBER_CONTAINERS[container.type] ?? 'member'} of ${qualifier} at the indexed revision.`,
+    recommendation: `Use one of the declared members (${available.slice(0, 8).join(', ')}), or add ${member} to ${qualifier} as part of this change.`,
+    subject: {
+      assumedSymbol: key,
+      nodeIds: [String(container.id)],
+      ...(container.path === undefined ? {} : { filePaths: [container.path] }),
+    },
+    evidenceIds: [...container.knowledge.evidenceIds],
+    confidence: 0.9,
+    provenance: 'static-analysis',
+    analyzer: 'check-assumptions',
+  });
+  return result.ok ? result.value : undefined;
+};
+
 export const checkAssumptions = (input: AssumptionCheckInput): readonly PreflightFinding[] => {
   const findings: PreflightFinding[] = [];
   const seen = new Set<string>();
@@ -106,47 +152,13 @@ export const checkAssumptions = (input: AssumptionCheckInput): readonly Prefligh
       continue;
     }
     seen.add(key);
-    const containers = containersNamed(input.graph, qualifier);
-    if (containers.length === 0) {
+    const container = judgeableContainer(input, qualifier, match.index);
+    if (container === undefined || declaredMembers(input.graph, container).has(member)) {
       continue;
     }
-    const sentence = sentenceAround(input.statement, match.index);
-    if (CREATION_CONTEXT.test(sentence) && !ASSERTION_CONTEXT.test(sentence)) {
-      continue;
-    }
-    const withMembers = containers.filter(
-      (container) => declaredMembers(input.graph, container).size > 0,
-    );
-    if (withMembers.length === 0) {
-      continue;
-    }
-    const exists = withMembers.some((container) =>
-      declaredMembers(input.graph, container).has(member),
-    );
-    if (exists) {
-      continue;
-    }
-    const container = withMembers[0] as GraphNode;
-    const available = [...declaredMembers(input.graph, container)].sort();
-    const result = createPreflightFinding({
-      id: input.nextId(`${input.requirementId}:${key}`),
-      kind: 'invalid-assumption',
-      severity: 'blocking',
-      requirementIds: [input.requirementId],
-      statement: `Requirement ${input.requirementId} references ${key}, but ${member} is not a ${MEMBER_CONTAINERS[container.type] ?? 'member'} of ${qualifier} at the indexed revision.`,
-      recommendation: `Use one of the declared members (${available.slice(0, 8).join(', ')}), or add ${member} to ${qualifier} as part of this change.`,
-      subject: {
-        assumedSymbol: key,
-        nodeIds: [String(container.id)],
-        ...(container.path === undefined ? {} : { filePaths: [container.path] }),
-      },
-      evidenceIds: [...container.knowledge.evidenceIds],
-      confidence: 0.9,
-      provenance: 'static-analysis',
-      analyzer: 'check-assumptions',
-    });
-    if (result.ok) {
-      findings.push(result.value);
+    const finding = invalidAssumption(input, container, qualifier, member);
+    if (finding !== undefined) {
+      findings.push(finding);
     }
   }
   return findings;

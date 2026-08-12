@@ -38,13 +38,7 @@
               }
             }
           },
-          "required": [
-            "id",
-            "snapshotId",
-            "status",
-            "provisional",
-            "provisionalReasons"
-          ],
+          "required": ["id", "snapshotId", "status", "provisional", "provisionalReasons"],
           "additionalProperties": false
         },
         "specification": {
@@ -64,22 +58,14 @@
             },
             "extractionMode": {
               "type": "string",
-              "enum": [
-                "provider",
-                "deterministic-fallback",
-                "unchanged"
-              ]
+              "enum": ["provider", "deterministic-fallback", "unchanged"]
             },
             "extractionQuality": {
               "type": "object",
               "properties": {
                 "strategy": {
                   "type": "string",
-                  "enum": [
-                    "structured",
-                    "partially-structured",
-                    "prose-fallback"
-                  ]
+                  "enum": ["structured", "partially-structured", "prose-fallback"]
                 },
                 "structuredRequirementCount": {
                   "type": "integer",
@@ -160,12 +146,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "id",
-            "version",
-            "title",
-            "extractionMode"
-          ],
+          "required": ["id", "version", "title", "extractionMode"],
           "additionalProperties": false
         },
         "freshness": {
@@ -209,11 +190,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "state",
-            "stale",
-            "reasons"
-          ],
+          "required": ["state", "stale", "reasons"],
           "additionalProperties": false
         },
         "coverage": {
@@ -280,12 +257,7 @@
                         "type": "boolean"
                       }
                     },
-                    "required": [
-                      "category",
-                      "count",
-                      "examplePaths",
-                      "affectsPredictedArea"
-                    ],
+                    "required": ["category", "count", "examplePaths", "affectsPredictedArea"],
                     "additionalProperties": false
                   }
                 },
@@ -297,20 +269,11 @@
                   "minimum": 0
                 }
               },
-              "required": [
-                "totalCount",
-                "coverageLosingCount",
-                "affectsPredictedArea",
-                "groups"
-              ],
+              "required": ["totalCount", "coverageLosingCount", "affectsPredictedArea", "groups"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "requirementCount",
-            "requirementsWithStructuralImpact",
-            "indexWarnings"
-          ],
+          "required": ["requirementCount", "requirementsWithStructuralImpact", "indexWarnings"],
           "additionalProperties": false
         },
         "counts": {
@@ -346,12 +309,7 @@
               }
             }
           },
-          "required": [
-            "totalImpacts",
-            "componentCount",
-            "byLikelihood",
-            "byEvidenceType"
-          ],
+          "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
           "additionalProperties": false
         },
         "evidenceQuality": {
@@ -359,11 +317,7 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": [
-                "evidence-backed",
-                "mixed",
-                "weak"
-              ]
+              "enum": ["evidence-backed", "mixed", "weak"]
             },
             "reasons": {
               "type": "array",
@@ -411,11 +365,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "status",
-            "reasons",
-            "counts"
-          ],
+          "required": ["status", "reasons", "counts"],
           "additionalProperties": false
         },
         "topImpacts": {
@@ -437,14 +387,7 @@
               },
               "likelihood": {
                 "type": "string",
-                "enum": [
-                  "required",
-                  "likely",
-                  "possible",
-                  "lexical-only",
-                  "unlikely",
-                  "excluded"
-                ]
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
               },
               "evidenceType": {
                 "type": "string",
@@ -547,11 +490,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "statement",
-              "origin"
-            ],
+            "required": ["id", "statement", "origin"],
             "additionalProperties": false
           }
         },
@@ -573,10 +512,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "concept",
-              "note"
-            ],
+            "required": ["concept", "note"],
             "additionalProperties": false
           }
         },
@@ -672,12 +608,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "feasibility",
-            "decision",
-            "counts",
-            "decidingFindingIds"
-          ],
+          "required": ["feasibility", "decision", "counts", "decidingFindingIds"],
           "additionalProperties": false
         },
         "preflightFindings": {
@@ -706,11 +637,7 @@
               },
               "severity": {
                 "type": "string",
-                "enum": [
-                  "blocking",
-                  "warning",
-                  "informational"
-                ]
+                "enum": ["blocking", "warning", "informational"]
               },
               "requirementIds": {
                 "type": "array",
@@ -756,11 +683,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "sourceRef",
-                  "relation",
-                  "targetRef"
-                ],
+                "required": ["sourceRef", "relation", "targetRef"],
                 "additionalProperties": false
               },
               "runtimePathId": {
@@ -842,10 +765,7 @@
               }
             }
           },
-          "required": [
-            "indexedConstraintCount",
-            "opaqueGuardPaths"
-          ],
+          "required": ["indexedConstraintCount", "opaqueGuardPaths"],
           "additionalProperties": false
         },
         "blockingQuestions": {
@@ -866,11 +786,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "question",
-              "severity"
-            ],
+            "required": ["id", "question", "severity"],
             "additionalProperties": false
           }
         },
@@ -909,11 +825,7 @@
                 }
               }
             },
-            "required": [
-              "category",
-              "reason",
-              "examplePaths"
-            ],
+            "required": ["category", "reason", "examplePaths"],
             "additionalProperties": false
           }
         },
@@ -929,10 +841,7 @@
               "minimum": 0
             }
           },
-          "required": [
-            "nodeCount",
-            "relationshipCount"
-          ],
+          "required": ["nodeCount", "relationshipCount"],
           "additionalProperties": false
         },
         "warnings": {
@@ -949,10 +858,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "code",
-              "message"
-            ],
+            "required": ["code", "message"],
             "additionalProperties": false
           }
         },
@@ -1014,11 +920,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "returned",
-            "totalMatching",
-            "appliedFilters"
-          ],
+          "required": ["returned", "totalMatching", "appliedFilters"],
           "additionalProperties": false
         },
         "impactQuery": {
@@ -1055,12 +957,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "status",
-            "scope",
-            "limitations",
-            "resultCount"
-          ],
+          "required": ["status", "scope", "limitations", "resultCount"],
           "additionalProperties": false
         },
         "workspaceCoverage": {
@@ -1068,10 +965,7 @@
           "properties": {
             "status": {
               "type": "string",
-              "enum": [
-                "adequate",
-                "insufficient-coverage"
-              ]
+              "enum": ["adequate", "insufficient-coverage"]
             },
             "reasons": {
               "type": "array",
@@ -1101,10 +995,7 @@
                         "minimum": 0
                       }
                     },
-                    "required": [
-                      "name",
-                      "fileCount"
-                    ],
+                    "required": ["name", "fileCount"],
                     "additionalProperties": false
                   }
                 },
@@ -1122,10 +1013,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "name",
-                      "reason"
-                    ],
+                    "required": ["name", "reason"],
                     "additionalProperties": false
                   }
                 },
@@ -1147,20 +1035,12 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "name",
-                      "path",
-                      "hint"
-                    ],
+                    "required": ["name", "path", "hint"],
                     "additionalProperties": false
                   }
                 }
               },
-              "required": [
-                "indexed",
-                "registeredButMissing",
-                "candidates"
-              ],
+              "required": ["indexed", "registeredButMissing", "candidates"],
               "additionalProperties": false
             },
             "affectedRequirementIds": {
@@ -1219,11 +1099,7 @@
                 }
               }
             },
-            "required": [
-              "action",
-              "reason",
-              "instruction"
-            ],
+            "required": ["action", "reason", "instruction"],
             "additionalProperties": false
           }
         },

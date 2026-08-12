@@ -17,13 +17,15 @@ const knowledge = {
   analysisRunId: 'run-1',
 };
 
-const node = (
-  id: string,
-  category: NodeCategory,
-  type: string,
-  name: string,
-  path?: string,
-): GraphNode => {
+interface NodeSpec {
+  readonly id: string;
+  readonly category: NodeCategory;
+  readonly type: string;
+  readonly name: string;
+  readonly path?: string;
+}
+
+const node = ({ id, category, type, name, path }: NodeSpec): GraphNode => {
   const result = createGraphNode({
     id,
     category,
@@ -40,23 +42,40 @@ const node = (
 
 const graph = (): KnowledgeGraph => {
   const nodes = [
-    node(
-      'file:services/newsletter-service/api/routes.py',
-      'repository',
-      'file',
-      'routes.py',
-      'services/newsletter-service/api/routes.py',
-    ),
-    node(
-      'file:services/user-profile-service/app.py',
-      'repository',
-      'file',
-      'app.py',
-      'services/user-profile-service/app.py',
-    ),
-    node('sym:ItemType', 'application', 'enum', 'ItemType', 'services/shared/item_type.py'),
-    node('sym:ItemType.GESUCH', 'application', 'enum-member', 'GESUCH'),
-    node('locale:de', 'asset', 'locale-bundle', 'de.json', 'apps/web/locales/de.json'),
+    node({
+      id: 'file:services/newsletter-service/api/routes.py',
+      category: 'repository',
+      type: 'file',
+      name: 'routes.py',
+      path: 'services/newsletter-service/api/routes.py',
+    }),
+    node({
+      id: 'file:services/user-profile-service/app.py',
+      category: 'repository',
+      type: 'file',
+      name: 'app.py',
+      path: 'services/user-profile-service/app.py',
+    }),
+    node({
+      id: 'sym:ItemType',
+      category: 'application',
+      type: 'enum',
+      name: 'ItemType',
+      path: 'services/shared/item_type.py',
+    }),
+    node({
+      id: 'sym:ItemType.GESUCH',
+      category: 'application',
+      type: 'enum-member',
+      name: 'GESUCH',
+    }),
+    node({
+      id: 'locale:de',
+      category: 'asset',
+      type: 'locale-bundle',
+      name: 'de.json',
+      path: 'apps/web/locales/de.json',
+    }),
   ];
   const edges = [
     (() => {

@@ -24,9 +24,7 @@ export const UNMATCHED_REQUIREMENT_CLASSES = [
 
 export type UnmatchedRequirementClass = (typeof UNMATCHED_REQUIREMENT_CLASSES)[number];
 
-export const isUnmatchedRequirementClass = (
-  value: unknown,
-): value is UnmatchedRequirementClass =>
+export const isUnmatchedRequirementClass = (value: unknown): value is UnmatchedRequirementClass =>
   typeof value === 'string' && (UNMATCHED_REQUIREMENT_CLASSES as readonly string[]).includes(value);
 
 /** The observations a classifier is allowed to use. All deterministic, all supplied by the caller. */
@@ -71,6 +69,38 @@ export interface RequirementClassification {
  * An invalid assumption then outranks new surface: the specification asserted something exists, and
  * a false assertion is a defect in the plan, whereas new surface is not.
  */
+type Verdict = readonly [UnmatchedRequirementClass, string, number];
+
+/**
+ * The scope question, answered before anything else.
+ *
+ * If the relevant code was never searched, every later reading is unfounded. Keeping these first
+ * and separate is what stops "we did not index it" from being reported as "it does not exist".
+ */
+const scopeVerdict = (signals: ClassificationSignals): Verdict | undefined => {
+  if (signals.touchesUnindexedRepository) {
+    return [
+      'COVERAGE_GAP',
+      'the requirement concerns a repository that is registered but not indexed, so absence of a match proves nothing',
+      0.9,
+    ];
+  }
+  if (signals.touchesIndexingGap) {
+    return [
+      'COVERAGE_GAP',
+      'the requirement concerns files the index skipped, so absence of a match proves nothing',
+      0.75,
+    ];
+  }
+  return signals.referencesExternalBoundary
+    ? [
+        'EXTERNAL_DEPENDENCY',
+        'the requirement is satisfied by a system outside this repository',
+        0.7,
+      ]
+    : undefined;
+};
+
 export const classifyUnmatchedRequirement = (
   requirementId: string,
   signals: ClassificationSignals,
@@ -81,26 +111,9 @@ export const classifyUnmatchedRequirement = (
     confidence: number,
   ): RequirementClassification => ({ requirementId, classification, rationale, confidence });
 
-  if (signals.touchesUnindexedRepository) {
-    return classify(
-      'COVERAGE_GAP',
-      'the requirement concerns a repository that is registered but not indexed, so absence of a match proves nothing',
-      0.9,
-    );
-  }
-  if (signals.touchesIndexingGap) {
-    return classify(
-      'COVERAGE_GAP',
-      'the requirement concerns files the index skipped, so absence of a match proves nothing',
-      0.75,
-    );
-  }
-  if (signals.referencesExternalBoundary) {
-    return classify(
-      'EXTERNAL_DEPENDENCY',
-      'the requirement is satisfied by a system outside this repository',
-      0.7,
-    );
+  const scope = scopeVerdict(signals);
+  if (scope !== undefined) {
+    return classify(...scope);
   }
   if (signals.hasInvalidSymbolAssumption) {
     return classify(

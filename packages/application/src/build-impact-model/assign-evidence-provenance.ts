@@ -44,7 +44,8 @@ const PROVENANCE_BY_BASIS: Readonly<Record<ImpactEvidenceType, EvidenceProvenanc
  * `ItemType.ANGEBOT`). Ordinary prose words are excluded deliberately — treating "newsletter" as a
  * supplied identifier would mark half the repository as an echo and destroy the distinction.
  */
-const IDENTIFIER = /\b[\w./-]*[\w-]+\.(?:[a-z]{1,5})\b|\b\w*[a-z0-9]_[\w_]+\b|\b[A-Z][a-zA-Z0-9]{3,}\b/g;
+const IDENTIFIER =
+  /\b[\w./-]*[\w-]+\.(?:[a-z]{1,5})\b|\b\w*[a-z0-9]_[\w_]+\b|\b[A-Z][a-zA-Z0-9]{3,}\b/g;
 
 export const suppliedIdentifiers = (specificationText: string): ReadonlySet<string> => {
   const found = new Set<string>();
@@ -116,9 +117,7 @@ export interface ProvenanceAssignment {
   readonly independence: EvidenceIndependence;
 }
 
-export const assignEvidenceProvenance = (
-  input: AssignProvenanceInput,
-): ProvenanceAssignment => {
+export const assignEvidenceProvenance = (input: AssignProvenanceInput): ProvenanceAssignment => {
   const supplied = suppliedIdentifiers(input.specificationText);
   const impacts = input.analysis.requirementImpacts.map((impact) => ({
     ...impact,

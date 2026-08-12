@@ -40,12 +40,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "id",
-            "commitSha",
-            "dirtyWorkingTree",
-            "createdAt"
-          ],
+          "required": ["id", "commitSha", "dirtyWorkingTree", "createdAt"],
           "additionalProperties": false
         },
         "counts": {
@@ -64,11 +59,7 @@
               "minimum": 0
             }
           },
-          "required": [
-            "files",
-            "nodes",
-            "edges"
-          ],
+          "required": ["files", "nodes", "edges"],
           "additionalProperties": false
         },
         "lastRun": {
@@ -87,11 +78,7 @@
               "minimum": 0
             }
           },
-          "required": [
-            "finishedAt",
-            "durationMs",
-            "warningCount"
-          ],
+          "required": ["finishedAt", "durationMs", "warningCount"],
           "additionalProperties": false
         },
         "repositories": {
@@ -120,19 +107,10 @@
               },
               "reasonCode": {
                 "type": "string",
-                "enum": [
-                  "not-indexed",
-                  "disabled",
-                  "path-missing",
-                  "path-outside-root"
-                ]
+                "enum": ["not-indexed", "disabled", "path-missing", "path-outside-root"]
               }
             },
-            "required": [
-              "name",
-              "indexed",
-              "fileCount"
-            ],
+            "required": ["name", "indexed", "fileCount"],
             "additionalProperties": false
           }
         },
@@ -154,11 +132,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "name",
-              "path",
-              "hint"
-            ],
+            "required": ["name", "path", "hint"],
             "additionalProperties": false
           }
         },
@@ -203,11 +177,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "state",
-            "stale",
-            "reasons"
-          ],
+          "required": ["state", "stale", "reasons"],
           "additionalProperties": false
         },
         "indexWarnings": {
@@ -263,12 +233,7 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "category",
-                  "count",
-                  "examplePaths",
-                  "affectsPredictedArea"
-                ],
+                "required": ["category", "count", "examplePaths", "affectsPredictedArea"],
                 "additionalProperties": false
               }
             },
@@ -280,12 +245,7 @@
               "minimum": 0
             }
           },
-          "required": [
-            "totalCount",
-            "coverageLosingCount",
-            "affectsPredictedArea",
-            "groups"
-          ],
+          "required": ["totalCount", "coverageLosingCount", "affectsPredictedArea", "groups"],
           "additionalProperties": false
         },
         "ignoredCount": {
@@ -311,19 +271,11 @@
               "minLength": 1
             }
           },
-          "required": [
-            "name",
-            "version"
-          ],
+          "required": ["name", "version"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "command",
-        "initialized",
-        "indexed"
-      ],
+      "required": ["schemaVersion", "command", "initialized", "indexed"],
       "additionalProperties": false
     }
   },

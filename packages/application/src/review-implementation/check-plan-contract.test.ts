@@ -1,4 +1,8 @@
-import { createGraphNode, createKnowledgeGraph, createRepositoryConstraint } from '@impactgraph/domain';
+import {
+  createGraphNode,
+  createKnowledgeGraph,
+  createRepositoryConstraint,
+} from '@impactgraph/domain';
 import { describe, expect, it } from 'vitest';
 
 import { checkPlanContract } from './check-plan-contract.js';
@@ -105,7 +109,12 @@ describe('checkPlanContract — architectural drift', () => {
           changedPaths: ['services/newsletter-service/api/issue_routes.py'],
           changedNodeIds: new Set(['n:routes']),
           addedEdges: [
-            { type: 'CALLS_ENDPOINT', sourceId: 'n:routes', targetId: 'n:profile', evidenceIds: ['ev-9'] },
+            {
+              type: 'CALLS_ENDPOINT',
+              sourceId: 'n:routes',
+              targetId: 'n:profile',
+              evidenceIds: ['ev-9'],
+            },
           ],
           graph: graph(),
         },
@@ -128,7 +137,12 @@ describe('checkPlanContract — architectural drift', () => {
           changedPaths: ['services/newsletter-service/jobs/send.py'],
           changedNodeIds: new Set(['n:send']),
           addedEdges: [
-            { type: 'CALLS_ENDPOINT', sourceId: 'n:send', targetId: 'n:profile', evidenceIds: ['ev-9'] },
+            {
+              type: 'CALLS_ENDPOINT',
+              sourceId: 'n:send',
+              targetId: 'n:profile',
+              evidenceIds: ['ev-9'],
+            },
           ],
           graph: graph(),
         },
@@ -150,10 +164,7 @@ describe('checkPlanContract — architectural drift', () => {
         },
       }),
     );
-    expect(result.unplannedPaths).toEqual([
-      'README.md',
-      'services/newsletter-service/digest.py',
-    ]);
+    expect(result.unplannedPaths).toEqual(['README.md', 'services/newsletter-service/digest.py']);
     expect(result.unchangedExpectedPaths).toEqual([
       'services/newsletter-service/api/issue_routes.py',
     ]);
@@ -188,7 +199,9 @@ describe('checkPlanContract — architectural drift', () => {
         },
       }),
     );
-    expect(result.findings.filter((finding) => finding.kind === 'runtime-topology-gap')).toEqual([]);
+    expect(result.findings.filter((finding) => finding.kind === 'runtime-topology-gap')).toEqual(
+      [],
+    );
   });
 
   it('flags a guard that governs the changed area and was not itself updated', () => {

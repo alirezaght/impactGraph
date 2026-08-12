@@ -11,9 +11,9 @@ import {
   handleVariables,
 } from './parse-declarations.js';
 import { collectEnvReferences } from './parse-env.js';
-import { collectSymbolMembers } from './parse-members.js';
 import { emitFieldFlows } from './parse-field-flow.js';
 import { collectHttpCallFacts } from './parse-http-calls.js';
+import { collectSymbolMembers } from './parse-members.js';
 import { collectPubSubFacts } from './parse-pubsub.js';
 
 import type { ParseState } from './parse-context.js';

@@ -3,11 +3,7 @@ import { canBlock, createPreflightFinding } from '@impactgraph/domain';
 import { matchesAnyGlob } from '../evaluate-rules/glob.js';
 
 import type { ProposedEdge, ProposedMechanism } from './proposed-edges.js';
-import type {
-  ConstraintKind,
-  PreflightFinding,
-  RepositoryConstraint,
-} from '@impactgraph/domain';
+import type { ConstraintKind, PreflightFinding, RepositoryConstraint } from '@impactgraph/domain';
 
 /**
  * Hold every relationship the plan proposes against every rule the repository enforces.
@@ -65,9 +61,12 @@ const exemptionFor = (
 ): RepositoryConstraint['exemptions'][number] | undefined =>
   constraint.exemptions.find((exemption) => {
     const subject = exemption.subject;
-    const candidates = [edge.source.path, edge.source.ref, edge.target.path, edge.target.ref].filter(
-      (value): value is string => value !== undefined,
-    );
+    const candidates = [
+      edge.source.path,
+      edge.source.ref,
+      edge.target.path,
+      edge.target.ref,
+    ].filter((value): value is string => value !== undefined);
     return candidates.some(
       (candidate) =>
         candidate === subject ||
@@ -105,6 +104,25 @@ const recommendationFor = (constraint: RepositoryConstraint): string =>
         .join(', ')}), or revise the design.`
     : `Revise the design, or change ${constraint.source.filePath} deliberately and record why.`;
 
+/**
+ * A boundary restriction states what IS allowed, so it is violated only when the target is not
+ * among the permitted scopes. Every other constraint kind states what is forbidden outright, and
+ * for those this is always false.
+ */
+const permittedByBoundary = (constraint: RepositoryConstraint, edge: ProposedEdge): boolean => {
+  if (constraint.kind !== 'boundary-restriction') {
+    return false;
+  }
+  const allowed = constraint.rule.targetScope;
+  if (allowed === undefined) {
+    return false;
+  }
+  return (
+    inScope(edge.target, allowed).matched ||
+    (allowed.roles ?? []).some((role) => edge.target.ref.toLowerCase().includes(role.toLowerCase()))
+  );
+};
+
 interface Candidate {
   readonly edge: ProposedEdge;
   readonly constraint: RepositoryConstraint;
@@ -123,19 +141,8 @@ const candidates = (input: CheckConstraintsInput): readonly Candidate[] => {
       if (!scoped.matched) {
         continue;
       }
-      // A boundary restriction states what IS allowed; it is violated only when the target is not
-      // among the permitted scopes. Everything else states what is forbidden outright.
-      if (constraint.kind === 'boundary-restriction') {
-        const allowed = constraint.rule.targetScope;
-        const permitted =
-          allowed !== undefined &&
-          (inScope(edge.target, allowed).matched ||
-            (allowed.roles ?? []).some((role) =>
-              edge.target.ref.toLowerCase().includes(role.toLowerCase()),
-            ));
-        if (permitted) {
-          continue;
-        }
+      if (permittedByBoundary(constraint, edge)) {
+        continue;
       }
       found.push({ edge, constraint, byPath: scoped.byPath });
     }

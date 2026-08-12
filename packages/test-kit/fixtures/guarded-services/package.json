@@ -1,1 +1,5 @@
-{ "name": "guarded-services-fixture", "private": true, "version": "0.0.0" }
+{
+  "name": "guarded-services-fixture",
+  "private": true,
+  "version": "0.0.0"
+}

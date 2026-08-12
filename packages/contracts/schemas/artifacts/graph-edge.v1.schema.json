@@ -71,19 +71,13 @@
                         "maxLength": 1000
                       }
                     },
-                    "required": [
-                      "type",
-                      "contribution"
-                    ],
+                    "required": ["type", "contribution"],
                     "additionalProperties": false
                   },
                   "minItems": 1
                 }
               },
-              "required": [
-                "value",
-                "signals"
-              ],
+              "required": ["value", "signals"],
               "additionalProperties": false
             },
             "createdAt": {
@@ -110,10 +104,7 @@
                   "minimum": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "specificationVersion"
-              ],
+              "required": ["specificationId", "specificationVersion"],
               "additionalProperties": false
             }
           },
@@ -128,14 +119,7 @@
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "id",
-        "type",
-        "sourceId",
-        "targetId",
-        "knowledge"
-      ],
+      "required": ["schemaVersion", "id", "type", "sourceId", "targetId", "knowledge"],
       "additionalProperties": false
     }
   },

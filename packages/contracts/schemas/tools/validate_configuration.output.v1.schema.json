@@ -14,12 +14,7 @@
             "properties": {
               "file": {
                 "type": "string",
-                "enum": [
-                  "config.yml",
-                  "architecture.yml",
-                  "aliases.yml",
-                  "rules.yml"
-                ]
+                "enum": ["config.yml", "architecture.yml", "aliases.yml", "rules.yml"]
               },
               "present": {
                 "type": "boolean"
@@ -35,12 +30,7 @@
                 }
               }
             },
-            "required": [
-              "file",
-              "present",
-              "valid",
-              "messages"
-            ],
+            "required": ["file", "present", "valid", "messages"],
             "additionalProperties": false
           }
         },
@@ -52,11 +42,7 @@
           }
         }
       },
-      "required": [
-        "valid",
-        "files",
-        "crossFileMessages"
-      ],
+      "required": ["valid", "files", "crossFileMessages"],
       "additionalProperties": false
     }
   },

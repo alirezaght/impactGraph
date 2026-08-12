@@ -23,14 +23,18 @@ import type {
  */
 
 /** Language that describes creating something rather than changing something. */
-const CREATION = /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for)\b/i;
+const CREATION =
+  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for)\b/i;
 /** Language that names a system this repository does not contain. */
 const EXTERNAL =
   /\b(third[- ]party|external (?:service|system|api)|vendor|upstream provider|sendgrid|stripe|twilio)\b/i;
 
 /** Node types that indicate a KIND of surface is indexed at all — the NEW_SURFACE evidence. */
 const SURFACE_KINDS: readonly { readonly pattern: RegExp; readonly types: readonly string[] }[] = [
-  { pattern: /\b(localization|localisation|i18n|translation|locale)\b/i, types: ['locale-bundle', 'translation-key'] },
+  {
+    pattern: /\b(localization|localisation|i18n|translation|locale)\b/i,
+    types: ['locale-bundle', 'translation-key'],
+  },
   { pattern: /\b(route|endpoint|path)\b/i, types: ['api-endpoint', 'controller', 'handler'] },
   { pattern: /\b(schema|contract)\b/i, types: ['json-schema', 'openapi-document', 'schema'] },
   { pattern: /\b(migration)\b/i, types: ['migration'] },
@@ -121,6 +125,22 @@ const signalsFor = (
   siblingSurfaceIndexed: siblingSurfaceIndexed(statement, types),
 });
 
+/** Every requirement, in the shape the analyzers consume, built from state analysis already holds. */
+const preflightRequirements = (context: PreflightContext): readonly PreflightRequirement[] => {
+  const types = indexedTypes(context.graph);
+  const withImpact = new Set(
+    context.analysis.requirementImpacts.map((impact) => impact.requirementId),
+  );
+  return context.specification.requirements.map((requirement) => ({
+    id: requirement.id,
+    ...(requirement.label === undefined ? {} : { label: requirement.label }),
+    statement: requirement.statement,
+    concepts: namedConcepts(context.analysis, context.graph, requirement.id),
+    hasStructuralImpact: withImpact.has(requirement.id),
+    signals: signalsFor(requirement.statement, requirement.id, context, types),
+  }));
+};
+
 export const runPreflightForAnalysis = (context: PreflightContext): PreflightOutcome => {
   const loaded = loadConstraints(
     context.rootDir,
@@ -128,21 +148,7 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
     context.snapshotId,
     context.analysis.createdAt,
   );
-  const types = indexedTypes(context.graph);
-  const withImpact = new Set(
-    context.analysis.requirementImpacts.map((impact) => impact.requirementId),
-  );
-  const requirements: readonly PreflightRequirement[] = context.specification.requirements.map(
-    (requirement) => ({
-      id: requirement.id,
-      ...(requirement.label === undefined ? {} : { label: requirement.label }),
-      statement: requirement.statement,
-      concepts: namedConcepts(context.analysis, context.graph, requirement.id),
-      hasStructuralImpact: withImpact.has(requirement.id),
-      signals: signalsFor(requirement.statement, requirement.id, context, types),
-    }),
-  );
-
+  const requirements = preflightRequirements(context);
   const result = runPreflight({
     requirements,
     graph: context.graph,

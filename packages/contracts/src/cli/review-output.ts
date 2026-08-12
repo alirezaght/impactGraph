@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import { cliReviewBreakdownSchema } from './review-breakdown.js';
 import { preflightFindingSchema } from './plan-assessment.js';
+import { cliReviewBreakdownSchema } from './review-breakdown.js';
 import { cliReviewDriftSchema } from './review-drift.js';
 
 // The §38.2 review report as machine-readable CLI output (PRD §20). Split out of outputs.ts by

@@ -30,8 +30,8 @@ import {
 
 import { CONFIG_MAINTENANCE_HANDLERS } from './registry-config.js';
 import { DECISION_HANDLERS } from './registry-decisions.js';
-import { GRAPH_HANDLERS } from './registry-graph.js';
 import { GOVERNANCE_HANDLERS } from './registry-governance.js';
+import { GRAPH_HANDLERS } from './registry-graph.js';
 import { IMPACT_HANDLERS } from './registry-impacts.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';

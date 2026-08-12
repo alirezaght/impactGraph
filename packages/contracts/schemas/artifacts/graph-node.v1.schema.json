@@ -75,19 +75,13 @@
                         "maxLength": 1000
                       }
                     },
-                    "required": [
-                      "type",
-                      "contribution"
-                    ],
+                    "required": ["type", "contribution"],
                     "additionalProperties": false
                   },
                   "minItems": 1
                 }
               },
-              "required": [
-                "value",
-                "signals"
-              ],
+              "required": ["value", "signals"],
               "additionalProperties": false
             },
             "createdAt": {
@@ -114,10 +108,7 @@
                   "minimum": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "specificationVersion"
-              ],
+              "required": ["specificationId", "specificationVersion"],
               "additionalProperties": false
             }
           },
@@ -153,17 +144,10 @@
                   },
                   "requiredness": {
                     "type": "string",
-                    "enum": [
-                      "required",
-                      "optional",
-                      "unknown"
-                    ]
+                    "enum": ["required", "optional", "unknown"]
                   }
                 },
-                "required": [
-                  "name",
-                  "requiredness"
-                ],
+                "required": ["name", "requiredness"],
                 "additionalProperties": false
               }
             },
@@ -174,22 +158,11 @@
               }
             }
           },
-          "required": [
-            "path",
-            "pathParameters",
-            "queryParameters"
-          ],
+          "required": ["path", "pathParameters", "queryParameters"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "id",
-        "category",
-        "type",
-        "name",
-        "knowledge"
-      ],
+      "required": ["schemaVersion", "id", "category", "type", "name", "knowledge"],
       "additionalProperties": false
     }
   },

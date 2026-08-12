@@ -37,9 +37,7 @@
           ]
         }
       },
-      "required": [
-        "query"
-      ],
+      "required": ["query"],
       "additionalProperties": false
     }
   },

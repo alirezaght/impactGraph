@@ -27,7 +27,12 @@ import type { CallFact, FragmentBuilder, IndexingContext } from '@impactgraph/la
 const URL_NAME = /(^|_)(service_)?urls?$|_service_url$|_url$|service_urls/i;
 
 /** Block kinds whose value can be a service address and can be followed. */
-const RESOLUTION_TYPES = new Set(['terraform-resource', 'terraform-local', 'terraform-output', 'terraform-variable']);
+const RESOLUTION_TYPES = new Set([
+  'terraform-resource',
+  'terraform-local',
+  'terraform-output',
+  'terraform-variable',
+]);
 
 /** Node types that terminate a resolution chain: something that actually runs. */
 const RUNTIME_TYPES = new Set(['cloud-run-service', 'cloud-run-job']);
@@ -123,6 +128,30 @@ const emitUrlEntryPoints = (
  * Follow the references a block states. A reference from one resolution block to another is a
  * RESOLUTION hop; a reference that lands on something deployable is where traffic ARRIVES.
  */
+interface RoutingHop {
+  readonly source: GraphNode;
+  readonly target: GraphNode;
+  /** True when the reference lands on something deployable — where traffic arrives. */
+  readonly isArrival: boolean;
+}
+
+/** The routing hop one reference states, or undefined when the reference is not routing at all. */
+const routingHop = (
+  fact: CallFact,
+  byId: ReadonlyMap<string, GraphNode>,
+): RoutingHop | undefined => {
+  if (fact.receiverName !== REFERENCE_RECEIVER || fact.enclosingSymbolNodeId === undefined) {
+    return undefined;
+  }
+  const source = byId.get(fact.enclosingSymbolNodeId);
+  const target = resolveAddress(byId, directoryOf(fact.filePath), fact.calleeName);
+  if (source === undefined || target === undefined || !carriesAnAddress(source)) {
+    return undefined;
+  }
+  const isArrival = RUNTIME_TYPES.has(target.type);
+  return isArrival || RESOLUTION_TYPES.has(target.type) ? { source, target, isArrival } : undefined;
+};
+
 const emitResolutionEdges = (
   builder: FragmentBuilder,
   context: IndexingContext,
@@ -130,18 +159,11 @@ const emitResolutionEdges = (
   byId: ReadonlyMap<string, GraphNode>,
 ): void => {
   for (const fact of graph.callFacts) {
-    if (fact.receiverName !== REFERENCE_RECEIVER || fact.enclosingSymbolNodeId === undefined) {
+    const hop = routingHop(fact, byId);
+    if (hop === undefined) {
       continue;
     }
-    const source = byId.get(fact.enclosingSymbolNodeId);
-    const target = resolveAddress(byId, directoryOf(fact.filePath), fact.calleeName);
-    if (source === undefined || target === undefined || !carriesAnAddress(source)) {
-      continue;
-    }
-    const isArrival = RUNTIME_TYPES.has(target.type);
-    if (!isArrival && !RESOLUTION_TYPES.has(target.type)) {
-      continue;
-    }
+    const { source, target, isArrival } = hop;
     builder.addEdge(
       {
         id: `${isArrival ? 'routes-to' : 'resolves-to'}:${String(source.id)}->${String(target.id)}`,
@@ -162,21 +184,69 @@ const emitResolutionEdges = (
  * configured the service, production ran the container, and only the container's environment
  * decides whether the request succeeds.
  */
+const groupEnvBindings = (graph: CodeGraph): ReadonlyMap<string, CallFact[]> => {
+  const grouped = new Map<string, CallFact[]>();
+  for (const fact of graph.callFacts) {
+    if (fact.receiverName !== CLOUD_RUN_ENV_RECEIVER || fact.enclosingSymbolNodeId === undefined) {
+      continue;
+    }
+    const existing = grouped.get(fact.enclosingSymbolNodeId) ?? [];
+    existing.push(fact);
+    grouped.set(fact.enclosingSymbolNodeId, existing);
+  }
+  return grouped;
+};
+
+interface EnvironmentEmit {
+  readonly builder: FragmentBuilder;
+  readonly context: IndexingContext;
+  readonly byId: ReadonlyMap<string, GraphNode>;
+  readonly containerId: string;
+  readonly facts: readonly CallFact[];
+}
+
+/** The environment one container is given, as nodes and RECEIVES_ENV edges. */
+const emitEnvironment = ({ builder, context, byId, containerId, facts }: EnvironmentEmit): void => {
+  for (const fact of facts) {
+    const envName = fact.stringArguments[0];
+    if (envName === undefined) {
+      continue;
+    }
+    const envId = `env:${envName}`;
+    const envelope = deterministicEnvelope(context, [fact.evidenceId], 'configuration');
+    if (byId.get(envId) === undefined) {
+      builder.addNode(
+        {
+          id: envId,
+          category: 'infrastructure',
+          type: 'environment-variable',
+          name: envName,
+          path: fact.filePath,
+          knowledge: envelope,
+        },
+        fact.filePath,
+      );
+    }
+    builder.addEdge(
+      {
+        id: `receives-env:${containerId}->${envId}`,
+        type: 'RECEIVES_ENV',
+        sourceId: containerId,
+        targetId: envId,
+        knowledge: envelope,
+      },
+      fact.filePath,
+    );
+  }
+};
+
 const emitContainersAndEnvironment = (
   builder: FragmentBuilder,
   context: IndexingContext,
   graph: CodeGraph,
   byId: ReadonlyMap<string, GraphNode>,
 ): void => {
-  const envByService = new Map<string, CallFact[]>();
-  for (const fact of graph.callFacts) {
-    if (fact.receiverName !== CLOUD_RUN_ENV_RECEIVER || fact.enclosingSymbolNodeId === undefined) {
-      continue;
-    }
-    const existing = envByService.get(fact.enclosingSymbolNodeId) ?? [];
-    existing.push(fact);
-    envByService.set(fact.enclosingSymbolNodeId, existing);
-  }
+  const envByService = groupEnvBindings(graph);
   for (const node of graph.nodes) {
     if (!RUNTIME_TYPES.has(node.type)) {
       continue;
@@ -209,37 +279,13 @@ const emitContainersAndEnvironment = (
       },
       filePath,
     );
-    for (const fact of envByService.get(String(node.id)) ?? []) {
-      const envName = fact.stringArguments[0];
-      if (envName === undefined) {
-        continue;
-      }
-      const envId = `env:${envName}`;
-      const envEnvelope = deterministicEnvelope(context, [fact.evidenceId], 'configuration');
-      if (byId.get(envId) === undefined) {
-        builder.addNode(
-          {
-            id: envId,
-            category: 'infrastructure',
-            type: 'environment-variable',
-            name: envName,
-            path: fact.filePath,
-            knowledge: envEnvelope,
-          },
-          fact.filePath,
-        );
-      }
-      builder.addEdge(
-        {
-          id: `receives-env:${containerId}->${envId}`,
-          type: 'RECEIVES_ENV',
-          sourceId: containerId,
-          targetId: envId,
-          knowledge: envEnvelope,
-        },
-        fact.filePath,
-      );
-    }
+    emitEnvironment({
+      builder,
+      context,
+      byId,
+      containerId,
+      facts: envByService.get(String(node.id)) ?? [],
+    });
   }
 };
 

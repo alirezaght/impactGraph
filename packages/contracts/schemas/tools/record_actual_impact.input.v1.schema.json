@@ -48,18 +48,10 @@
               },
               "kind": {
                 "type": "string",
-                "enum": [
-                  "added",
-                  "removed",
-                  "changed"
-                ]
+                "enum": ["added", "removed", "changed"]
               }
             },
-            "required": [
-              "filePath",
-              "symbolName",
-              "kind"
-            ],
+            "required": ["filePath", "symbolName", "kind"],
             "additionalProperties": false
           }
         },
@@ -82,18 +74,10 @@
               },
               "kind": {
                 "type": "string",
-                "enum": [
-                  "added",
-                  "removed"
-                ]
+                "enum": ["added", "removed"]
               }
             },
-            "required": [
-              "type",
-              "sourceId",
-              "targetId",
-              "kind"
-            ],
+            "required": ["type", "sourceId", "targetId", "kind"],
             "additionalProperties": false
           }
         },
@@ -126,16 +110,10 @@
               },
               "kind": {
                 "type": "string",
-                "enum": [
-                  "risk",
-                  "correction"
-                ]
+                "enum": ["risk", "correction"]
               }
             },
-            "required": [
-              "note",
-              "kind"
-            ],
+            "required": ["note", "kind"],
             "additionalProperties": false
           }
         },
@@ -144,9 +122,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "analysisId"
-      ],
+      "required": ["analysisId"],
       "additionalProperties": false
     }
   },

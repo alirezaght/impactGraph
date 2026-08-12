@@ -16,12 +16,12 @@ import {
 import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impact-summary-facts.js';
 import { toIndexWarningReportDto } from './index-health-dto.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
-import { buildRequiredActions } from './required-actions.js';
 import {
   summaryFindings,
   toAssessmentDto,
   toIndependenceDto,
 } from './preflight-block.js';
+import { buildRequiredActions } from './required-actions.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
 import type { GroupedImpact } from './impact-selection.js';
@@ -315,6 +315,27 @@ const preflightBlock = (
   };
 };
 
+/** One unmatched requirement, carrying WHY nothing matched when the preflight pass classified it. */
+const unmatchedLine = (
+  input: ImpactSummaryInput,
+  requirement: ReturnType<typeof unmatchedRequirements>[number],
+): CliImpactSummary['unmatchedRequirements'][number] => {
+  // Classifications are keyed by the label a reader sees (R9), falling back to the internal id.
+  const classified = classificationOf(input, requirement.label ?? requirement.id);
+  return {
+    id: requirement.id,
+    ...(requirement.label === undefined ? {} : { label: requirement.label }),
+    statement: requirement.statement,
+    origin: originOf(requirement),
+    ...(classified === undefined
+      ? {}
+      : {
+          classification: classified.classification,
+          classificationRationale: classified.rationale,
+        }),
+  };
+};
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -349,22 +370,9 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
     topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
-    unmatchedRequirements: unmatched.map((requirement) => {
-      // Classifications are keyed by the label a reader sees (R9), falling back to the internal id.
-      const classified = classificationOf(input, requirement.label ?? requirement.id);
-      return {
-        id: requirement.id,
-        ...(requirement.label === undefined ? {} : { label: requirement.label }),
-        statement: requirement.statement,
-        origin: originOf(requirement),
-        ...(classified === undefined
-          ? {}
-          : {
-              classification: classified.classification,
-              classificationRationale: classified.rationale,
-            }),
-      };
-    }),
+    unmatchedRequirements: unmatched.map((requirement) =>
+      unmatchedLine(input, requirement),
+    ),
     unresolvedConcepts: unresolvedConcepts(analysis),
     ...preflightBlock(input),
     ...blockersBlock(input),

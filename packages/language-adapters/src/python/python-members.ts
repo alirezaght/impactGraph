@@ -1,5 +1,4 @@
 import { deterministicEnvelope } from '../fragment-builder.js';
-
 import { fieldNode, namedChildrenOf } from '../tree-sitter/syntax.js';
 
 import type { PythonParseState } from './python-context.js';

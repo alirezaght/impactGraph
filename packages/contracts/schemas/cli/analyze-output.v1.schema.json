@@ -29,11 +29,7 @@
             },
             "extractionMode": {
               "type": "string",
-              "enum": [
-                "provider",
-                "deterministic-fallback",
-                "unchanged"
-              ]
+              "enum": ["provider", "deterministic-fallback", "unchanged"]
             },
             "readiness": {
               "type": "object",
@@ -74,12 +70,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "id",
-            "version",
-            "title",
-            "extractionMode"
-          ],
+          "required": ["id", "version", "title", "extractionMode"],
           "additionalProperties": false
         },
         "analysis": {
@@ -102,12 +93,7 @@
               "minimum": 0
             }
           },
-          "required": [
-            "id",
-            "snapshotId",
-            "status",
-            "impactCount"
-          ],
+          "required": ["id", "snapshotId", "status", "impactCount"],
           "additionalProperties": false
         },
         "requirements": {
@@ -153,10 +139,7 @@
                     },
                     "directness": {
                       "type": "string",
-                      "enum": [
-                        "direct",
-                        "indirect"
-                      ]
+                      "enum": ["direct", "indirect"]
                     },
                     "confidence": {
                       "type": "number",
@@ -237,20 +220,12 @@
                       "minLength": 1
                     }
                   },
-                  "required": [
-                    "question",
-                    "severity"
-                  ],
+                  "required": ["question", "severity"],
                   "additionalProperties": false
                 }
               }
             },
-            "required": [
-              "id",
-              "statement",
-              "impacts",
-              "openQuestions"
-            ],
+            "required": ["id", "statement", "impacts", "openQuestions"],
             "additionalProperties": false
           }
         },
@@ -325,11 +300,7 @@
                   },
                   "complexity": {
                     "type": "string",
-                    "enum": [
-                      "low",
-                      "medium",
-                      "high"
-                    ]
+                    "enum": ["low", "medium", "high"]
                   },
                   "risks": {
                     "type": "array",
@@ -351,12 +322,7 @@
                 "additionalProperties": false
               }
             },
-            "required": [
-              "id",
-              "title",
-              "description",
-              "affectedNodeIds"
-            ],
+            "required": ["id", "title", "description", "affectedNodeIds"],
             "additionalProperties": false
           }
         },
@@ -425,10 +391,7 @@
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "type",
-                        "contribution"
-                      ],
+                      "required": ["type", "contribution"],
                       "additionalProperties": false
                     }
                   }
@@ -467,17 +430,11 @@
                   },
                   "sourceKind": {
                     "type": "string",
-                    "enum": [
-                      "existing",
-                      "proposed"
-                    ]
+                    "enum": ["existing", "proposed"]
                   },
                   "targetKind": {
                     "type": "string",
-                    "enum": [
-                      "existing",
-                      "proposed"
-                    ]
+                    "enum": ["existing", "proposed"]
                   },
                   "type": {
                     "type": "string",
@@ -525,10 +482,7 @@
               }
             }
           },
-          "required": [
-            "nodes",
-            "relationships"
-          ],
+          "required": ["nodes", "relationships"],
           "additionalProperties": false
         },
         "planAssessment": {
@@ -623,12 +577,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "feasibility",
-            "decision",
-            "counts",
-            "decidingFindingIds"
-          ],
+          "required": ["feasibility", "decision", "counts", "decidingFindingIds"],
           "additionalProperties": false
         },
         "preflightFindings": {
@@ -657,11 +606,7 @@
               },
               "severity": {
                 "type": "string",
-                "enum": [
-                  "blocking",
-                  "warning",
-                  "informational"
-                ]
+                "enum": ["blocking", "warning", "informational"]
               },
               "requirementIds": {
                 "type": "array",
@@ -707,11 +652,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "sourceRef",
-                  "relation",
-                  "targetRef"
-                ],
+                "required": ["sourceRef", "relation", "targetRef"],
                 "additionalProperties": false
               },
               "runtimePathId": {
@@ -780,12 +721,7 @@
                 "maximum": 1
               }
             },
-            "required": [
-              "requirementId",
-              "classification",
-              "rationale",
-              "confidence"
-            ],
+            "required": ["requirementId", "classification", "rationale", "confidence"],
             "additionalProperties": false
           }
         },
@@ -832,10 +768,7 @@
               }
             }
           },
-          "required": [
-            "indexedConstraintCount",
-            "opaqueGuardPaths"
-          ],
+          "required": ["indexedConstraintCount", "opaqueGuardPaths"],
           "additionalProperties": false
         }
       },

@@ -51,11 +51,7 @@
               },
               "priority": {
                 "type": "string",
-                "enum": [
-                  "must",
-                  "should",
-                  "could"
-                ]
+                "enum": ["must", "should", "could"]
               },
               "sourceExcerpt": {
                 "type": "string",
@@ -63,12 +59,7 @@
                 "maxLength": 2000
               }
             },
-            "required": [
-              "statement",
-              "type",
-              "concepts",
-              "actors"
-            ],
+            "required": ["statement", "type", "concepts", "actors"],
             "additionalProperties": false
           },
           "maxItems": 200
@@ -108,11 +99,7 @@
               },
               "severity": {
                 "type": "string",
-                "enum": [
-                  "blocking",
-                  "important",
-                  "minor"
-                ]
+                "enum": ["blocking", "important", "minor"]
               },
               "affectedRequirementStatements": {
                 "type": "array",
@@ -124,23 +111,13 @@
                 "maxItems": 20
               }
             },
-            "required": [
-              "question",
-              "reason",
-              "severity",
-              "affectedRequirementStatements"
-            ],
+            "required": ["question", "reason", "severity", "affectedRequirementStatements"],
             "additionalProperties": false
           },
           "maxItems": 50
         }
       },
-      "required": [
-        "requirements",
-        "actors",
-        "constraints",
-        "openQuestions"
-      ],
+      "required": ["requirements", "actors", "constraints", "openQuestions"],
       "additionalProperties": false
     }
   },

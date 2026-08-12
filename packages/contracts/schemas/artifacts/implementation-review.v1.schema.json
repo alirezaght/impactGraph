@@ -51,20 +51,12 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "id",
-                "specificationId",
-                "specificationVersion",
-                "approvedSnapshotId"
-              ],
+              "required": ["id", "specificationId", "specificationVersion", "approvedSnapshotId"],
               "additionalProperties": false
             },
             "target": {
               "type": "string",
-              "enum": [
-                "working-tree",
-                "commit"
-              ]
+              "enum": ["working-tree", "commit"]
             },
             "reviewSnapshotId": {
               "type": "string",
@@ -122,19 +114,11 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "reason"
-                    ],
+                    "required": ["reason"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "category",
-                  "nodeId",
-                  "nodeName",
-                  "explanation",
-                  "filePaths"
-                ],
+                "required": ["category", "nodeId", "nodeName", "explanation", "filePaths"],
                 "additionalProperties": false
               }
             },
@@ -153,12 +137,7 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": [
-                      "implemented",
-                      "partially-implemented",
-                      "not-found",
-                      "unclear"
-                    ]
+                    "enum": ["implemented", "partially-implemented", "not-found", "unclear"]
                   },
                   "evidence": {
                     "type": "array",
@@ -167,31 +146,19 @@
                       "properties": {
                         "marker": {
                           "type": "string",
-                          "enum": [
-                            "confirmed",
-                            "missing",
-                            "unclear"
-                          ]
+                          "enum": ["confirmed", "missing", "unclear"]
                         },
                         "note": {
                           "type": "string",
                           "minLength": 1
                         }
                       },
-                      "required": [
-                        "marker",
-                        "note"
-                      ],
+                      "required": ["marker", "note"],
                       "additionalProperties": false
                     }
                   }
                 },
-                "required": [
-                  "requirementId",
-                  "statement",
-                  "status",
-                  "evidence"
-                ],
+                "required": ["requirementId", "statement", "status", "evidence"],
                 "additionalProperties": false
               }
             },
@@ -219,10 +186,7 @@
                   "minimum": 0
                 }
               },
-              "required": [
-                "added",
-                "removed"
-              ],
+              "required": ["added", "removed"],
               "additionalProperties": false
             },
             "ruleViolations": {
@@ -249,11 +213,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "ruleId",
-                  "message",
-                  "filePaths"
-                ],
+                "required": ["ruleId", "message", "filePaths"],
                 "additionalProperties": false
               }
             },
@@ -298,10 +258,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "path",
-                      "name"
-                    ],
+                    "required": ["path", "name"],
                     "additionalProperties": false
                   }
                 },
@@ -327,12 +284,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "path",
-                      "name",
-                      "likelihood",
-                      "basis"
-                    ],
+                    "required": ["path", "name", "likelihood", "basis"],
                     "additionalProperties": false
                   }
                 },
@@ -388,10 +340,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "statement",
-                      "changedPaths"
-                    ],
+                    "required": ["statement", "changedPaths"],
                     "additionalProperties": false
                   }
                 },
@@ -408,10 +357,7 @@
                     },
                     "target": {
                       "type": "string",
-                      "enum": [
-                        "working-tree",
-                        "commit"
-                      ]
+                      "enum": ["working-tree", "commit"]
                     },
                     "changedFileCount": {
                       "type": "integer",
@@ -444,11 +390,7 @@
                   "properties": {
                     "level": {
                       "type": "string",
-                      "enum": [
-                        "high",
-                        "limited",
-                        "low"
-                      ]
+                      "enum": ["high", "limited", "low"]
                     },
                     "reasons": {
                       "type": "array",
@@ -459,10 +401,7 @@
                       "minItems": 1
                     }
                   },
-                  "required": [
-                    "level",
-                    "reasons"
-                  ],
+                  "required": ["level", "reasons"],
                   "additionalProperties": false
                 }
               },
@@ -500,10 +439,7 @@
                       },
                       "direction": {
                         "type": "string",
-                        "enum": [
-                          "added",
-                          "removed"
-                        ]
+                        "enum": ["added", "removed"]
                       },
                       "category": {
                         "type": "string",
@@ -536,24 +472,14 @@
                             "minLength": 1
                           }
                         },
-                        "required": [
-                          "nodeId",
-                          "nodeName"
-                        ],
+                        "required": ["nodeId", "nodeName"],
                         "additionalProperties": false
                       },
                       "to": {
                         "$ref": "#/definitions/ImplementationReviewArtifactV1/properties/document/properties/drift/properties/entries/items/properties/from"
                       }
                     },
-                    "required": [
-                      "edgeId",
-                      "edgeType",
-                      "direction",
-                      "category",
-                      "from",
-                      "to"
-                    ],
+                    "required": ["edgeId", "edgeType", "direction", "category", "from", "to"],
                     "additionalProperties": false
                   }
                 },
@@ -570,10 +496,7 @@
                         "minimum": 1
                       }
                     },
-                    "required": [
-                      "category",
-                      "count"
-                    ],
+                    "required": ["category", "count"],
                     "additionalProperties": false
                   }
                 },
@@ -592,16 +515,11 @@
                       "minimum": 1
                     }
                   },
-                  "required": [
-                    "contexts"
-                  ],
+                  "required": ["contexts"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "entries",
-                "omitted"
-              ],
+              "required": ["entries", "omitted"],
               "additionalProperties": false
             },
             "planContract": {
@@ -633,11 +551,7 @@
                       },
                       "severity": {
                         "type": "string",
-                        "enum": [
-                          "blocking",
-                          "warning",
-                          "informational"
-                        ]
+                        "enum": ["blocking", "warning", "informational"]
                       },
                       "requirementIds": {
                         "type": "array",
@@ -683,11 +597,7 @@
                             "minLength": 1
                           }
                         },
-                        "required": [
-                          "sourceRef",
-                          "relation",
-                          "targetRef"
-                        ],
+                        "required": ["sourceRef", "relation", "targetRef"],
                         "additionalProperties": false
                       },
                       "runtimePathId": {
@@ -741,11 +651,7 @@
                   }
                 }
               },
-              "required": [
-                "findings",
-                "unplannedPaths",
-                "unchangedExpectedPaths"
-              ],
+              "required": ["findings", "unplannedPaths", "unchangedExpectedPaths"],
               "additionalProperties": false
             }
           },
@@ -779,11 +685,7 @@
               },
               "category": {
                 "type": "string",
-                "enum": [
-                  "missing",
-                  "unexpected",
-                  "divergent"
-                ]
+                "enum": ["missing", "unexpected", "divergent"]
               },
               "reason": {
                 "type": "string",
@@ -792,35 +694,19 @@
               },
               "actor": {
                 "type": "string",
-                "enum": [
-                  "user",
-                  "agent"
-                ]
+                "enum": ["user", "agent"]
               },
               "decidedAt": {
                 "type": "string",
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "nodeId",
-              "category",
-              "reason",
-              "actor",
-              "decidedAt"
-            ],
+            "required": ["id", "nodeId", "category", "reason", "actor", "decidedAt"],
             "additionalProperties": false
           }
         }
       },
-      "required": [
-        "schemaVersion",
-        "id",
-        "createdAt",
-        "document",
-        "acceptedDeviations"
-      ],
+      "required": ["schemaVersion", "id", "createdAt", "document", "acceptedDeviations"],
       "additionalProperties": false
     }
   },

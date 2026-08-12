@@ -70,9 +70,8 @@ export const isIndependent = (provenance: EvidenceProvenance): boolean =>
  * Absence is read as the weakest interpretation, matching how a missing evidence basis is read.
  * An analysis stored before this field existed must not be treated as independently evidenced.
  */
-export const provenanceOf = (
-  value: EvidenceProvenance | undefined,
-): EvidenceProvenance => value ?? 'WEAK_LEXICAL';
+export const provenanceOf = (value: EvidenceProvenance | undefined): EvidenceProvenance =>
+  value ?? 'WEAK_LEXICAL';
 
 export interface EvidenceIndependence {
   /** Impacts whose provenance counts as independent. */
@@ -93,8 +92,9 @@ export const summariseIndependence = (
     independentCount: resolved.filter(isIndependent).length,
     confirmationCount: resolved.filter((provenance) => provenance === 'USER_SUPPLIED').length,
     weightedIndependence:
-      Math.round(resolved.reduce((sum, provenance) => sum + independenceWeight(provenance), 0) * 100) /
-      100,
+      Math.round(
+        resolved.reduce((sum, provenance) => sum + independenceWeight(provenance), 0) * 100,
+      ) / 100,
     totalCount: resolved.length,
   };
 };

@@ -18,24 +18,14 @@
         },
         "extractionMode": {
           "type": "string",
-          "enum": [
-            "provider",
-            "deterministic-fallback",
-            "unchanged"
-          ]
+          "enum": ["provider", "deterministic-fallback", "unchanged"]
         },
         "requirementCount": {
           "type": "integer",
           "minimum": 0
         }
       },
-      "required": [
-        "specificationId",
-        "version",
-        "title",
-        "extractionMode",
-        "requirementCount"
-      ],
+      "required": ["specificationId", "version", "title", "extractionMode", "requirementCount"],
       "additionalProperties": false
     }
   },

@@ -13,10 +13,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "rollbackId",
-        "restoredFile"
-      ],
+      "required": ["rollbackId", "restoredFile"],
       "additionalProperties": false
     }
   },

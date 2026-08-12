@@ -26,10 +26,22 @@ export const QUERY_INTENTS = [
 export type QueryIntent = (typeof QUERY_INTENTS)[number];
 
 const INTENT_PATTERNS: readonly { readonly intent: QueryIntent; readonly pattern: RegExp }[] = [
-  { intent: 'validation', pattern: /\b(guard|invariant|constraint|rule|enforce|ci check|lint|policy|allowlist|forbidden)\b/i },
+  {
+    intent: 'validation',
+    pattern:
+      /\b(guard|invariant|constraint|rule|enforce|ci check|lint|policy|allowlist|forbidden)\b/i,
+  },
   { intent: 'tests', pattern: /\b(test|spec|fixture|golden|assertion|coverage)\b/i },
-  { intent: 'runtime', pattern: /\b(deploy|terraform|cloud run|container|environment variable|env var|gateway|aggregator|topology|infra)\b/i },
-  { intent: 'architecture', pattern: /\b(architecture|boundary|layer|module structure|bounded context|dependency direction)\b/i },
+  {
+    intent: 'runtime',
+    pattern:
+      /\b(deploy|terraform|cloud run|container|environment variable|env var|gateway|aggregator|topology|infra)\b/i,
+  },
+  {
+    intent: 'architecture',
+    pattern:
+      /\b(architecture|boundary|layer|module structure|bounded context|dependency direction)\b/i,
+  },
   { intent: 'ownership', pattern: /\b(owner|owns|team|responsible|maintainer)\b/i },
   { intent: 'planning', pattern: /\b(plan|impact|affected|change surface|requirement)\b/i },
 ];
@@ -43,7 +55,8 @@ export const inferQueryIntent = (query: string): QueryIntent =>
   INTENT_PATTERNS.find((entry) => entry.pattern.test(query))?.intent ?? 'implementation';
 
 const isTest = (hit: ComponentSearchHit): boolean =>
-  hit.type === 'test' || /(^|\/)(tests?|__tests__|spec)\//.test(hit.path ?? '') ||
+  hit.type === 'test' ||
+  /(^|\/)(tests?|__tests__|spec)\//.test(hit.path ?? '') ||
   /\.(test|spec)\.[a-z]+$/.test(hit.path ?? '');
 
 const isGuard = (hit: ComponentSearchHit): boolean =>
@@ -52,33 +65,45 @@ const isGuard = (hit: ComponentSearchHit): boolean =>
   /eslint|\.github\/workflows/.test(hit.path ?? '');
 
 const isRuntime = (hit: ComponentSearchHit): boolean =>
-  hit.category === 'infrastructure' || /\.tf$|(^|\/)(infra|terraform|deploy)\//.test(hit.path ?? '');
+  hit.category === 'infrastructure' ||
+  /\.tf$|(^|\/)(infra|terraform|deploy)\//.test(hit.path ?? '');
 
 const isFixture = (hit: ComponentSearchHit): boolean => /(^|\/)fixtures?\//.test(hit.path ?? '');
 
-/** Multipliers per intent. Above 1 promotes, below 1 demotes; nothing is ever removed. */
-const weightFor = (intent: QueryIntent, hit: ComponentSearchHit): number => {
+/** What kind of thing a hit is, from the reader's point of view rather than the graph's. */
+type HitRole = 'fixture' | 'test' | 'guard' | 'runtime' | 'source';
+
+const roleOf = (hit: ComponentSearchHit): HitRole => {
+  // Fixtures first: a fixture's contents are also tests and infrastructure, and none of that is
+  // this repository's production surface. They leaked into predictions as "example paths".
   if (isFixture(hit)) {
-    // Fixtures are sample repositories, not this repository's production surface. They leaked into
-    // predictions as "example paths" and read as real answers.
-    return 0.4;
+    return 'fixture';
   }
-  switch (intent) {
-    case 'implementation':
-    case 'planning':
-      return isTest(hit) ? 0.5 : isGuard(hit) ? 0.8 : 1;
-    case 'validation':
-      return isGuard(hit) ? 1.6 : isTest(hit) ? 1.3 : 1;
-    case 'tests':
-      return isTest(hit) ? 1.6 : 0.7;
-    case 'runtime':
-      return isRuntime(hit) ? 1.6 : isTest(hit) ? 0.5 : 1;
-    case 'architecture':
-      return isGuard(hit) ? 1.3 : isTest(hit) ? 0.6 : 1;
-    case 'ownership':
-      return 1;
+  if (isTest(hit)) {
+    return 'test';
   }
+  if (isGuard(hit)) {
+    return 'guard';
+  }
+  return isRuntime(hit) ? 'runtime' : 'source';
 };
+
+/**
+ * Multipliers per intent and role. Above 1 promotes, below 1 demotes; nothing is ever removed,
+ * because a demoted result the caller actually wanted must still be reachable by scrolling.
+ */
+const WEIGHTS: Readonly<Record<QueryIntent, Readonly<Record<HitRole, number>>>> = {
+  implementation: { fixture: 0.4, test: 0.5, guard: 0.8, runtime: 1, source: 1 },
+  planning: { fixture: 0.4, test: 0.5, guard: 0.8, runtime: 1, source: 1 },
+  validation: { fixture: 0.4, test: 1.3, guard: 1.6, runtime: 1, source: 1 },
+  tests: { fixture: 0.4, test: 1.6, guard: 0.7, runtime: 0.7, source: 0.7 },
+  runtime: { fixture: 0.4, test: 0.5, guard: 1, runtime: 1.6, source: 1 },
+  architecture: { fixture: 0.4, test: 0.6, guard: 1.3, runtime: 1, source: 1 },
+  ownership: { fixture: 0.4, test: 1, guard: 1, runtime: 1, source: 1 },
+};
+
+const weightFor = (intent: QueryIntent, hit: ComponentSearchHit): number =>
+  WEIGHTS[intent][roleOf(hit)];
 
 /** Results kept per file before the rest are pushed below everything else. */
 export const MAX_HITS_PER_FILE = 2;
@@ -107,9 +132,7 @@ const MEMBER_TYPES = new Set([
  * file and reports that as a search. The overflow is not dropped — it is moved below the diverse
  * results, so nothing disappears and the first screen answers the question.
  */
-const applyFileDiversity = (
-  hits: readonly ComponentSearchHit[],
-): readonly ComponentSearchHit[] => {
+const applyFileDiversity = (hits: readonly ComponentSearchHit[]): readonly ComponentSearchHit[] => {
   const perFile = new Map<string, number>();
   const primary: ComponentSearchHit[] = [];
   const overflow: ComponentSearchHit[] = [];

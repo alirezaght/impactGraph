@@ -1,7 +1,4 @@
 import { compareImplementation } from '@impactgraph/application';
-
-import { toFindingDto } from './reports/preflight-block.js';
-import { reviewAgainstPlan } from './review-plan-contract.js';
 import { createGitCliAdapter } from '@impactgraph/git';
 import { readArchitectureConfig } from '@impactgraph/persistence';
 
@@ -10,10 +7,12 @@ import { failWith } from './failure.js';
 import { loadGraphAt, withIndexStore } from './graphs.js';
 import { performIndexRun } from './indexing.js';
 import { appendLearningProposal, reviewCoChangeProposal } from './learning.js';
+import { toFindingDto } from './reports/preflight-block.js';
 import { buildReviewDrift } from './reports/review-drift.js';
 import { buildReviewOutput } from './reports/review-output.js';
 import { collectWorkspaceRepositoryContext } from './repository-coverage.js';
 import { persistReviewDocument } from './review-artifacts.js';
+import { reviewAgainstPlan } from './review-plan-contract.js';
 import { evaluateConfiguredRules, loadProjectKnowledge } from './rules.js';
 import { GIT_FAILURES } from './snapshot.js';
 import { loadSpecification } from './specifications.js';
@@ -21,7 +20,9 @@ import { loadSpecification } from './specifications.js';
 import type { Failable } from './failure.js';
 import type { ReviewBreakdownContext } from './reports/review-output.js';
 import type { ReviewRepositoryScope } from './reports/review-scope.js';
+import type { PlanContractInput } from './review-plan-contract.js';
 import type { GitDiffResult, RuleViolation } from '@impactgraph/application';
+import type { CliReviewOutput } from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
   ImplementationReview,
@@ -100,23 +101,57 @@ interface CompareInputs {
   readonly reviewSnapshotId: string;
 }
 
+/**
+ * ADR-0017 — attach the plan-contract block: the approved design checked against the diff rather
+ * than archived alongside it.
+ */
+const withPlanContract = (
+  document: CliReviewOutput,
+  context: PlanContractInput,
+): CliReviewOutput => {
+  const contract = reviewAgainstPlan(context);
+  return {
+    ...document,
+    planContract: {
+      findings: contract.findings.map(toFindingDto),
+      unplannedPaths: [...contract.unplannedPaths],
+      unchangedExpectedPaths: [...contract.unchangedExpectedPaths],
+    },
+  };
+};
+
+/** Both graphs a comparison needs: the one approval was bound to, and the one just indexed. */
+const loadComparisonGraphs = async (
+  store: Parameters<Parameters<typeof withIndexStore>[1]>[0],
+  analysis: ImpactAnalysis,
+  reviewSnapshotId: string,
+): Promise<Failable<{ approved: KnowledgeGraph; current: KnowledgeGraph }>> => {
+  const approvedGraph = await loadGraphAt(store, analysis.repositorySnapshotId, 'approved');
+  if (!approvedGraph.ok) {
+    return approvedGraph;
+  }
+  if (approvedGraph.value.nodes.size === 0 && analysis.requirementImpacts.length > 0) {
+    return failWith(
+      'indexingFailure',
+      `approved snapshot ${analysis.repositorySnapshotId} is no longer in the local index — the cache was rebuilt since approval`,
+    );
+  }
+  const currentGraph = await loadGraphAt(store, reviewSnapshotId, 'current');
+  if (!currentGraph.ok) {
+    return currentGraph;
+  }
+  return { ok: true, value: { approved: approvedGraph.value, current: currentGraph.value } };
+};
+
 const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<ReviewBundle>> => {
   const { rootDir, analysis, specification, diff, reviewSnapshotId, target } = inputs;
   return withIndexStore(rootDir, async (store) => {
-    const approvedGraph = await loadGraphAt(store, analysis.repositorySnapshotId, 'approved');
-    if (!approvedGraph.ok) {
-      return approvedGraph;
+    const graphs = await loadComparisonGraphs(store, analysis, reviewSnapshotId);
+    if (!graphs.ok) {
+      return graphs;
     }
-    if (approvedGraph.value.nodes.size === 0 && analysis.requirementImpacts.length > 0) {
-      return failWith(
-        'indexingFailure',
-        `approved snapshot ${analysis.repositorySnapshotId} is no longer in the local index — the cache was rebuilt since approval`,
-      );
-    }
-    const currentGraph = await loadGraphAt(store, reviewSnapshotId, 'current');
-    if (!currentGraph.ok) {
-      return currentGraph;
-    }
+    const approvedGraph = { value: graphs.value.approved };
+    const currentGraph = { value: graphs.value.current };
     const review = compareImplementation({
       reviewId: `review-${analysis.id}-${Date.now().toString(36)}`,
       analysis,
@@ -144,22 +179,19 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
       approvedGraph: approvedGraph.value,
       currentGraph: currentGraph.value,
     });
-    // ADR-0017 — the approved plan as a contract, checked rather than archived.
-    const planContract = reviewAgainstPlan({
+    const persisted = persistReviewDocument(
       rootDir,
-      analysis,
-      review: review.value,
-      approvedGraph: approvedGraph.value,
-      currentGraph: currentGraph.value,
-    });
-    const persisted = persistReviewDocument(rootDir, {
-      ...buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
-      planContract: {
-        findings: planContract.findings.map(toFindingDto),
-        unplannedPaths: [...planContract.unplannedPaths],
-        unchangedExpectedPaths: [...planContract.unchangedExpectedPaths],
-      },
-    });
+      withPlanContract(
+        buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
+        {
+          rootDir,
+          analysis,
+          review: review.value,
+          approvedGraph: approvedGraph.value,
+          currentGraph: currentGraph.value,
+        },
+      ),
+    );
     if (!persisted.ok) {
       return persisted;
     }

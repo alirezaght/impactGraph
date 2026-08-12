@@ -93,7 +93,10 @@ describe('classifyUnmatchedRequirement', () => {
   });
 
   it('classifies a missing enum member as INVALID_ASSUMPTION', () => {
-    const result = classifyUnmatchedRequirement('R4', signals({ hasInvalidSymbolAssumption: true }));
+    const result = classifyUnmatchedRequirement(
+      'R4',
+      signals({ hasInvalidSymbolAssumption: true }),
+    );
     expect(result.classification).toBe('INVALID_ASSUMPTION');
   });
 

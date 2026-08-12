@@ -25,12 +25,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "specificationId",
-        "specificationVersion",
-        "decisionId",
-        "decisionRecorded"
-      ],
+      "required": ["specificationId", "specificationVersion", "decisionId", "decisionRecorded"],
       "additionalProperties": false
     }
   },

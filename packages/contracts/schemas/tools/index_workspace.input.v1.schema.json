@@ -6,10 +6,7 @@
       "properties": {
         "warningDetail": {
           "type": "string",
-          "enum": [
-            "summary",
-            "full"
-          ]
+          "enum": ["summary", "full"]
         }
       },
       "additionalProperties": false

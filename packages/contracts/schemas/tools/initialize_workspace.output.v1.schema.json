@@ -14,10 +14,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "created",
-        "alreadyInitialized"
-      ],
+      "required": ["created", "alreadyInitialized"],
       "additionalProperties": false
     }
   },

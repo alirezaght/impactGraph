@@ -26,9 +26,7 @@ export interface RequirementSignalInput {
   readonly siblingSurfaceIndexed: boolean;
 }
 
-const FINDING_KIND: Readonly<
-  Record<UnmatchedRequirementClass, PreflightFinding['kind']>
-> = {
+const FINDING_KIND: Readonly<Record<UnmatchedRequirementClass, PreflightFinding['kind']>> = {
   NEW_SURFACE: 'new-surface',
   COVERAGE_GAP: 'coverage-gap',
   INVALID_ASSUMPTION: 'invalid-assumption',

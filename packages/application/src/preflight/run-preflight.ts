@@ -81,9 +81,7 @@ const byImportance = (a: PreflightFinding, b: PreflightFinding): number => {
  * Runtime paths are resolved only for URLs the plan actually touches. Walking every URL in a large
  * repository would bury one real gap under a hundred paths nobody proposed to change.
  */
-const relevantUrlPattern = (
-  requirements: readonly PreflightRequirement[],
-): RegExp | undefined => {
+const relevantUrlPattern = (requirements: readonly PreflightRequirement[]): RegExp | undefined => {
   const names = requirements
     .flatMap((requirement) => requirement.concepts.map((concept) => concept.ref))
     .map((ref) => ref.replace(/[^A-Za-z0-9]+/g, '.?'))
@@ -91,9 +89,9 @@ const relevantUrlPattern = (
   return names.length === 0 ? undefined : new RegExp(names.join('|'), 'i');
 };
 
-export const runPreflight = (input: RunPreflightInput): PreflightResult => {
+/** The checks that read the plan's proposed relationships and the symbols it asserts. */
+const designFindings = (input: RunPreflightInput): readonly PreflightFinding[] => {
   const findings: PreflightFinding[] = [];
-
   const proposedEdges = input.requirements.flatMap((requirement) =>
     deriveProposedEdges({
       requirementId: requirement.label ?? requirement.id,
@@ -108,7 +106,6 @@ export const runPreflight = (input: RunPreflightInput): PreflightResult => {
       nextId: input.nextId,
     }),
   );
-
   for (const requirement of input.requirements) {
     findings.push(
       ...checkAssumptions({
@@ -119,7 +116,12 @@ export const runPreflight = (input: RunPreflightInput): PreflightResult => {
       }),
     );
   }
+  return findings;
+};
 
+/** The checks that read the deployment topology and the configuration it carries. */
+const deploymentFindings = (input: RunPreflightInput): readonly PreflightFinding[] => {
+  const findings: PreflightFinding[] = [];
   const urlPattern = relevantUrlPattern(input.requirements);
   const paths = resolveRuntimePaths({
     graph: input.graph,
@@ -143,7 +145,11 @@ export const runPreflight = (input: RunPreflightInput): PreflightResult => {
       nextId: input.nextId,
     }),
   );
+  return findings;
+};
 
+export const runPreflight = (input: RunPreflightInput): PreflightResult => {
+  const findings: PreflightFinding[] = [...designFindings(input), ...deploymentFindings(input)];
   const unmatched = input.requirements.filter((requirement) => !requirement.hasStructuralImpact);
   const classifications = unmatched.map((requirement) =>
     classifyUnmatchedRequirement(requirement.label ?? requirement.id, {

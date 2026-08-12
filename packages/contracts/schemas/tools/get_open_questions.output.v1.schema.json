@@ -96,12 +96,7 @@
           "additionalProperties": false
         }
       },
-      "required": [
-        "specificationId",
-        "version",
-        "openQuestions",
-        "readiness"
-      ],
+      "required": ["specificationId", "version", "openQuestions", "readiness"],
       "additionalProperties": false
     }
   },

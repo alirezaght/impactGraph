@@ -41,15 +41,15 @@ Preserved strengths:
 
 Failures, each mapping to a requirement of this design:
 
-| Observed | Requirement |
-| --- | --- |
-| Unmatched requirements diagnosed as "index more repositories" when the truth was new surface | R13 |
-| The single match (R16 → `submitSpecification`) was a spec echo, tiered `required` at 0.9 | R11, R12 |
-| 8 of the next 11 impacts were `.test.ts` files reached via `CONTAINS → IMPORTS` | R17 |
-| Zero constraints found, though the repo enforces boundaries, domain purity, and a LOC gate | R1–R4 |
-| `find_components` returned 11 of 12 hits as fields of one interface in one file | R17 |
-| `index_workspace` returned 91 KB / 792 raw warning strings and exceeded the tool token limit | R20 |
-| `predictedArtifacts` cited test fixtures (`fixtures/ts-basic/prisma/migrations/…`) as production surface | R20 |
+| Observed                                                                                                 | Requirement |
+| -------------------------------------------------------------------------------------------------------- | ----------- |
+| Unmatched requirements diagnosed as "index more repositories" when the truth was new surface             | R13         |
+| The single match (R16 → `submitSpecification`) was a spec echo, tiered `required` at 0.9                 | R11, R12    |
+| 8 of the next 11 impacts were `.test.ts` files reached via `CONTAINS → IMPORTS`                          | R17         |
+| Zero constraints found, though the repo enforces boundaries, domain purity, and a LOC gate               | R1–R4       |
+| `find_components` returned 11 of 12 hits as fields of one interface in one file                          | R17         |
+| `index_workspace` returned 91 KB / 792 raw warning strings and exceeded the tool token limit             | R20         |
+| `predictedArtifacts` cited test fixtures (`fixtures/ts-basic/prisma/migrations/…`) as production surface | R20         |
 
 ## 2. Product shift
 
@@ -68,7 +68,7 @@ Component discovery remains, demoted to supporting detail.
 
 The current pipeline is `spec → concepts → node match → traverse → impacts → readiness:N`.
 
-Nothing in it can produce a *negative* finding. Impacts are the only output type, so the only
+Nothing in it can produce a _negative_ finding. Impacts are the only output type, so the only
 expressible failure is "no impact found", and the only expressible confidence is a number that rises
 when matching succeeds — including when matching succeeds tautologically.
 
@@ -85,7 +85,7 @@ new **runtime/deployment graph**.
   deliberately kept separate from the deterministic graph. It is the correct input to constraint
   checking. It is extended from option-derived to requirement-derived proposed edges.
 - `application/evaluate-rules` already models `ArchitectureRule` and `RuleViolation` with evidence.
-  The constraint model subsumes it as one constraint *source*; it is not replaced.
+  The constraint model subsumes it as one constraint _source_; it is not replaced.
 - `domain/impact/evidence-basis.ts` already implements a closed evidence vocabulary with per-basis
   tier ceilings. Evidence provenance is a second, orthogonal axis using the same mechanism.
 - `domain/impact/workspace-coverage.ts` already computes insufficient-coverage. It becomes the input
@@ -99,17 +99,17 @@ new **runtime/deployment graph**.
 
 `RepositoryConstraint`:
 
-| Field | Meaning |
-| --- | --- |
-| `id`, `name` | stable identity |
-| `kind` | see below |
-| `severity` | `blocking` \| `warning` \| `advisory` |
-| `scope` | path globs, roles, or contexts the constraint governs |
-| `rule` | typed predicate (forbidden pattern, required pairing, required config key…) |
-| `exemptions` | allowlist entries, each with its own source location |
-| `source` | file path + range of the guard that declares it |
-| `extraction` | `recognized` \| `declared` \| `ai-proposed` \| `opaque` |
-| `provenance`, `evidenceIds`, `repositorySnapshotId` | knowledge-category discipline |
+| Field                                               | Meaning                                                                     |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `id`, `name`                                        | stable identity                                                             |
+| `kind`                                              | see below                                                                   |
+| `severity`                                          | `blocking` \| `warning` \| `advisory`                                       |
+| `scope`                                             | path globs, roles, or contexts the constraint governs                       |
+| `rule`                                              | typed predicate (forbidden pattern, required pairing, required config key…) |
+| `exemptions`                                        | allowlist entries, each with its own source location                        |
+| `source`                                            | file path + range of the guard that declares it                             |
+| `extraction`                                        | `recognized` \| `declared` \| `ai-proposed` \| `opaque`                     |
+| `provenance`, `evidenceIds`, `repositorySnapshotId` | knowledge-category discipline                                               |
 
 Kinds: `forbidden-dependency`, `forbidden-runtime-call`, `required-accompanying-change`,
 `required-config`, `required-runtime`, `boundary-restriction`, `must-pass-check`, `opaque-check`.
@@ -136,7 +136,7 @@ findings" and is validated in the constructor, not left to producers.
 ### 4.3 Evidence provenance semantics (R11, R12)
 
 `USER_SUPPLIED` carries independence weight ~0.1 and is **excluded from the independent-evidence
-count** that feeds plan assessment. It is *not* downgraded in tier: a file the specification named
+count** that feeds plan assessment. It is _not_ downgraded in tier: a file the specification named
 genuinely is required, and hiding it would be dishonest. It is relabelled as **confirmation**, so
 that feasibility and readiness can no longer rise because the engine echoed the specification.
 

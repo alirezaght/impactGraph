@@ -94,8 +94,9 @@ export interface PreflightFinding {
   readonly analyzer: string;
 }
 
-const collectIssues = (input: PreflightFinding): ValidationIssue[] => {
-  const issues: ValidationIssue[] = [...blankIdIssue(input.id, 'id')];
+/** The vocabulary half: kind, severity, and what a severity is allowed to be claimed for. */
+const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
   if (!isPreflightFindingKind(input.kind)) {
     issues.push(validationIssue('invalid-type', 'kind', 'unknown finding kind'));
   }
@@ -111,6 +112,20 @@ const collectIssues = (input: PreflightFinding): ValidationIssue[] => {
       ),
     );
   }
+  /**
+   * A blocking finding with no evidence is exactly the failure mode this system exists to avoid:
+   * it stops work on an assertion nobody can check.
+   */
+  if (input.severity === 'blocking' && input.evidenceIds.length === 0) {
+    issues.push(
+      validationIssue('missing-evidence', 'evidenceIds', 'a blocking finding requires evidence'),
+    );
+  }
+  return issues;
+};
+
+const collectIssues = (input: PreflightFinding): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [...blankIdIssue(input.id, 'id'), ...taxonomyIssues(input)];
   if (input.statement.trim().length === 0) {
     issues.push(validationIssue('blank-field', 'statement', 'statement required'));
   }
@@ -125,15 +140,6 @@ const collectIssues = (input: PreflightFinding): ValidationIssue[] => {
   }
   if (input.analyzer.trim().length === 0) {
     issues.push(validationIssue('blank-field', 'analyzer', 'producing analyzer required'));
-  }
-  /**
-   * A blocking finding with no evidence is exactly the failure mode this system exists to avoid:
-   * it stops work on an assertion nobody can check.
-   */
-  if (input.severity === 'blocking' && input.evidenceIds.length === 0) {
-    issues.push(
-      validationIssue('missing-evidence', 'evidenceIds', 'a blocking finding requires evidence'),
-    );
   }
   return issues;
 };

@@ -53,10 +53,7 @@
                     "type": "number"
                   }
                 },
-                "required": [
-                  "type",
-                  "contribution"
-                ],
+                "required": ["type", "contribution"],
                 "additionalProperties": false
               }
             },
@@ -93,19 +90,11 @@
                         "minimum": 0
                       }
                     },
-                    "required": [
-                      "startLine",
-                      "startColumn",
-                      "endLine",
-                      "endColumn"
-                    ],
+                    "required": ["startLine", "startColumn", "endLine", "endColumn"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "id",
-                  "source"
-                ],
+                "required": ["id", "source"],
                 "additionalProperties": false
               }
             },
@@ -151,12 +140,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "edgeId",
-              "type",
-              "from",
-              "fromName"
-            ],
+            "required": ["edgeId", "type", "from", "fromName"],
             "additionalProperties": false
           }
         },
@@ -182,12 +166,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "edgeId",
-              "type",
-              "to",
-              "toName"
-            ],
+            "required": ["edgeId", "type", "to", "toName"],
             "additionalProperties": false
           }
         },
@@ -234,12 +213,7 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "level",
-                "rank",
-                "provenance",
-                "detail"
-              ],
+              "required": ["level", "rank", "provenance", "detail"],
               "additionalProperties": false
             },
             "role": {
@@ -258,12 +232,7 @@
                 "properties": {
                   "marker": {
                     "type": "string",
-                    "enum": [
-                      "generated",
-                      "ignored",
-                      "infrastructure",
-                      "shared"
-                    ]
+                    "enum": ["generated", "ignored", "infrastructure", "shared"]
                   },
                   "level": {
                     "$ref": "#/definitions/Tool_explain_node_OutputV1/properties/effective/properties/name/properties/level"
@@ -278,13 +247,7 @@
                     "$ref": "#/definitions/Tool_explain_node_OutputV1/properties/effective/properties/name/properties/detail"
                   }
                 },
-                "required": [
-                  "marker",
-                  "level",
-                  "rank",
-                  "provenance",
-                  "detail"
-                ],
+                "required": ["marker", "level", "rank", "provenance", "detail"],
                 "additionalProperties": false
               }
             },

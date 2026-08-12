@@ -21,12 +21,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "schemaVersion",
-        "command",
-        "name",
-        "version"
-      ],
+      "required": ["schemaVersion", "command", "name", "version"],
       "additionalProperties": false
     }
   },

@@ -8,12 +8,7 @@ import {
 
 import { checkRuntime } from './check-runtime.js';
 
-import type {
-  GraphEdge,
-  GraphNode,
-  KnowledgeGraph,
-  NodeCategory,
-} from '@impactgraph/domain';
+import type { GraphEdge, GraphNode, KnowledgeGraph, NodeCategory } from '@impactgraph/domain';
 
 const knowledge = {
   provenance: 'static-analysis' as const,
@@ -68,7 +63,12 @@ const aggregatorGraph = (aggregatorEnv: readonly string[]): KnowledgeGraph => {
     ),
   ];
   const edges: GraphEdge[] = [
-    edge('e1', 'RESOLVES_TO', 'url:NEWSLETTER_SERVICE_URL', 'local:frontend_service_urls.newsletter'),
+    edge(
+      'e1',
+      'RESOLVES_TO',
+      'url:NEWSLETTER_SERVICE_URL',
+      'local:frontend_service_urls.newsletter',
+    ),
     edge('e2', 'RESOLVES_TO', 'local:frontend_service_urls.newsletter', 'local:_agg.newsletter'),
     edge('e3', 'ROUTES_TO', 'local:_agg.newsletter', 'run:aggregator'),
     edge('e4', 'CONTAINS', 'run:aggregator', 'container:aggregator'),
@@ -174,8 +174,8 @@ describe('checkRuntime — the aggregator scenario', () => {
       nextId,
     });
     expect(findings.every((finding) => finding.severity === 'warning')).toBe(true);
-    expect(
-      findings.some((finding) => finding.statement.includes('could not be resolved')),
-    ).toBe(true);
+    expect(findings.some((finding) => finding.statement.includes('could not be resolved'))).toBe(
+      true,
+    );
   });
 });

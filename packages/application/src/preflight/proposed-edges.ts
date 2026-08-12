@@ -44,7 +44,8 @@ const MECHANISM_RULES: readonly MechanismRule[] = [
   {
     mechanism: 'event',
     relation: 'PUBLISHES',
-    pattern: /\b(publish(?:es|ed)?|emit(?:s|ted)?|enqueue(?:s|d)?|pub\/?sub|topic|message queue)\b/i,
+    pattern:
+      /\b(publish(?:es|ed)?|emit(?:s|ted)?|enqueue(?:s|d)?|pub\/?sub|topic|message queue)\b/i,
   },
   {
     mechanism: 'direct-data-access',
@@ -119,7 +120,9 @@ const orderEndpoints = (
   }
   const [earlier, later] = firstAt <= secondAt ? [first, second] : [second, first];
   const earliestAt = Math.min(firstAt, secondAt);
-  const fronted = /\bfrom\s+(?:the\s+)?$/i.test(statement.slice(Math.max(0, earliestAt - 12), earliestAt));
+  const fronted = /\bfrom\s+(?:the\s+)?$/i.test(
+    statement.slice(Math.max(0, earliestAt - 12), earliestAt),
+  );
   return fronted ? [later, earlier] : [earlier, later];
 };
 
@@ -151,9 +154,7 @@ export interface DeriveProposedEdgesInput {
  * three services does not propose six relationships; inflating the count would flood the findings
  * with pairs nobody proposed.
  */
-export const deriveProposedEdges = (
-  input: DeriveProposedEdgesInput,
-): readonly ProposedEdge[] => {
+export const deriveProposedEdges = (input: DeriveProposedEdgesInput): readonly ProposedEdge[] => {
   if (input.concepts.length < 2) {
     return [];
   }

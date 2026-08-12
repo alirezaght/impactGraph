@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  inferQueryIntent,
-  MAX_HITS_PER_FILE,
-  rankByIntent,
-} from './component-search-intent.js';
+import { inferQueryIntent, MAX_HITS_PER_FILE, rankByIntent } from './component-search-intent.js';
 
 import type { ComponentSearchHit } from './component-search-scoring.js';
 

@@ -49,13 +49,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "category",
-              "type",
-              "name",
-              "provenance"
-            ],
+            "required": ["id", "category", "type", "name", "provenance"],
             "additionalProperties": false
           }
         },
@@ -85,13 +79,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "type",
-              "sourceId",
-              "targetId",
-              "provenance"
-            ],
+            "required": ["id", "type", "sourceId", "targetId", "provenance"],
             "additionalProperties": false
           }
         },

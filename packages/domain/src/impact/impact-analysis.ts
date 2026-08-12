@@ -1,18 +1,18 @@
 import { err, ok } from '../errors/result.js';
 import { validationError, validationIssue } from '../errors/validation.js';
 import { deepFreeze } from '../freeze.js';
-import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
 import { isEvidenceProvenance, provenanceOf } from '../preflight/evidence-provenance.js';
+import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
 import { isProvenance, knowledgeCategoryOf } from '../provenance/provenance.js';
 
 import { capLikelihood, isImpactEvidenceType, primaryEvidenceType } from './evidence-basis.js';
 import { collectProposedStructureIssues } from './proposed-structure.js';
 
-import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
 import type { ImpactEvidenceType } from './evidence-basis.js';
 import type { ProposedStructure } from './proposed-structure.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
+import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
 import type { ConfidenceSignal } from '../provenance/confidence.js';
 import type { Provenance } from '../provenance/provenance.js';
 
@@ -285,10 +285,7 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
   if (impact.tierCappedBy !== undefined && !isImpactEvidenceType(impact.tierCappedBy)) {
     issues.push(validationIssue('invalid-type', `${path}.tierCappedBy`, 'unknown evidence type'));
   }
-  if (
-    impact.evidenceProvenance !== undefined &&
-    !isEvidenceProvenance(impact.evidenceProvenance)
-  ) {
+  if (impact.evidenceProvenance !== undefined && !isEvidenceProvenance(impact.evidenceProvenance)) {
     issues.push(
       validationIssue('invalid-type', `${path}.evidenceProvenance`, 'unknown evidence provenance'),
     );

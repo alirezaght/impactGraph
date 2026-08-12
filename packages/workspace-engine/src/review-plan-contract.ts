@@ -74,10 +74,7 @@ const addedEdges = (
     }));
 
 /** Runtime processes the approved impacts touched — what the plan said would be on the path. */
-const runtimeProcesses = (
-  analysis: ImpactAnalysis,
-  graph: KnowledgeGraph,
-): ReadonlySet<string> => {
+const runtimeProcesses = (analysis: ImpactAnalysis, graph: KnowledgeGraph): ReadonlySet<string> => {
   const processes = new Set<string>();
   for (const impact of analysis.requirementImpacts) {
     const type = graph.nodes.get(impact.nodeId as NodeId)?.type;
@@ -104,9 +101,7 @@ const requiredConfigNames = (
 };
 
 export const reviewAgainstPlan = (input: PlanContractInput): PlanContractResult => {
-  const expectedNodeIds = new Set(
-    input.analysis.requirementImpacts.map((impact) => impact.nodeId),
-  );
+  const expectedNodeIds = new Set(input.analysis.requirementImpacts.map((impact) => impact.nodeId));
   const constraints = loadConstraints(
     input.rootDir,
     input.currentGraph,

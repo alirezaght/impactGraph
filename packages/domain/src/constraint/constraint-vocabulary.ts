@@ -79,7 +79,10 @@ export type ConstraintExtraction = (typeof CONSTRAINT_EXTRACTIONS)[number];
  * script, and a guard nobody could parse, are both real information — but neither may stop a plan
  * on its own, because neither can be shown to a reviewer as proof.
  */
-export const AUTHORITATIVE_EXTRACTIONS: readonly ConstraintExtraction[] = ['recognized', 'declared'];
+export const AUTHORITATIVE_EXTRACTIONS: readonly ConstraintExtraction[] = [
+  'recognized',
+  'declared',
+];
 
 export const canBlock = (extraction: ConstraintExtraction): boolean =>
   AUTHORITATIVE_EXTRACTIONS.includes(extraction);
@@ -88,5 +91,4 @@ export const canBlock = (extraction: ConstraintExtraction): boolean =>
 export const cappedSeverity = (
   proposed: ConstraintSeverity,
   extraction: ConstraintExtraction,
-): ConstraintSeverity =>
-  proposed === 'blocking' && !canBlock(extraction) ? 'warning' : proposed;
+): ConstraintSeverity => (proposed === 'blocking' && !canBlock(extraction) ? 'warning' : proposed);

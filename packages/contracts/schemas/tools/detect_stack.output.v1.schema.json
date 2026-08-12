@@ -23,11 +23,7 @@
           }
         }
       },
-      "required": [
-        "languages",
-        "frameworks",
-        "signals"
-      ],
+      "required": ["languages", "frameworks", "signals"],
       "additionalProperties": false
     }
   },

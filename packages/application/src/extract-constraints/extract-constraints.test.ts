@@ -43,9 +43,7 @@ describe('extractConstraints — guard scripts', () => {
     const result = extractConstraints(
       request([{ path: 'ci/scripts/check-service-peer-http.py', content: PEER_HTTP_GUARD }]),
     );
-    const constraint = result.constraints.find(
-      (entry) => entry.kind === 'forbidden-runtime-call',
-    );
+    const constraint = result.constraints.find((entry) => entry.kind === 'forbidden-runtime-call');
     expect(constraint).toBeDefined();
     expect(constraint?.severity).toBe('blocking');
     expect(constraint?.extraction).toBe('recognized');
@@ -58,9 +56,7 @@ describe('extractConstraints — guard scripts', () => {
     const result = extractConstraints(
       request([{ path: 'ci/scripts/check-service-peer-http.py', content: PEER_HTTP_GUARD }]),
     );
-    const constraint = result.constraints.find(
-      (entry) => entry.kind === 'forbidden-runtime-call',
-    );
+    const constraint = result.constraints.find((entry) => entry.kind === 'forbidden-runtime-call');
     expect(constraint?.exemptions.map((entry) => entry.subject)).toEqual([
       'services/newsletter-service/jobs/send.py',
     ]);
@@ -78,7 +74,9 @@ describe('extractConstraints — guard scripts', () => {
 
   it('indexes an unreadable guard as opaque rather than reporting nothing', () => {
     const result = extractConstraints(
-      request([{ path: 'ci/scripts/check-something.sh', content: '#!/bin/sh\nmake verify || exit 1\n' }]),
+      request([
+        { path: 'ci/scripts/check-something.sh', content: '#!/bin/sh\nmake verify || exit 1\n' },
+      ]),
     );
     const constraint = result.constraints[0];
     expect(constraint?.kind).toBe('opaque-check');
@@ -96,9 +94,7 @@ describe('extractConstraints — guard scripts', () => {
     const result = extractConstraints(
       request([{ path: 'ci/scripts/check-service-peer-http.py', content: computed }]),
     );
-    const constraint = result.constraints.find(
-      (entry) => entry.kind === 'forbidden-runtime-call',
-    );
+    const constraint = result.constraints.find((entry) => entry.kind === 'forbidden-runtime-call');
     expect(constraint?.exemptions).toEqual([]);
   });
 });

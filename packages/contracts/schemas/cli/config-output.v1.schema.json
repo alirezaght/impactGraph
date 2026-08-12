@@ -38,25 +38,14 @@
             },
             "privacyMode": {
               "type": "string",
-              "enum": [
-                "local-only",
-                "selected-snippets",
-                "full-context",
-                "external-agent"
-              ]
+              "enum": ["local-only", "selected-snippets", "full-context", "external-agent"]
             },
             "provider": {
               "type": "object",
               "properties": {
                 "strategy": {
                   "type": "string",
-                  "enum": [
-                    "none",
-                    "external-agent",
-                    "anthropic",
-                    "openai-compatible",
-                    "local"
-                  ]
+                  "enum": ["none", "external-agent", "anthropic", "openai-compatible", "local"]
                 },
                 "modelId": {
                   "type": "string",
@@ -67,9 +56,7 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "strategy"
-              ],
+              "required": ["strategy"],
               "additionalProperties": false
             },
             "automation": {
@@ -77,11 +64,7 @@
               "properties": {
                 "mode": {
                   "type": "string",
-                  "enum": [
-                    "autonomous",
-                    "review",
-                    "manual"
-                  ]
+                  "enum": ["autonomous", "review", "manual"]
                 },
                 "safeOperations": {
                   "type": "array",
@@ -91,9 +74,7 @@
                   }
                 }
               },
-              "required": [
-                "mode"
-              ],
+              "required": ["mode"],
               "additionalProperties": false
             },
             "repositories": {
@@ -113,26 +94,16 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "name",
-                  "path"
-                ],
+                "required": ["name", "path"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "schemaVersion"
-          ],
+          "required": ["schemaVersion"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "command",
-        "initialized",
-        "config"
-      ],
+      "required": ["schemaVersion", "command", "initialized", "config"],
       "additionalProperties": false
     }
   },

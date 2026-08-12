@@ -10,29 +10,18 @@
         },
         "classification": {
           "type": "string",
-          "enum": [
-            "safe",
-            "material"
-          ]
+          "enum": ["safe", "material"]
         },
         "approval": {
           "type": "string",
-          "enum": [
-            "auto",
-            "approved"
-          ]
+          "enum": ["auto", "approved"]
         },
         "file": {
           "type": "string",
           "minLength": 1
         }
       },
-      "required": [
-        "rollbackId",
-        "classification",
-        "approval",
-        "file"
-      ],
+      "required": ["rollbackId", "classification", "approval", "file"],
       "additionalProperties": false
     }
   },

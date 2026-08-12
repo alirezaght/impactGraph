@@ -49,23 +49,12 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "statement",
-              "type",
-              "concepts",
-              "actors",
-              "status"
-            ],
+            "required": ["id", "statement", "type", "concepts", "actors", "status"],
             "additionalProperties": false
           }
         }
       },
-      "required": [
-        "specificationId",
-        "version",
-        "requirements"
-      ],
+      "required": ["specificationId", "version", "requirements"],
       "additionalProperties": false
     }
   },

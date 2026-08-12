@@ -45,3 +45,20 @@ export const candidateRepositorySchema = z
 export type RepositoryReasonCode = z.infer<typeof repositoryReasonCodeSchema>;
 export type RepositoryIndexStateDto = z.infer<typeof repositoryIndexStateSchema>;
 export type CandidateRepositoryDto = z.infer<typeof candidateRepositorySchema>;
+
+/**
+ * The snapshot every command's document is bound to.
+ *
+ * Lives here rather than in `outputs.ts` because `index-output.ts` needs it too, and importing it
+ * from `outputs.ts` made the two files circular — which surfaced as an undefined Zod schema at
+ * module-evaluation time rather than as an import error.
+ */
+export const snapshotSummarySchema = z
+  .object({
+    id: z.string().min(1),
+    branch: z.string().optional(),
+    commitSha: z.string().min(1),
+    dirtyWorkingTree: z.boolean(),
+    createdAt: z.string().min(1),
+  })
+  .strict();

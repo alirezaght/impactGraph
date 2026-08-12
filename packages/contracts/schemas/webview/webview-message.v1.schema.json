@@ -20,11 +20,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -43,23 +39,14 @@
               "properties": {
                 "source": {
                   "type": "string",
-                  "enum": [
-                    "current-file",
-                    "selection"
-                  ]
+                  "enum": ["current-file", "selection"]
                 }
               },
-              "required": [
-                "source"
-              ],
+              "required": ["source"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -85,18 +72,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "name",
-                "text"
-              ],
+              "required": ["name", "text"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -122,18 +102,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "name",
-                "text"
-              ],
+              "required": ["name", "text"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -163,19 +136,11 @@
                   "minimum": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "left",
-                "right"
-              ],
+              "required": ["specificationId", "left", "right"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -204,19 +169,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "questionId",
-                "answer"
-              ],
+              "required": ["specificationId", "questionId", "answer"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -241,18 +198,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "questionId"
-              ],
+              "required": ["specificationId", "questionId"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -278,25 +228,14 @@
                 },
                 "decision": {
                   "type": "string",
-                  "enum": [
-                    "confirmed",
-                    "rejected"
-                  ]
+                  "enum": ["confirmed", "rejected"]
                 }
               },
-              "required": [
-                "specificationId",
-                "requirementId",
-                "decision"
-              ],
+              "required": ["specificationId", "requirementId", "decision"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -325,19 +264,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "specificationId",
-                "requirementId",
-                "statement"
-              ],
+              "required": ["specificationId", "requirementId", "statement"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -378,26 +309,15 @@
                       "minimum": 0
                     }
                   },
-                  "required": [
-                    "startLine",
-                    "startColumn",
-                    "endLine",
-                    "endColumn"
-                  ],
+                  "required": ["startLine", "startColumn", "endLine", "endColumn"],
                   "additionalProperties": false
                 }
               },
-              "required": [
-                "path"
-              ],
+              "required": ["path"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -427,17 +347,11 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "nodeId"
-              ],
+              "required": ["nodeId"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -468,30 +382,18 @@
                 },
                 "decision": {
                   "type": "string",
-                  "enum": [
-                    "accepted",
-                    "rejected"
-                  ]
+                  "enum": ["accepted", "rejected"]
                 },
                 "reason": {
                   "type": "string",
                   "minLength": 1
                 }
               },
-              "required": [
-                "analysisId",
-                "requirementId",
-                "nodeId",
-                "decision"
-              ],
+              "required": ["analysisId", "requirementId", "nodeId", "decision"],
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -511,11 +413,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         },
         {
@@ -535,11 +433,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "protocolVersion",
-            "type",
-            "payload"
-          ],
+          "required": ["protocolVersion", "type", "payload"],
           "additionalProperties": false
         }
       ]

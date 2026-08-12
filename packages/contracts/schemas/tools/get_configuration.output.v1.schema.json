@@ -27,25 +27,14 @@
             },
             "privacyMode": {
               "type": "string",
-              "enum": [
-                "local-only",
-                "selected-snippets",
-                "full-context",
-                "external-agent"
-              ]
+              "enum": ["local-only", "selected-snippets", "full-context", "external-agent"]
             },
             "provider": {
               "type": "object",
               "properties": {
                 "strategy": {
                   "type": "string",
-                  "enum": [
-                    "none",
-                    "external-agent",
-                    "anthropic",
-                    "openai-compatible",
-                    "local"
-                  ]
+                  "enum": ["none", "external-agent", "anthropic", "openai-compatible", "local"]
                 },
                 "modelId": {
                   "type": "string",
@@ -56,9 +45,7 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "strategy"
-              ],
+              "required": ["strategy"],
               "additionalProperties": false
             },
             "automation": {
@@ -66,11 +53,7 @@
               "properties": {
                 "mode": {
                   "type": "string",
-                  "enum": [
-                    "autonomous",
-                    "review",
-                    "manual"
-                  ]
+                  "enum": ["autonomous", "review", "manual"]
                 },
                 "safeOperations": {
                   "type": "array",
@@ -80,9 +63,7 @@
                   }
                 }
               },
-              "required": [
-                "mode"
-              ],
+              "required": ["mode"],
               "additionalProperties": false
             },
             "repositories": {
@@ -102,17 +83,12 @@
                     "type": "boolean"
                   }
                 },
-                "required": [
-                  "name",
-                  "path"
-                ],
+                "required": ["name", "path"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "schemaVersion"
-          ],
+          "required": ["schemaVersion"],
           "additionalProperties": false
         },
         "architecture": {
@@ -144,16 +120,10 @@
                   },
                   "source": {
                     "type": "string",
-                    "enum": [
-                      "human-confirmed",
-                      "agent-approved"
-                    ]
+                    "enum": ["human-confirmed", "agent-approved"]
                   }
                 },
-                "required": [
-                  "name",
-                  "paths"
-                ],
+                "required": ["name", "paths"],
                 "additionalProperties": false
               }
             },
@@ -178,12 +148,7 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": [
-                        "generated",
-                        "ignored",
-                        "infrastructure",
-                        "shared"
-                      ]
+                      "enum": ["generated", "ignored", "infrastructure", "shared"]
                     },
                     "minItems": 1
                   },
@@ -196,9 +161,7 @@
                     "$ref": "#/definitions/Tool_get_configuration_OutputV1/properties/architecture/properties/contexts/items/properties/source"
                   }
                 },
-                "required": [
-                  "path"
-                ],
+                "required": ["path"],
                 "additionalProperties": false
               }
             },
@@ -228,12 +191,7 @@
                     "$ref": "#/definitions/Tool_get_configuration_OutputV1/properties/architecture/properties/contexts/items/properties/source"
                   }
                 },
-                "required": [
-                  "from",
-                  "to",
-                  "reason",
-                  "confirmedAt"
-                ],
+                "required": ["from", "to", "reason", "confirmedAt"],
                 "additionalProperties": false
               }
             },
@@ -262,12 +220,7 @@
                     "$ref": "#/definitions/Tool_get_configuration_OutputV1/properties/architecture/properties/contexts/items/properties/source"
                   }
                 },
-                "required": [
-                  "edgeId",
-                  "confirmed",
-                  "reason",
-                  "confirmedAt"
-                ],
+                "required": ["edgeId", "confirmed", "reason", "confirmedAt"],
                 "additionalProperties": false
               }
             },
@@ -302,19 +255,12 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "subjectKind",
-                  "subject",
-                  "reason",
-                  "confirmedAt"
-                ],
+                "required": ["subjectKind", "subject", "reason", "confirmedAt"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "schemaVersion"
-          ],
+          "required": ["schemaVersion"],
           "additionalProperties": false
         },
         "aliases": {
@@ -345,16 +291,12 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "component"
-                ],
+                "required": ["component"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "schemaVersion"
-          ],
+          "required": ["schemaVersion"],
           "additionalProperties": false
         },
         "rules": {
@@ -399,10 +341,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "id",
-                      "type"
-                    ],
+                    "required": ["id", "type"],
                     "additionalProperties": false
                   },
                   {
@@ -428,12 +367,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "id",
-                      "type",
-                      "whenChanged",
-                      "requireChanged"
-                    ],
+                    "required": ["id", "type", "whenChanged", "requireChanged"],
                     "additionalProperties": false
                   }
                 ]
@@ -453,9 +387,7 @@
                   },
                   "language": {
                     "type": "string",
-                    "enum": [
-                      "typescript"
-                    ]
+                    "enum": ["typescript"]
                   },
                   "match": {
                     "type": "object",
@@ -484,9 +416,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "imports"
-                    ],
+                    "required": ["imports"],
                     "additionalProperties": false
                   },
                   "produces": {
@@ -509,35 +439,20 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "nodeCategory",
-                      "nodeType"
-                    ],
+                    "required": ["nodeCategory", "nodeType"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "id",
-                  "language",
-                  "match",
-                  "produces"
-                ],
+                "required": ["id", "language", "match", "produces"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "schemaVersion"
-          ],
+          "required": ["schemaVersion"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "config",
-        "architecture",
-        "aliases",
-        "rules"
-      ],
+      "required": ["config", "architecture", "aliases", "rules"],
       "additionalProperties": false
     }
   },

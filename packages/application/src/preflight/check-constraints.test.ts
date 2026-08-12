@@ -118,7 +118,9 @@ describe('checkConstraints — the peer-HTTP scenario', () => {
 
   it('never blocks on a constraint whose guard could not be parsed', () => {
     const opaque = extractConstraints({
-      files: [{ path: 'ci/scripts/check-mystery.sh', content: '#!/bin/sh\nmake verify || exit 1\n' }],
+      files: [
+        { path: 'ci/scripts/check-mystery.sh', content: '#!/bin/sh\nmake verify || exit 1\n' },
+      ],
       repositorySnapshotId: 'snap-1',
       createdAt: '2026-08-12T00:00:00.000Z',
       nextId: (seed) => `constraint-${seed.replace(/[^a-z0-9]/gi, '-').slice(0, 50)}`,

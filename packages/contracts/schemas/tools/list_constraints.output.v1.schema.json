@@ -23,20 +23,11 @@
               },
               "severity": {
                 "type": "string",
-                "enum": [
-                  "blocking",
-                  "warning",
-                  "advisory"
-                ]
+                "enum": ["blocking", "warning", "advisory"]
               },
               "extraction": {
                 "type": "string",
-                "enum": [
-                  "recognized",
-                  "declared",
-                  "ai-proposed",
-                  "opaque"
-                ]
+                "enum": ["recognized", "declared", "ai-proposed", "opaque"]
               },
               "statement": {
                 "type": "string",
@@ -92,12 +83,7 @@
           "minimum": 0
         }
       },
-      "required": [
-        "constraints",
-        "totalCount",
-        "opaqueGuardPaths",
-        "guardFilesRead"
-      ],
+      "required": ["constraints", "totalCount", "opaqueGuardPaths", "guardFilesRead"],
       "additionalProperties": false
     }
   },

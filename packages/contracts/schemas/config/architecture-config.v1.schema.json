@@ -30,16 +30,10 @@
               },
               "source": {
                 "type": "string",
-                "enum": [
-                  "human-confirmed",
-                  "agent-approved"
-                ]
+                "enum": ["human-confirmed", "agent-approved"]
               }
             },
-            "required": [
-              "name",
-              "paths"
-            ],
+            "required": ["name", "paths"],
             "additionalProperties": false
           }
         },
@@ -64,12 +58,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": [
-                    "generated",
-                    "ignored",
-                    "infrastructure",
-                    "shared"
-                  ]
+                  "enum": ["generated", "ignored", "infrastructure", "shared"]
                 },
                 "minItems": 1
               },
@@ -82,9 +71,7 @@
                 "$ref": "#/definitions/ArchitectureConfigV1/properties/contexts/items/properties/source"
               }
             },
-            "required": [
-              "path"
-            ],
+            "required": ["path"],
             "additionalProperties": false
           }
         },
@@ -114,12 +101,7 @@
                 "$ref": "#/definitions/ArchitectureConfigV1/properties/contexts/items/properties/source"
               }
             },
-            "required": [
-              "from",
-              "to",
-              "reason",
-              "confirmedAt"
-            ],
+            "required": ["from", "to", "reason", "confirmedAt"],
             "additionalProperties": false
           }
         },
@@ -148,12 +130,7 @@
                 "$ref": "#/definitions/ArchitectureConfigV1/properties/contexts/items/properties/source"
               }
             },
-            "required": [
-              "edgeId",
-              "confirmed",
-              "reason",
-              "confirmedAt"
-            ],
+            "required": ["edgeId", "confirmed", "reason", "confirmedAt"],
             "additionalProperties": false
           }
         },
@@ -188,19 +165,12 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "subjectKind",
-              "subject",
-              "reason",
-              "confirmedAt"
-            ],
+            "required": ["subjectKind", "subject", "reason", "confirmedAt"],
             "additionalProperties": false
           }
         }
       },
-      "required": [
-        "schemaVersion"
-      ],
+      "required": ["schemaVersion"],
       "additionalProperties": false
     }
   },

@@ -14,10 +14,7 @@
         },
         "view": {
           "type": "string",
-          "enum": [
-            "architecture",
-            "impact"
-          ]
+          "enum": ["architecture", "impact"]
         },
         "snapshotId": {
           "type": "string",
@@ -25,11 +22,7 @@
         },
         "grouping": {
           "type": "string",
-          "enum": [
-            "context",
-            "application",
-            "package"
-          ]
+          "enum": ["context", "application", "package"]
         },
         "groups": {
           "type": "integer",

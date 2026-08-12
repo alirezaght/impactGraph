@@ -34,12 +34,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "id",
-            "commitSha",
-            "dirtyWorkingTree",
-            "createdAt"
-          ],
+          "required": ["id", "commitSha", "dirtyWorkingTree", "createdAt"],
           "additionalProperties": false
         },
         "fileCount": {
@@ -105,20 +100,12 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "category",
-                  "count"
-                ],
+                "required": ["category", "count"],
                 "additionalProperties": false
               }
             }
           },
-          "required": [
-            "totalCount",
-            "returnedCount",
-            "omittedCount",
-            "byCategory"
-          ],
+          "required": ["totalCount", "returnedCount", "omittedCount", "byCategory"],
           "additionalProperties": false
         },
         "repositories": {
@@ -147,19 +134,10 @@
               },
               "reasonCode": {
                 "type": "string",
-                "enum": [
-                  "not-indexed",
-                  "disabled",
-                  "path-missing",
-                  "path-outside-root"
-                ]
+                "enum": ["not-indexed", "disabled", "path-missing", "path-outside-root"]
               }
             },
-            "required": [
-              "name",
-              "indexed",
-              "fileCount"
-            ],
+            "required": ["name", "indexed", "fileCount"],
             "additionalProperties": false
           }
         }

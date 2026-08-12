@@ -11,14 +11,7 @@
         },
         "minLikelihood": {
           "type": "string",
-          "enum": [
-            "required",
-            "likely",
-            "possible",
-            "lexical-only",
-            "unlikely",
-            "excluded"
-          ]
+          "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
         },
         "evidenceTypes": {
           "type": "array",
@@ -60,9 +53,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "specificationId"
-      ],
+      "required": ["specificationId"],
       "additionalProperties": false
     }
   },

@@ -292,9 +292,9 @@ export {
   toConstraintSummary,
 } from './reports/preflight-block.js';
 export type { SummarisedWarnings } from './reports/index-warning-summary.js';
-export {
-  WARNING_SAMPLE_SIZE,
-  summariseIndexWarnings,
-} from './reports/index-warning-summary.js';
+export { WARNING_SAMPLE_SIZE, summariseIndexWarnings } from './reports/index-warning-summary.js';
 export type { PlanContractInput } from './review-plan-contract.js';
 export { reviewAgainstPlan } from './review-plan-contract.js';
+
+// ADR-0017 — runtime traversal re-exported so shells depend on one façade, not two.
+export { resolveRuntimePaths, configuredNamesByProcess } from '@impactgraph/application';

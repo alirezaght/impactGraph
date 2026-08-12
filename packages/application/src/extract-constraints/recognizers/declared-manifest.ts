@@ -1,9 +1,5 @@
 import type { ExtractedConstraint } from '../types.js';
-import type {
-  ConstraintKind,
-  ConstraintRelation,
-  ConstraintSeverity,
-} from '@impactgraph/domain';
+import type { ConstraintKind, ConstraintRelation, ConstraintSeverity } from '@impactgraph/domain';
 
 /**
  * Human-declared constraints from `.impactgraph/constraints.yml`.

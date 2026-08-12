@@ -18,23 +18,14 @@
         },
         "decision": {
           "type": "string",
-          "enum": [
-            "accepted",
-            "rejected",
-            "manually-added"
-          ]
+          "enum": ["accepted", "rejected", "manually-added"]
         },
         "reason": {
           "type": "string",
           "minLength": 1
         }
       },
-      "required": [
-        "analysisId",
-        "requirementId",
-        "nodeId",
-        "decision"
-      ],
+      "required": ["analysisId", "requirementId", "nodeId", "decision"],
       "additionalProperties": false
     }
   },

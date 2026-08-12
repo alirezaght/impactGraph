@@ -35,11 +35,7 @@
                       "minLength": 1
                     }
                   },
-                  "required": [
-                    "kind",
-                    "nodeId",
-                    "name"
-                  ],
+                  "required": ["kind", "nodeId", "name"],
                   "additionalProperties": false
                 }
               },
@@ -59,11 +55,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "id",
-              "hops",
-              "receivedEnvironment"
-            ],
+            "required": ["id", "hops", "receivedEnvironment"],
             "additionalProperties": false
           }
         },
@@ -72,10 +64,7 @@
           "minimum": 0
         }
       },
-      "required": [
-        "paths",
-        "totalCount"
-      ],
+      "required": ["paths", "totalCount"],
       "additionalProperties": false
     }
   },

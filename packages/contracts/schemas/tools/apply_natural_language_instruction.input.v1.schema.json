@@ -13,9 +13,7 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "instruction"
-      ],
+      "required": ["instruction"],
       "additionalProperties": false
     }
   },

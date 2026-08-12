@@ -35,14 +35,7 @@
               },
               "likelihood": {
                 "type": "string",
-                "enum": [
-                  "required",
-                  "likely",
-                  "possible",
-                  "lexical-only",
-                  "unlikely",
-                  "excluded"
-                ]
+                "enum": ["required", "likely", "possible", "lexical-only", "unlikely", "excluded"]
               },
               "evidenceType": {
                 "type": "string",
@@ -124,10 +117,7 @@
                       "type": "number"
                     }
                   },
-                  "required": [
-                    "type",
-                    "contribution"
-                  ],
+                  "required": ["type", "contribution"],
                   "additionalProperties": false
                 }
               }
@@ -183,12 +173,7 @@
               }
             }
           },
-          "required": [
-            "totalImpacts",
-            "componentCount",
-            "byLikelihood",
-            "byEvidenceType"
-          ],
+          "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
           "additionalProperties": false
         },
         "pagination": {
@@ -245,11 +230,7 @@
               "additionalProperties": false
             }
           },
-          "required": [
-            "returned",
-            "totalMatching",
-            "appliedFilters"
-          ],
+          "required": ["returned", "totalMatching", "appliedFilters"],
           "additionalProperties": false
         },
         "impactQuery": {
@@ -286,12 +267,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "status",
-            "scope",
-            "limitations",
-            "resultCount"
-          ],
+          "required": ["status", "scope", "limitations", "resultCount"],
           "additionalProperties": false
         }
       },

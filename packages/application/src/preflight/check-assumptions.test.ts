@@ -15,13 +15,15 @@ const knowledge = {
   analysisRunId: 'run-1',
 };
 
-const node = (
-  id: string,
-  category: NodeCategory,
-  type: string,
-  name: string,
-  path?: string,
-): GraphNode => {
+interface NodeSpec {
+  readonly id: string;
+  readonly category: NodeCategory;
+  readonly type: string;
+  readonly name: string;
+  readonly path?: string;
+}
+
+const node = ({ id, category, type, name, path }: NodeSpec): GraphNode => {
   const result = createGraphNode({
     id,
     category,
@@ -47,9 +49,20 @@ const edge = (id: string, type: string, from: string, to: string): GraphEdge => 
 /** An `ItemType` enum declaring three members, none of them ANGEBOT. */
 const enumGraph = (members: readonly string[]): KnowledgeGraph => {
   const nodes = [
-    node('sym:ItemType', 'application', 'enum', 'ItemType', 'src/domain/item_type.py'),
+    node({
+      id: 'sym:ItemType',
+      category: 'application',
+      type: 'enum',
+      name: 'ItemType',
+      path: 'src/domain/item_type.py',
+    }),
     ...members.map((member) =>
-      node(`sym:ItemType.${member}`, 'application', 'enum-member', member),
+      node({
+        id: `sym:ItemType.${member}`,
+        category: 'application',
+        type: 'enum-member',
+        name: member,
+      }),
     ),
   ];
   const edges = members.map((member, index) =>
@@ -104,7 +117,7 @@ describe('checkAssumptions — the ItemType.ANGEBOT scenario', () => {
 
   it('says nothing when the container is indexed but its members were never extracted', () => {
     const bare = createKnowledgeGraph(
-      [node('sym:ItemType', 'application', 'enum', 'ItemType')],
+      [node({ id: 'sym:ItemType', category: 'application', type: 'enum', name: 'ItemType' })],
       [],
     );
     expect(bare.ok).toBe(true);

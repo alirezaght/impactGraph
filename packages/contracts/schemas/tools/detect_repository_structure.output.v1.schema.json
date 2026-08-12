@@ -88,12 +88,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": [
-                    "generated",
-                    "ignored",
-                    "infrastructure",
-                    "shared"
-                  ]
+                  "enum": ["generated", "ignored", "infrastructure", "shared"]
                 }
               },
               "correctionLevels": {
@@ -148,22 +143,11 @@
               "minimum": 0
             }
           },
-          "required": [
-            "packages",
-            "sourceRoots",
-            "testRoots",
-            "buildConfigFiles",
-            "entryPoints"
-          ],
+          "required": ["packages", "sourceRoots", "testRoots", "buildConfigFiles", "entryPoints"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "snapshotId",
-        "workspaces",
-        "packages",
-        "totals"
-      ],
+      "required": ["snapshotId", "workspaces", "packages", "totals"],
       "additionalProperties": false
     }
   },

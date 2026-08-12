@@ -31,10 +31,7 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "schemaVersion",
-                "id"
-              ],
+              "required": ["schemaVersion", "id"],
               "additionalProperties": true
             },
             "approvedAnalysis": {
@@ -62,12 +59,7 @@
                   "minLength": 1
                 }
               },
-              "required": [
-                "id",
-                "commitSha",
-                "dirtyWorkingTree",
-                "createdAt"
-              ],
+              "required": ["id", "commitSha", "dirtyWorkingTree", "createdAt"],
               "additionalProperties": false
             },
             "requiredImpacts": {
@@ -108,10 +100,7 @@
                   },
                   "directness": {
                     "type": "string",
-                    "enum": [
-                      "direct",
-                      "indirect"
-                    ]
+                    "enum": ["direct", "indirect"]
                   },
                   "confidence": {
                     "type": "number",
@@ -206,10 +195,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "id",
-                      "type"
-                    ],
+                    "required": ["id", "type"],
                     "additionalProperties": false
                   },
                   {
@@ -235,12 +221,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "id",
-                      "type",
-                      "whenChanged",
-                      "requireChanged"
-                    ],
+                    "required": ["id", "type", "whenChanged", "requireChanged"],
                     "additionalProperties": false
                   }
                 ]
@@ -268,10 +249,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "name",
-                  "reason"
-                ],
+                "required": ["name", "reason"],
                 "additionalProperties": false
               }
             },
@@ -305,10 +283,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "code",
-                  "message"
-                ],
+                "required": ["code", "message"],
                 "additionalProperties": false
               }
             },
@@ -323,10 +298,7 @@
                   },
                   "kind": {
                     "type": "string",
-                    "enum": [
-                      "required-impact",
-                      "architecture-rule"
-                    ]
+                    "enum": ["required-impact", "architecture-rule"]
                   },
                   "description": {
                     "type": "string",
@@ -341,11 +313,7 @@
                     "minLength": 1
                   }
                 },
-                "required": [
-                  "id",
-                  "kind",
-                  "description"
-                ],
+                "required": ["id", "kind", "description"],
                 "additionalProperties": false
               }
             }
@@ -368,11 +336,7 @@
           "additionalProperties": false
         }
       },
-      "required": [
-        "schemaVersion",
-        "command",
-        "context"
-      ],
+      "required": ["schemaVersion", "command", "context"],
       "additionalProperties": false
     }
   },

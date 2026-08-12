@@ -11,7 +11,8 @@ import type { ConstraintRecognizer, ExtractedConstraint, GuardFile } from '../ty
  * workflow can stop a merge, and only the second deserves `blocking`.
  */
 
-const WORKFLOW_PATH = /(^|\/)\.(github\/workflows|gitlab-ci|circleci)\/?[^/]*\.(ya?ml)$|\.gitlab-ci\.yml$/;
+const WORKFLOW_PATH =
+  /(^|\/)\.(github\/workflows|gitlab-ci|circleci)\/?[^/]*\.(ya?ml)$|\.gitlab-ci\.yml$/;
 
 /** Commands that invoke a repository guard rather than doing ordinary build work. */
 const GUARD_COMMAND =

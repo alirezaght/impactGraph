@@ -18,28 +18,14 @@
         },
         "subjectKind": {
           "type": "string",
-          "enum": [
-            "context",
-            "component",
-            "alias",
-            "exclusion",
-            "rule",
-            "detection",
-            "ignore"
-          ]
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
         },
         "confirmationCount": {
           "type": "integer",
           "minimum": 1
         }
       },
-      "required": [
-        "rollbackId",
-        "file",
-        "subject",
-        "subjectKind",
-        "confirmationCount"
-      ],
+      "required": ["rollbackId", "file", "subject", "subjectKind", "confirmationCount"],
       "additionalProperties": false
     }
   },

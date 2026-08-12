@@ -13,10 +13,7 @@
           "const": true
         }
       },
-      "required": [
-        "analysisId",
-        "confirmedByUser"
-      ],
+      "required": ["analysisId", "confirmedByUser"],
       "additionalProperties": false
     }
   },

@@ -163,6 +163,10 @@ const attributeOf = (entry: JsonEntry): TerraformAttribute | undefined => {
     return {
       range: entry.range,
       interpolated,
+      // The JSON reader records no per-attribute references: `.tf.json` states its references as
+      // interpolation strings, and reading those would be a second, subtly different rule. An
+      // empty list is honest here — it says "none were read", which is exactly true.
+      references: [],
       ...(interpolated ? {} : { literal: value.value }),
       ...(integer === undefined || interpolated ? {} : { integer }),
     };
@@ -172,7 +176,12 @@ const attributeOf = (entry: JsonEntry): TerraformAttribute | undefined => {
     // count — the HCL reader records neither, and neither does this one.
     return undefined;
   }
-  return { range: entry.range, interpolated: false, ...(integer === undefined ? {} : { integer }) };
+  return {
+    range: entry.range,
+    interpolated: false,
+    references: [],
+    ...(integer === undefined ? {} : { integer }),
+  };
 };
 
 /** Direct attributes of one body, first occurrence winning, exactly as the HCL reader does. */

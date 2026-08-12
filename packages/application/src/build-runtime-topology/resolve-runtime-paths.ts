@@ -94,7 +94,10 @@ const walk = (
     if (next.length === 0) {
       return hops.some((entry) => entry.kind === 'handler')
         ? { hops }
-        : { hops, incompleteReason: `the chain stops at '${current.name}' before reaching a handler` };
+        : {
+            hops,
+            incompleteReason: `the chain stops at '${current.name}' before reaching a handler`,
+          };
     }
     if (next.length > 1) {
       return {
@@ -104,7 +107,7 @@ const walk = (
     }
     const edge = next[0] as GraphEdge;
     via = edge.type;
-    current = graph.nodes.get(edge.targetId as NodeId);
+    current = graph.nodes.get(edge.targetId);
   }
   return hops.length >= MAX_HOPS
     ? { hops, incompleteReason: 'the chain exceeded the traversal budget' }
@@ -152,7 +155,7 @@ export const configuredNamesByProcess = (
     if (edge.type !== 'RECEIVES_ENV') {
       continue;
     }
-    const target = graph.nodes.get(edge.targetId as NodeId);
+    const target = graph.nodes.get(edge.targetId);
     if (target === undefined) {
       continue;
     }

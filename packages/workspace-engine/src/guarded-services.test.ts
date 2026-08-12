@@ -30,9 +30,7 @@ import type { KnowledgeGraph, RepositoryConstraint } from '@impactgraph/domain';
  * entirely, and each one was discoverable from the repository the whole time.
  */
 
-const FIXTURE = fileURLToPath(
-  new URL('../../test-kit/fixtures/guarded-services', import.meta.url),
-);
+const FIXTURE = fileURLToPath(new URL('../../test-kit/fixtures/guarded-services', import.meta.url));
 
 let repoDir: string;
 let graph: KnowledgeGraph;
@@ -220,7 +218,7 @@ describe('EVIDENCE PROVENANCE', () => {
       impactType: 'domain-model' as const,
       directness: 'direct' as const,
       confidence: 0.9,
-      confidenceSignals: [{ type: 'direct-observation', contribution: 0.9 }],
+      confidenceSignals: [{ type: 'direct-observation' as const, contribution: 0.9 }],
       explanation: 'matched',
       expectedChanges: [],
       evidenceIds: ['ev-1'],

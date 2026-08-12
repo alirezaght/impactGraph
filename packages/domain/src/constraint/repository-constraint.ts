@@ -167,7 +167,11 @@ const collectIssues = (input: RepositoryConstraint): ValidationIssue[] => {
   input.exemptions.forEach((exemption, index) => {
     if (exemption.subject.trim().length === 0) {
       issues.push(
-        validationIssue('blank-field', `exemptions[${index}].subject`, 'exemption subject required'),
+        validationIssue(
+          'blank-field',
+          `exemptions[${index}].subject`,
+          'exemption subject required',
+        ),
       );
     }
   });

@@ -13,24 +13,11 @@
         },
         "subjectKind": {
           "type": "string",
-          "enum": [
-            "context",
-            "component",
-            "alias",
-            "exclusion",
-            "rule",
-            "detection",
-            "ignore"
-          ]
+          "enum": ["context", "component", "alias", "exclusion", "rule", "detection", "ignore"]
         },
         "file": {
           "type": "string",
-          "enum": [
-            "config.yml",
-            "architecture.yml",
-            "aliases.yml",
-            "rules.yml"
-          ]
+          "enum": ["config.yml", "architecture.yml", "aliases.yml", "rules.yml"]
         },
         "description": {
           "type": "string",
@@ -56,10 +43,7 @@
             },
             "actorKind": {
               "type": "string",
-              "enum": [
-                "user",
-                "agent"
-              ]
+              "enum": ["user", "agent"]
             },
             "agentId": {
               "type": "string",
@@ -75,12 +59,7 @@
               "maximum": 1
             }
           },
-          "required": [
-            "rollbackId",
-            "timestamp",
-            "actorKind",
-            "reason"
-          ],
+          "required": ["rollbackId", "timestamp", "actorKind", "reason"],
           "additionalProperties": false
         },
         "auditTrail": {
@@ -105,12 +84,7 @@
                 "minLength": 1
               }
             },
-            "required": [
-              "rollbackId",
-              "timestamp",
-              "operationKind",
-              "file"
-            ],
+            "required": ["rollbackId", "timestamp", "operationKind", "file"],
             "additionalProperties": false
           }
         },
@@ -133,22 +107,11 @@
               "minLength": 1
             }
           },
-          "required": [
-            "nodeCount",
-            "sampleNodeIds",
-            "detail"
-          ],
+          "required": ["nodeCount", "sampleNodeIds", "detail"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "subject",
-        "found",
-        "description",
-        "confirmed",
-        "auditTrail",
-        "affects"
-      ],
+      "required": ["subject", "found", "description", "confirmed", "auditTrail", "affects"],
       "additionalProperties": false
     }
   },

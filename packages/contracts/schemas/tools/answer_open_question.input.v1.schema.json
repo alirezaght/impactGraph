@@ -21,11 +21,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "specificationId",
-        "questionId",
-        "answer"
-      ],
+      "required": ["specificationId", "questionId", "answer"],
       "additionalProperties": false
     }
   },
