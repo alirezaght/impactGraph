@@ -22,9 +22,20 @@ import type {
  * the impact model, the coverage verdict — so the pass adds a comparison, not a second opinion.
  */
 
-/** Language that describes creating something rather than changing something. */
+/**
+ * Language that describes bringing something into existence rather than changing something.
+ *
+ * The first version of this list held only `add`/`create`/`new`/`introduce`, and a self-run showed
+ * why that is too narrow: "Index repository rules as first-class entities" and "Model runtime
+ * topology" both create surface, and both fell through to `NO_EVIDENCE` — the honest fallback, but
+ * the wrong answer. A specification writes creation as whatever verb suits the noun.
+ *
+ * Widening this is safe only because it is one signal among several and only ever consulted for a
+ * requirement that matched NOTHING. A requirement that modifies existing surface has impacts, so it
+ * is never classified at all.
+ */
 const CREATION =
-  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for)\b/i;
+  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for|index|model|models|modelled|emit|emits|expose|exposes|record|records|classify|classifies|derive|derives|represent|represents|extract|extracts|validate|validates)\b/i;
 /** Language that names a system this repository does not contain. */
 const EXTERNAL =
   /\b(third[- ]party|external (?:service|system|api)|vendor|upstream provider|sendgrid|stripe|twilio)\b/i;
