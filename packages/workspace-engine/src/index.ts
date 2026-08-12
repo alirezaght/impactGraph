@@ -296,3 +296,5 @@ export {
   WARNING_SAMPLE_SIZE,
   summariseIndexWarnings,
 } from './reports/index-warning-summary.js';
+export type { PlanContractInput } from './review-plan-contract.js';
+export { reviewAgainstPlan } from './review-plan-contract.js';

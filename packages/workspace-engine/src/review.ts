@@ -1,4 +1,7 @@
 import { compareImplementation } from '@impactgraph/application';
+
+import { toFindingDto } from './reports/preflight-block.js';
+import { reviewAgainstPlan } from './review-plan-contract.js';
 import { createGitCliAdapter } from '@impactgraph/git';
 import { readArchitectureConfig } from '@impactgraph/persistence';
 
@@ -141,10 +144,22 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
       approvedGraph: approvedGraph.value,
       currentGraph: currentGraph.value,
     });
-    const persisted = persistReviewDocument(
+    // ADR-0017 — the approved plan as a contract, checked rather than archived.
+    const planContract = reviewAgainstPlan({
       rootDir,
-      buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
-    );
+      analysis,
+      review: review.value,
+      approvedGraph: approvedGraph.value,
+      currentGraph: currentGraph.value,
+    });
+    const persisted = persistReviewDocument(rootDir, {
+      ...buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
+      planContract: {
+        findings: planContract.findings.map(toFindingDto),
+        unplannedPaths: [...planContract.unplannedPaths],
+        unchangedExpectedPaths: [...planContract.unchangedExpectedPaths],
+      },
+    });
     if (!persisted.ok) {
       return persisted;
     }

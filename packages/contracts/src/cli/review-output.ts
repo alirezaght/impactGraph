@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cliReviewBreakdownSchema } from './review-breakdown.js';
+import { preflightFindingSchema } from './plan-assessment.js';
 import { cliReviewDriftSchema } from './review-drift.js';
 
 // The §38.2 review report as machine-readable CLI output (PRD §20). Split out of outputs.ts by
@@ -105,6 +106,24 @@ export const cliReviewOutputSchema = z
      * `discrepanciesFound`. Absent on producers that predate it.
      */
     drift: cliReviewDriftSchema.optional(),
+    /**
+     * Additive v1 field (ADR-0017): the approved plan treated as a contract.
+     *
+     * `drift` above answers "what relationships moved". This answers the different question the
+     * review exists for: did the implementation satisfy the design that was approved, and did it
+     * introduce anything the design did not account for. Absent when no approved plan was
+     * available to check against — never "checked and clean", which the counts below carry.
+     */
+    planContract: z
+      .object({
+        findings: z.array(preflightFindingSchema),
+        /** Changed paths the plan never mentioned. Not defects — unaccounted-for work. */
+        unplannedPaths: z.array(z.string().min(1)),
+        /** Paths the plan expected to change and the diff did not touch. */
+        unchangedExpectedPaths: z.array(z.string().min(1)),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

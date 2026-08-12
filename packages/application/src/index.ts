@@ -219,3 +219,10 @@ export {
   suppliedIdentifiers,
   isUserSupplied,
 } from './build-impact-model/assign-evidence-provenance.js';
+export type {
+  ApprovedPlan,
+  ActualChange,
+  CheckPlanContractInput,
+  PlanContractResult,
+} from './review-implementation/check-plan-contract.js';
+export { checkPlanContract } from './review-implementation/check-plan-contract.js';

@@ -603,6 +603,150 @@
                 "omitted"
               ],
               "additionalProperties": false
+            },
+            "planContract": {
+              "type": "object",
+              "properties": {
+                "findings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "blocking-constraint-violation",
+                          "constraint-warning",
+                          "runtime-topology-gap",
+                          "invalid-assumption",
+                          "config-semantics-risk",
+                          "new-surface",
+                          "coverage-gap",
+                          "unresolved-architectural-question",
+                          "missing-consumer",
+                          "guard-not-updated"
+                        ]
+                      },
+                      "severity": {
+                        "type": "string",
+                        "enum": [
+                          "blocking",
+                          "warning",
+                          "informational"
+                        ]
+                      },
+                      "requirementIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "statement": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "recommendation": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "analyzer": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "constraintId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "proposedRelationship": {
+                        "type": "object",
+                        "properties": {
+                          "sourceRef": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "relation": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "targetRef": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "sourceRef",
+                          "relation",
+                          "targetRef"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "runtimePathId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "assumedSymbol": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "nodeIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "filePaths": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "kind",
+                      "severity",
+                      "requirementIds",
+                      "statement",
+                      "recommendation",
+                      "confidence",
+                      "analyzer"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "unplannedPaths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "unchangedExpectedPaths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "findings",
+                "unplannedPaths",
+                "unchangedExpectedPaths"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
