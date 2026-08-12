@@ -1,9 +1,11 @@
 import { queryOutcome } from '@impactgraph/domain';
 
+import { rankByIntent } from './component-search-intent.js';
 import { candidatesFor, scoreNode } from './component-search-scoring.js';
 import { failWith } from './failure.js';
 import { loadCurrentGraph, withIndexStore } from './graphs.js';
 
+import type { QueryIntent } from './component-search-intent.js';
 import type { ComponentSearchHit, ComponentSearchResult } from './component-search-scoring.js';
 import type { Failable } from './failure.js';
 import type { KnowledgeGraph } from '@impactgraph/domain';
@@ -35,6 +37,11 @@ export interface ComponentSearchOptions {
    * single-repository sentence so an empty result is never unscoped.
    */
   readonly crossRepositoryLimitations?: readonly string[];
+  /**
+   * ADR-0017 — what the answer is FOR. Inferred from the query when absent; stating it explicitly
+   * is how a caller overrides an inference that read their wording the wrong way.
+   */
+  readonly intent?: QueryIntent;
 }
 
 const DEFAULT_LIMIT = 25;
@@ -132,15 +139,21 @@ const rank = ({ graph, query, tokens, scope, options }: RankInput): ComponentSea
       a.matchKind.localeCompare(b.matchKind) ||
       a.nodeId.localeCompare(b.nodeId),
   );
-  const page = hits.slice(0, limit);
+  // Intent re-weighting and per-file diversity happen AFTER relevance scoring, never inside it:
+  // relevance answers "does this match", intent answers "is this the kind of thing you wanted",
+  // and mixing the two makes neither auditable.
+  const ranked = rankByIntent(hits, query, options.intent);
+  const page = ranked.hits.slice(0, limit);
   const limitations: string[] = [
     ...(options.crossRepositoryLimitations ?? [
       'Only this workspace was searched; repositories not registered in the workspace were not analyzed.',
     ]),
     ...(includeLexical ? [] : ['Lexical-grade matches were excluded from this search.']),
+    `Ranked for '${ranked.intent}' intent — pass an explicit intent to change what is favoured.`,
   ];
   return {
     components: page,
+    intent: ranked.intent,
     matchKinds: [...new Set(page.map((hit) => hit.matchKind))].sort(),
     outcome: queryOutcome({
       scope,

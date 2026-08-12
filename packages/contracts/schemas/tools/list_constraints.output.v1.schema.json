@@ -1,0 +1,105 @@
+{
+  "$ref": "#/definitions/Tool_list_constraints_OutputV1",
+  "definitions": {
+    "Tool_list_constraints_OutputV1": {
+      "type": "object",
+      "properties": {
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "blocking",
+                  "warning",
+                  "advisory"
+                ]
+              },
+              "extraction": {
+                "type": "string",
+                "enum": [
+                  "recognized",
+                  "declared",
+                  "ai-proposed",
+                  "opaque"
+                ]
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourcePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scopeGlobs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "exemptionCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "notExtractedReason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "kind",
+              "severity",
+              "extraction",
+              "statement",
+              "sourcePath",
+              "scopeGlobs",
+              "exemptionCount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totalCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "opaqueGuardPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "guardFilesRead": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "constraints",
+        "totalCount",
+        "opaqueGuardPaths",
+        "guardFilesRead"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

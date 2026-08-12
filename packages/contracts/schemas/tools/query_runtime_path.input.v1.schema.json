@@ -1,0 +1,21 @@
+{
+  "$ref": "#/definitions/Tool_query_runtime_path_InputV1",
+  "definitions": {
+    "Tool_query_runtime_path_InputV1": {
+      "type": "object",
+      "properties": {
+        "urlName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

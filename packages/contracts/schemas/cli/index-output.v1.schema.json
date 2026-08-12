@@ -72,6 +72,55 @@
             "type": "string"
           }
         },
+        "warningSummary": {
+          "type": "object",
+          "properties": {
+            "totalCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "returnedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "omittedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byCategory": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "exampleMessage": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "category",
+                  "count"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "totalCount",
+            "returnedCount",
+            "omittedCount",
+            "byCategory"
+          ],
+          "additionalProperties": false
+        },
         "repositories": {
           "type": "array",
           "items": {

@@ -1,0 +1,83 @@
+{
+  "$ref": "#/definitions/Tool_query_runtime_path_OutputV1",
+  "definitions": {
+    "Tool_query_runtime_path_OutputV1": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "hops": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "nodeId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "viaRelation": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "nodeId",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "servingProcess": {
+                "type": "string",
+                "minLength": 1
+              },
+              "receivedEnvironment": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "incompleteReason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "hops",
+              "receivedEnvironment"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "totalCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "paths",
+        "totalCount"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

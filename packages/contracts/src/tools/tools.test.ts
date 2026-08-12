@@ -30,6 +30,10 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
         'explain_node',
         'explain_edge',
         'find_components',
+        // ADR-0017 — the governance and runtime layers, readable directly because a reviewer told
+        // a plan is BLOCKED needs to open the rule that blocked it.
+        'list_constraints',
+        'query_runtime_path',
         'preview_configuration_change',
         'apply_configuration_change',
         'rollback_configuration_change',

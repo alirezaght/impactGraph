@@ -291,3 +291,8 @@ export {
   summaryFindings,
   toConstraintSummary,
 } from './reports/preflight-block.js';
+export type { SummarisedWarnings } from './reports/index-warning-summary.js';
+export {
+  WARNING_SAMPLE_SIZE,
+  summariseIndexWarnings,
+} from './reports/index-warning-summary.js';

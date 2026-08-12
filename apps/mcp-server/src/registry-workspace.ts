@@ -6,6 +6,7 @@ import {
   performIndexRun,
   requireInitialized,
   snapshotSummary,
+  summariseIndexWarnings,
 } from '@impactgraph/workspace-engine';
 
 import { readOwnVersion, SERVER_NAME } from './version.js';
@@ -59,7 +60,7 @@ const workspaceStatus: ToolHandler<'get_workspace_status'> = async (rootDir) => 
   };
 };
 
-const indexWorkspace: ToolHandler<'index_workspace'> = async (rootDir) => {
+const indexWorkspace: ToolHandler<'index_workspace'> = async (rootDir, input) => {
   const initialized = requireInitialized(rootDir);
   if (!initialized.ok) {
     return initialized;
@@ -81,7 +82,9 @@ const indexWorkspace: ToolHandler<'index_workspace'> = async (rootDir) => {
       ignoredCount: summary.ignoredCount,
       nodeCount: summary.nodeCount,
       edgeCount: summary.edgeCount,
-      warnings: indexWarnings(summary),
+      // Compact by default: the full list is behind an explicit opt-in, because an unreadable
+      // answer is not an answer (ADR-0017).
+      ...summariseIndexWarnings(indexWarnings(summary), input.warningDetail ?? 'summary'),
       repositories: [...indexed.value.repositories],
     },
   };

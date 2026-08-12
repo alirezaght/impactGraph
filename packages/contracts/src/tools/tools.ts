@@ -15,6 +15,7 @@ import {
   cliReviewOutputSchema,
   cliStatusOutputSchema,
 } from '../cli/outputs.js';
+import { constraintSummarySchema } from '../cli/plan-assessment.js';
 
 import { CONFIG_INSPECTION_TOOL_CONTRACTS } from './config-inspection-tools.js';
 import { CONFIG_MAINTENANCE_TOOL_CONTRACTS } from './config-maintenance-tools.js';
@@ -103,8 +104,10 @@ export const MCP_TOOL_CONTRACTS = {
   },
   index_workspace: {
     description:
-      'Index the workspace into the local knowledge graph (deterministic, offline): the workspace root plus every registered, present, enabled repository from `repositories:` in .impactgraph/config.yml — one graph spanning all of them. Rebuilds the disposable cache. Register related repositories before indexing when a feature spans them.',
-    input: emptyInputSchema,
+      'Index the workspace into the local knowledge graph (deterministic, offline): the workspace root plus every registered, present, enabled repository from `repositories:` in .impactgraph/config.yml — one graph spanning all of them. Rebuilds the disposable cache. Register related repositories before indexing when a feature spans them. Returns a COMPACT summary: counts plus a grouped warning report with a small sample of lines. Pass warningDetail:"full" only when you intend to read every warning.',
+    input: z
+      .object({ warningDetail: z.enum(['summary', 'full']).optional() })
+      .strict(),
     output: cliIndexOutputSchema,
   },
   submit_specification: {
@@ -284,6 +287,21 @@ export const MCP_TOOL_CONTRACTS = {
         nodeTypes: z.array(z.string().min(1)).min(1).optional(),
         /** Drop token-overlap-only hits. Default: keep them — discovery wants leads. */
         includeLexical: z.boolean().optional(),
+        /**
+         * ADR-0017 — what the answer is FOR, which changes what ranks first. Inferred from the
+         * query when omitted; state it explicitly when the inference reads your wording wrongly.
+         */
+        intent: z
+          .enum([
+            'architecture',
+            'planning',
+            'implementation',
+            'validation',
+            'tests',
+            'runtime',
+            'ownership',
+          ])
+          .optional(),
       })
       .strict(),
     output: z
@@ -293,6 +311,64 @@ export const MCP_TOOL_CONTRACTS = {
         matchKinds: z.array(z.string().min(1)).optional(),
         /** Item 11: the difference between "nothing indexed matches" and "no query ran". */
         outcome: queryOutcomeSchema.optional(),
+        /** The intent the ranking used, inferred or explicit. */
+        intent: z.string().min(1).optional(),
+      })
+      .strict(),
+  },
+  list_constraints: {
+    description:
+      'List the repository rules ImpactGraph indexed: CI guards, lint boundaries, allowlists and human-declared constraints, with their scope, severity, exemption count and source. `extraction` says how the rule was arrived at — only `recognized` and `declared` constraints can block a plan; `opaque` means a guard exists whose rule could not be read, which is reported rather than hidden.',
+    input: z
+      .object({
+        severity: z.enum(['blocking', 'warning', 'advisory']).optional(),
+        kind: z.string().min(1).optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .strict(),
+    output: z
+      .object({
+        constraints: z.array(constraintSummarySchema),
+        totalCount: z.number().int().min(0),
+        /** Guards seen whose rule was not extracted — the honest limit of this layer. */
+        opaqueGuardPaths: z.array(z.string().min(1)),
+        guardFilesRead: z.number().int().min(0),
+      })
+      .strict(),
+  },
+  query_runtime_path: {
+    description:
+      'Answer "what process actually serves this traffic in production?". Walks the deployment graph from a configured URL through Terraform locals, outputs and variables to the runtime resource, container and handler, and reports the environment variables each process on the path receives. An unresolved chain is reported as unresolved, never completed by guesswork.',
+    input: z
+      .object({
+        /** Matches configured URL or environment-variable names, case-insensitively. */
+        urlName: z.string().min(1).optional(),
+        limit: z.number().int().min(1).max(50).optional(),
+      })
+      .strict(),
+    output: z
+      .object({
+        paths: z.array(
+          z
+            .object({
+              id: z.string().min(1),
+              hops: z.array(
+                z
+                  .object({
+                    kind: z.string().min(1),
+                    nodeId: z.string().min(1),
+                    name: z.string().min(1),
+                    viaRelation: z.string().min(1).optional(),
+                  })
+                  .strict(),
+              ),
+              servingProcess: z.string().min(1).optional(),
+              receivedEnvironment: z.array(z.string().min(1)),
+              incompleteReason: z.string().min(1).optional(),
+            })
+            .strict(),
+        ),
+        totalCount: z.number().int().min(0),
       })
       .strict(),
   },

@@ -3,7 +3,15 @@
   "definitions": {
     "Tool_index_workspace_InputV1": {
       "type": "object",
-      "properties": {},
+      "properties": {
+        "warningDetail": {
+          "type": "string",
+          "enum": [
+            "summary",
+            "full"
+          ]
+        }
+      },
       "additionalProperties": false
     }
   },

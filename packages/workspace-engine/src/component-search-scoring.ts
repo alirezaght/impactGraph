@@ -38,6 +38,8 @@ export interface ComponentSearchHit {
 
 export interface ComponentSearchResult {
   readonly components: readonly ComponentSearchHit[];
+  /** ADR-0017 — the intent the ranking used, inferred or explicit. */
+  readonly intent?: string;
   /** Distinct match kinds present, so a caller can see at a glance what grade of answer it got. */
   readonly matchKinds: readonly MatchKind[];
   readonly outcome: QueryOutcome;

@@ -48,7 +48,33 @@ export const cliIndexOutputSchema = z
     ignoredCount: z.number().int().min(0),
     nodeCount: z.number().int().min(0),
     edgeCount: z.number().int().min(0),
+    /**
+     * A BOUNDED sample, not the run's full warning list (ADR-0017).
+     *
+     * This field used to carry every line: an index of a mid-sized repository returned 792 strings
+     * and roughly 91 KB, which exceeded an agent's token budget outright — the tool's answer was
+     * unreadable, so the tool was useless however correct it was. The count that matters now lives
+     * in `warningSummary`, and the lines are a sample unless `warningDetail: 'full'` was asked for.
+     */
     warnings: z.array(z.string()),
+    /** Additive v1 (ADR-0017): the true totals, grouped, so a sample is never mistaken for all. */
+    warningSummary: z
+      .object({
+        totalCount: z.number().int().min(0),
+        returnedCount: z.number().int().min(0),
+        omittedCount: z.number().int().min(0),
+        byCategory: z.array(
+          z
+            .object({
+              category: z.string().min(1),
+              count: z.number().int().min(0),
+              exampleMessage: z.string().min(1).optional(),
+            })
+            .strict(),
+        ),
+      })
+      .strict()
+      .optional(),
     /** Additive v1: which registered repositories this run indexed. */
     repositories: z.array(repositoryIndexStateSchema).optional(),
   })

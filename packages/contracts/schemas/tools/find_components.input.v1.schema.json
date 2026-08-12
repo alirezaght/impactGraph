@@ -23,6 +23,18 @@
         },
         "includeLexical": {
           "type": "boolean"
+        },
+        "intent": {
+          "type": "string",
+          "enum": [
+            "architecture",
+            "planning",
+            "implementation",
+            "validation",
+            "tests",
+            "runtime",
+            "ownership"
+          ]
         }
       },
       "required": [

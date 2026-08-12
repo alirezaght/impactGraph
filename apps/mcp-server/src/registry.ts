@@ -31,6 +31,7 @@ import {
 import { CONFIG_MAINTENANCE_HANDLERS } from './registry-config.js';
 import { DECISION_HANDLERS } from './registry-decisions.js';
 import { GRAPH_HANDLERS } from './registry-graph.js';
+import { GOVERNANCE_HANDLERS } from './registry-governance.js';
 import { IMPACT_HANDLERS } from './registry-impacts.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';
@@ -302,6 +303,7 @@ const HANDLERS: ToolHandlerMap = {
       limit: input.limit ?? 25,
       ...(input.nodeTypes === undefined ? {} : { nodeTypes: input.nodeTypes }),
       ...(input.includeLexical === undefined ? {} : { includeLexical: input.includeLexical }),
+      ...(input.intent === undefined ? {} : { intent: input.intent }),
     });
     if (!found.ok) {
       return found;
@@ -321,6 +323,7 @@ const HANDLERS: ToolHandlerMap = {
           matchedOn: [...hit.matchedOn],
         })),
         matchKinds: [...found.value.matchKinds],
+        ...(found.value.intent === undefined ? {} : { intent: found.value.intent }),
         outcome: {
           ...found.value.outcome,
           limitations: [...found.value.outcome.limitations],
@@ -334,6 +337,7 @@ const HANDLERS: ToolHandlerMap = {
   ...STRUCTURE_HANDLERS,
   ...CONFIG_MAINTENANCE_HANDLERS,
   ...GRAPH_HANDLERS,
+  ...GOVERNANCE_HANDLERS,
 };
 
 const reviewDocument = async (

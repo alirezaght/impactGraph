@@ -114,6 +114,10 @@
             "resultCount"
           ],
           "additionalProperties": false
+        },
+        "intent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
