@@ -263,7 +263,92 @@ export {
   markImpactAnalysisReviewed,
   supersedeImpactAnalysis,
   addUserDecision,
+  evidenceProvenanceOf,
 } from './impact/impact-analysis.js';
+
+// ADR-0017 — repository constraints, preflight findings, plan assessment, runtime topology.
+export type {
+  ConstraintKind,
+  ConstraintRelation,
+  ConstraintSeverity,
+  ConstraintExtraction,
+} from './constraint/constraint-vocabulary.js';
+export {
+  CONSTRAINT_KINDS,
+  CONSTRAINT_RELATIONS,
+  CONSTRAINT_SEVERITIES,
+  CONSTRAINT_EXTRACTIONS,
+  AUTHORITATIVE_EXTRACTIONS,
+  isConstraintKind,
+  isConstraintRelation,
+  canBlock,
+  cappedSeverity,
+} from './constraint/constraint-vocabulary.js';
+export type {
+  ConstraintScope,
+  ConstraintRule,
+  ConstraintExemption,
+  RepositoryConstraint,
+} from './constraint/repository-constraint.js';
+export { createRepositoryConstraint, isExempt } from './constraint/repository-constraint.js';
+
+export type { EvidenceProvenance, EvidenceIndependence } from './preflight/evidence-provenance.js';
+export {
+  EVIDENCE_PROVENANCES,
+  INDEPENDENT_PROVENANCES,
+  isEvidenceProvenance,
+  independenceWeight,
+  isIndependent,
+  provenanceOf,
+  provenanceLabel,
+  summariseIndependence,
+} from './preflight/evidence-provenance.js';
+export type {
+  PreflightFindingKind,
+  FindingSeverity,
+  FindingSubject,
+  PreflightFinding,
+} from './preflight/preflight-finding.js';
+export {
+  PREFLIGHT_FINDING_KINDS,
+  FINDING_SEVERITIES,
+  isPreflightFindingKind,
+  createPreflightFinding,
+  isBlocking,
+} from './preflight/preflight-finding.js';
+export type {
+  UnmatchedRequirementClass,
+  ClassificationSignals,
+  RequirementClassification,
+} from './preflight/requirement-classification.js';
+export {
+  UNMATCHED_REQUIREMENT_CLASSES,
+  isUnmatchedRequirementClass,
+  classifyUnmatchedRequirement,
+} from './preflight/requirement-classification.js';
+export type {
+  Feasibility,
+  PlanAssessment,
+  PlanAssessmentCounts,
+  AssessmentInput,
+} from './preflight/plan-assessment.js';
+export { FEASIBILITIES, assessPlan } from './preflight/plan-assessment.js';
+
+export type {
+  RuntimeHopKind,
+  RuntimeHop,
+  RuntimePath,
+  ConfigRequirement,
+  RuntimeGapKind,
+  RuntimeGap,
+} from './runtime/runtime-path.js';
+export {
+  RUNTIME_HOP_KINDS,
+  RUNTIME_GAP_KINDS,
+  processHops,
+  isFullyResolved,
+  findConfigGaps,
+} from './runtime/runtime-path.js';
 export type { ImpactSignalInput } from './impact/confidence-weights.js';
 export {
   IMPACT_SIGNAL_WEIGHTS,

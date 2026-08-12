@@ -2,11 +2,13 @@ import { err, ok } from '../errors/result.js';
 import { validationError, validationIssue } from '../errors/validation.js';
 import { deepFreeze } from '../freeze.js';
 import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
+import { isEvidenceProvenance, provenanceOf } from '../preflight/evidence-provenance.js';
 import { isProvenance, knowledgeCategoryOf } from '../provenance/provenance.js';
 
 import { capLikelihood, isImpactEvidenceType, primaryEvidenceType } from './evidence-basis.js';
 import { collectProposedStructureIssues } from './proposed-structure.js';
 
+import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
 import type { ImpactEvidenceType } from './evidence-basis.js';
 import type { ProposedStructure } from './proposed-structure.js';
 import type { Result } from '../errors/result.js';
@@ -93,7 +95,20 @@ export interface RequirementImpact {
    * name resemblance.
    */
   readonly tierCappedBy?: ImpactEvidenceType;
+  /**
+   * Additive field: WHERE the evidence came from, as opposed to what kind it is (ADR-0017).
+   *
+   * `evidenceTypes` cannot distinguish "we found this" from "the specification told us this": a
+   * file the specification named is honestly `direct-structural`, and reporting it as such let
+   * readiness rise on echoes. Absent on analyses stored before the axis existed — read through
+   * `evidenceProvenanceOf`, which maps absence to `WEAK_LEXICAL`, the weakest reading.
+   */
+  readonly evidenceProvenance?: EvidenceProvenance;
 }
+
+/** Absence is read as the weakest provenance, never as "unclassified but fine". */
+export const evidenceProvenanceOf = (impact: RequirementImpact): EvidenceProvenance =>
+  provenanceOf(impact.evidenceProvenance);
 
 /** Absence is read as the weakest basis, never as "unclassified but fine". */
 export const evidenceTypesOf = (impact: RequirementImpact): readonly ImpactEvidenceType[] =>
@@ -269,6 +284,14 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
   }
   if (impact.tierCappedBy !== undefined && !isImpactEvidenceType(impact.tierCappedBy)) {
     issues.push(validationIssue('invalid-type', `${path}.tierCappedBy`, 'unknown evidence type'));
+  }
+  if (
+    impact.evidenceProvenance !== undefined &&
+    !isEvidenceProvenance(impact.evidenceProvenance)
+  ) {
+    issues.push(
+      validationIssue('invalid-type', `${path}.evidenceProvenance`, 'unknown evidence provenance'),
+    );
   }
   if (types.length === 0) {
     return issues;

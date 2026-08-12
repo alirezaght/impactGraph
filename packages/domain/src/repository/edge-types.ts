@@ -64,6 +64,39 @@ export const EDGE_TYPES = [
   'RENAMED_TO',
   /** field → payload/contract: the field appears in that serialized form. */
   'SERIALIZED_AS',
+  // ADR-0017 — governance relationships. A constraint does not DEPEND ON the code it governs, and
+  // collapsing these into DEPENDS_ON or USES destroys exactly the information a planner needs: the
+  // direction of the prohibition, and whether an exemption applies.
+  /** constraint → scope: this relationship must not exist here. */
+  'FORBIDS',
+  /** constraint → scope: only the listed sources may reach the governed scope. */
+  'ONLY_ALLOWED_FROM',
+  /** constraint → scope: the governed scope may only reach the listed targets. */
+  'ONLY_ALLOWED_TO',
+  /** check → scope: this check must pass over that scope. */
+  'MUST_PASS',
+  /** constraint → scope: dependencies out of this scope are restricted. */
+  'RESTRICTS_DEPENDENCY',
+  /** constraint → config-key/environment-variable: the scope may not run without it. */
+  'REQUIRES_CONFIG',
+  /** constraint → runtime resource: the scope may not run without it. */
+  'REQUIRES_RUNTIME',
+  /** constraint → exemption: this subject is allowed despite the rule. */
+  'EXEMPTS',
+  /** check → constraint: the guard that declares the rule. */
+  'GOVERNS',
+  // ADR-0017 — runtime topology. Direction is always along the traffic or the value.
+  /** service-url/gateway → runtime resource: traffic for this URL arrives here. */
+  'ROUTES_TO',
+  /** url/local/output/variable → its resolved value or target. */
+  'RESOLVES_TO',
+  /** handler/service code → the container or runtime process that executes it. */
+  'RUNS_IN',
+  /** container/runtime-process → environment-variable: this process is given that value. */
+  'RECEIVES_ENV',
+  // ADR-0017 — member declaration, so a referenced member can be checked for existence.
+  /** enum/union/config surface → the member it declares. */
+  'DECLARES_MEMBER',
   'DEPENDS_ON',
   'AFFECTS',
   'MAY_AFFECT',

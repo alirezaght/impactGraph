@@ -40,6 +40,13 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     'page',
     'form',
     'test',
+    // ADR-0017 — symbol members. Resolution stopped at the file and the top-level symbol, so
+    // `ItemType.ANGEBOT` could be assumed by a specification and never contradicted, because
+    // `ItemType` existed and nothing modelled what was inside it.
+    /** One member of an enum. */
+    'enum-member',
+    /** One literal of a union type or a const-object value set. */
+    'union-literal',
   ],
   data: [
     'database',
@@ -99,6 +106,19 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     'environment-variable',
     'docker-image',
     'deployment-pipeline',
+    // ADR-0017 — the runtime layer. These exist because a deployment topology is not a dependency
+    // graph: the process that actually serves a request is frequently NOT the service the code and
+    // the plan both name, and nothing in the source graph can express that difference.
+    /** A process that actually serves traffic — an aggregator, a gateway worker, a sidecar. */
+    'runtime-process',
+    /** One container within a runtime resource; the unit that does or does not receive env vars. */
+    'container',
+    /** A configured URL, as the frontend or a caller knows it, before resolution. */
+    'service-url',
+    /** A Terraform `locals` entry — the usual hop where a nominal name becomes a real target. */
+    'terraform-local',
+    'terraform-output',
+    'terraform-variable',
   ],
   repository: ['repository', 'workspace', 'package', 'directory', 'file', 'symbol'],
   /**
@@ -120,6 +140,25 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     /** A declared event/message contract document (AsyncAPI, JSON event schema, proto). */
     'event-definition',
     'generated-contract',
+    /** One key in a configuration surface — settings class, env schema, config map (ADR-0017). */
+    'config-key',
+    /** A named feature flag. Validated for existence like any other referenced member. */
+    'feature-flag',
+  ],
+  /**
+   * ADR-0017 — repository rules as first-class entities.
+   *
+   * A CI guard is not application code that happens to live under `ci/`. It governs other code, it
+   * has exemptions, and it can make a design impossible. Indexing it as a plain file loses all
+   * three, which is why it gets its own category rather than a node type inside `repository`.
+   */
+  governance: [
+    /** An indexed repository rule. See domain/constraint. */
+    'repository-constraint',
+    /** The guard that declares one or more constraints: a CI script, a lint config, a guard test. */
+    'ci-check',
+    /** One named escape from a constraint, carrying its own source location. */
+    'constraint-exemption',
   ],
 } as const);
 
