@@ -15,7 +15,7 @@ import type { Node } from 'web-tree-sitter';
 
 /** A Terraform address referenced from an expression: `var.x`, `module.y`, `<type>.<name>`. */
 export interface TerraformReference {
-  readonly kind: 'variable' | 'module' | 'resource' | 'data';
+  readonly kind: 'variable' | 'module' | 'resource' | 'data' | 'local';
   readonly address: string;
   readonly range: SourceRange;
 }
@@ -86,7 +86,7 @@ const identifierText = (node: Node): string | undefined =>
   namedChildrenOf(node).find((child) => child.type === 'identifier')?.text;
 
 /**
- * Heads that never name something this repository declares: `local`/`each`/`count`/`self`/`path`/
+ * Heads that never name something this repository declares: `each`/`count`/`self`/`path`/
  * `terraform` are language built-ins. Skipping them keeps unresolved-reference warnings
  * meaningful.
  *
@@ -94,14 +94,19 @@ const identifierText = (node: Node): string | undefined =>
  * declared in the configuration and IS indexed as a node, so `data.google_secret_manager_secret.x`
  * names something this repository owns — skipping it was the reason a resource that depends on a
  * data source used to show no edge at all (Story 16.1).
+ *
+ * `local` left this set in ADR-0017. It was skipped as a built-in when `locals` blocks were not
+ * nodes, and that was self-consistent — but it meant `local._agg.newsletter` referred to nothing,
+ * which is precisely the hop where a nominal service name became an aggregator, unwatched.
  */
-const SKIPPED_HEADS = new Set(['local', 'each', 'count', 'self', 'path', 'terraform']);
+const SKIPPED_HEADS = new Set(['each', 'count', 'self', 'path', 'terraform']);
 
 /** A `Map` for the §42.5 reason: the head is untrusted text and `__proto__` must miss. */
 const KINDS = new Map<string, TerraformReference['kind']>([
   ['data', 'data'],
   ['var', 'variable'],
   ['module', 'module'],
+  ['local', 'local'],
 ]);
 
 /** A Terraform address without a position — what a chain of dotted segments names, if anything. */

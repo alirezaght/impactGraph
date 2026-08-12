@@ -2,6 +2,9 @@ nodes:
 config:package.json|configuration-file|asset|package.json|configuration|-
 config:web/package.json|configuration-file|asset|package.json|configuration|-
 config:worker/package.json|configuration-file|asset|package.json|configuration|-
+container:terraform:infra/google_cloud_run_v2_job.worker|container|infrastructure|deals-worker container|configuration|-
+container:terraform:infra/google_cloud_run_v2_service.unmatched|container|infrastructure|no-such-package container|configuration|-
+container:terraform:infra/google_cloud_run_v2_service.web|container|infrastructure|deals-web container|configuration|-
 dependency:@google-cloud/pubsub|third-party-service|integration|@google-cloud/pubsub|configuration|-
 dependency:@nestjs/common|third-party-service|integration|@nestjs/common|configuration|-
 dependency:@nestjs/event-emitter|third-party-service|integration|@nestjs/event-emitter|configuration|-
@@ -134,6 +137,9 @@ CONTAINS|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#Dea
 CONTAINS|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter->spring:bean:symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter|framework-convention|ev1
 CONTAINS|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsChannel->spring:bean:symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsChannel|framework-convention|ev1
 CONTAINS|symbol:worker/src/deal-events.service.ts#DealEventsService->symbol:worker/src/deal-events.service.ts#DealEventsService.onDealEvent|static-analysis|ev1
+CONTAINS|terraform:infra/google_cloud_run_v2_job.worker->container:terraform:infra/google_cloud_run_v2_job.worker|configuration|ev1
+CONTAINS|terraform:infra/google_cloud_run_v2_service.unmatched->container:terraform:infra/google_cloud_run_v2_service.unmatched|configuration|ev1
+CONTAINS|terraform:infra/google_cloud_run_v2_service.web->container:terraform:infra/google_cloud_run_v2_service.web|configuration|ev1
 CONTAINS|workspace:cross-stack->package:deals-web|configuration|ev1
 CONTAINS|workspace:cross-stack->package:deals-worker|configuration|ev1
 DEPENDS_ON|package:deals-web->dependency:astro|configuration|ev1
@@ -157,6 +163,7 @@ PUBLISHES|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#De
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishConfiguredEvent->topic:deal-events|framework-convention|ev2
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishDealCreated->topic:deal-events|framework-convention|ev1
 PUBLISHES|symbol:worker/src/deal-publisher.ts#publishLegacyEvent->topic:deal-event|framework-convention|ev1
+RECEIVES_ENV|container:terraform:infra/google_cloud_run_v2_job.worker->env:DEAL_EVENTS_TOPIC|configuration|ev1
 SUBMITS_TO|symbol:web/src/pages/index.astro#index->route:POST /api/deals|framework-convention|ev3
 SUBSCRIBES_TO|symbol:api/app/events.py#consume_deals->subscription:deal-events-worker|framework-convention|ev1
 SUBSCRIBES_TO|symbol:service/src/main/java/com/example/deals/DealEventBridge.java#DealEventBridge.dealEventsAdapter->subscription:deal-events-worker|framework-convention|ev1

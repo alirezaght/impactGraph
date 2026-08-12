@@ -229,15 +229,20 @@ const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
   // DTO mapping emits FLOWS_TO/RENAMED_TO; plus the `nullable-boundary` fixture joins the roster.
   //
   // 613 → 616: item 6 — an outbound call to an ABSOLUTE url now matches a workspace route by path
+  // 616 → 623: ADR-0017 — the runtime layer. Each Cloud Run service gains a CONTAINS edge to its
+  // container, each container a RECEIVES_ENV edge per declared env binding, and `locals` entries
+  // gain RESOLVES_TO/ROUTES_TO edges along the address they carry. All additive; nothing moved.
   // (`CALLS_ENDPOINT`), so the cross-service HTTP flow that was invisible becomes an edge.
-  unchanged: 616,
+  unchanged: 623,
 };
 
 /** Expected NODE movement, summed over all fixtures. Steady state is everything unchanged. */
 const EXPECTED_NODE_MOVEMENT: Readonly<Record<string, number>> = {
+  // 479 → 485: ADR-0017 — one `container` node per Cloud Run service/job, plus the `locals`
+  // entries and `service-url` entry points that make a deployment chain walkable. All additive.
   // 352 → 424 for the asset adapter and the notification-chain fixture; 424 → 479 for the `field`
   // nodes of item 7 and the `nullable-boundary` fixture.
-  unchanged: 479,
+  unchanged: 485,
 };
 
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {

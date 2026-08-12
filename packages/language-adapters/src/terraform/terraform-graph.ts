@@ -328,6 +328,68 @@ const emitAssignment = (state: TerraformEmitState, assignment: TerraformAssignme
 };
 
 /**
+ * One node per `locals` ENTRY (ADR-0017).
+ *
+ * A `locals` block was previously skipped as a configuration setting rather than a component of the
+ * system. That reading cost real money: `admin → NEWSLETTER_SERVICE_URL →
+ * frontend_service_urls.newsletter → _agg.newsletter → aggregator` runs through two locals, and
+ * with neither in the graph the chain could not be walked, so nothing could notice the aggregator
+ * was serving traffic the plan never configured.
+ *
+ * The entry, not the block, is the node: a `locals` block holds independent values, and merging
+ * them would make every local look like it referenced whatever any local referenced.
+ */
+const emitLocals = (state: TerraformEmitState, block: TerraformBlock): void => {
+  for (const [name, attribute] of block.attributes) {
+    const address = `local.${name}`;
+    const evidenceId = evidenceAt(state, 'terraform-resource', {
+      range: attribute.range,
+      symbolName: address,
+    });
+    if (evidenceId === undefined) {
+      continue;
+    }
+    const nodeId = terraformNodeId(state.directory, address);
+    const knowledge = configurationKnowledge(state, evidenceId);
+    const node = state.builder.addNode(
+      {
+        id: nodeId,
+        category: 'infrastructure',
+        type: 'terraform-local',
+        name: address,
+        path: state.filePath,
+        knowledge,
+      },
+      state.filePath,
+    );
+    if (node === undefined) {
+      continue;
+    }
+    state.builder.addEdge(
+      {
+        id: `terraform:contains:${state.filePath}->${nodeId}`,
+        type: 'CONTAINS',
+        sourceId: fileNodeId(state.filePath),
+        targetId: nodeId,
+        knowledge,
+      },
+      state.filePath,
+    );
+    for (const reference of attribute.references) {
+      state.builder.addCallFact({
+        filePath: state.filePath,
+        receiverName: REFERENCE_RECEIVER,
+        calleeName: reference.address,
+        stringArguments: [],
+        identifierArguments: [],
+        enclosingSymbolNodeId: nodeId,
+        evidenceId,
+      });
+    }
+  }
+};
+
+/**
  * Emit one file's contents. A duplicate address within a file (invalid Terraform, which the CLI
  * would reject) is indexed once: reporting the same resource twice would be a worse lie than
  * reporting it once.
@@ -335,6 +397,10 @@ const emitAssignment = (state: TerraformEmitState, assignment: TerraformAssignme
 export const emitTerraformFile = (state: TerraformEmitState, document: TerraformDocument): void => {
   const seen = new Set<string>();
   for (const block of document.blocks) {
+    if (block.kind === 'locals') {
+      emitLocals(state, block);
+      continue;
+    }
     const address = blockAddress(block);
     if (address === undefined || seen.has(address)) {
       continue;

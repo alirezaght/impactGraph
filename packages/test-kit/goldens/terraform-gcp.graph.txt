@@ -1,4 +1,6 @@
 nodes:
+container:terraform:google_cloud_run_service.deals_api|container|infrastructure|deals-api container|configuration|-
+env:DEAL_EVENTS_TOPIC|environment-variable|infrastructure|DEAL_EVENTS_TOPIC|configuration|-
 file:dev.auto.tfvars.json|file|repository|dev.auto.tfvars.json|static-analysis|-
 file:expansion.tf|file|repository|expansion.tf|static-analysis|-
 file:main.tf|file|repository|main.tf|static-analysis|-
@@ -71,6 +73,7 @@ CONTAINS|file:modules/json-syntax/main.tf.json->terraform:modules/json-syntax/va
 CONTAINS|file:variables.tf->terraform:var.enable_audit|configuration|ev1
 CONTAINS|file:variables.tf->terraform:var.project_id|configuration|ev1
 CONTAINS|file:variables.tf->terraform:var.region|configuration|ev1
+CONTAINS|terraform:google_cloud_run_service.deals_api->container:terraform:google_cloud_run_service.deals_api|configuration|ev1
 CONTAINS|terraform:module.dead_letter->terraform:modules/dead-letter/google_pubsub_topic.dead_letter|configuration|ev1
 CONTAINS|terraform:module.dead_letter->terraform:modules/dead-letter/var.topic_name|configuration|ev1
 CONTAINS|terraform:module.json_syntax->terraform:modules/json-syntax/google_pubsub_subscription.json_events_worker|configuration|ev1
@@ -98,6 +101,7 @@ DEPENDS_ON|terraform:output.shard_topic_names->terraform:google_pubsub_topic.sha
 DEPENDS_ON|terraform:output.shard_topic_names->terraform:google_pubsub_topic.shard[2]|configuration|ev1
 DEPENDS_ON|terraform:provider.google->terraform:var.project_id|configuration|ev1
 DEPENDS_ON|terraform:provider.google->terraform:var.region|configuration|ev1
+RECEIVES_ENV|container:terraform:google_cloud_run_service.deals_api->env:DEAL_EVENTS_TOPIC|configuration|ev1
 REFERENCES_RESOURCE|terraform:data.google_secret_manager_secret.db_password->terraform:secret:db-password|configuration|ev1
 REFERENCES_RESOURCE|terraform:google_secret_manager_secret_iam_member.deals_api_db_password->terraform:secret:db-password|configuration|ev1
 REFERENCES_RESOURCE|terraform:modules/json-syntax/google_secret_manager_secret_iam_member.json_worker_db_password->terraform:secret:db-password|configuration|ev1

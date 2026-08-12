@@ -2,6 +2,7 @@ import { FragmentBuilder, REFERENCE_RECEIVER } from '@impactgraph/language-adapt
 
 import { linkTerraformModules } from './terraform-modules.js';
 import { linkTerraformReferences } from './terraform-references.js';
+import { enrichTerraformRuntime } from './terraform-runtime.js';
 import { linkTerraformVariableValues } from './terraform-variable-values.js';
 
 import type {
@@ -48,6 +49,8 @@ class TerraformFrameworkAdapter implements FrameworkAdapter {
     linkTerraformReferences(builder, graph, context.indexing);
     linkTerraformModules(builder, graph, context.indexing);
     linkTerraformVariableValues(builder, graph, context.indexing);
+    // ADR-0017 — the runtime layer: which URL resolves to which process, and what it receives.
+    enrichTerraformRuntime(builder, context.indexing, graph);
     return Promise.resolve(builder.build());
   }
 }

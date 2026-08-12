@@ -1,0 +1,8 @@
+name: ci
+on: [push]
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python3 ci/scripts/check-service-peer-http.py
+      - run: npm run lint

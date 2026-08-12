@@ -2,6 +2,7 @@ nodes:
 config:deal-management/package.json|configuration-file|asset|package.json|configuration|-
 config:notification-service/package.json|configuration-file|asset|package.json|configuration|-
 config:package.json|configuration-file|asset|package.json|configuration|-
+container:terraform:infra/google_cloud_run_service.notification_service|container|infrastructure|notification-service container|configuration|-
 dependency:@google-cloud/pubsub|third-party-service|integration|@google-cloud/pubsub|configuration|-
 dependency:express|third-party-service|integration|express|configuration|-
 directory:deal-management/src|directory|repository|src|static-analysis|-
@@ -115,6 +116,7 @@ CONTAINS|symbol:deal-management/src/outbox.ts#OutboxRecord->field:deal-managemen
 CONTAINS|symbol:deal-management/src/outbox.ts#OutboxRecord->field:deal-management/src/outbox.ts#OutboxRecord.payload|static-analysis|ev1
 CONTAINS|symbol:notification-service/src/notification-projection.ts#Envelope->field:notification-service/src/notification-projection.ts#Envelope.eventType|static-analysis|ev1
 CONTAINS|symbol:notification-service/src/notification-projection.ts#Envelope->field:notification-service/src/notification-projection.ts#Envelope.payload|static-analysis|ev1
+CONTAINS|terraform:infra/google_cloud_run_service.notification_service->container:terraform:infra/google_cloud_run_service.notification_service|configuration|ev1
 CONTAINS|workspace:notification-chain->package:deal-management|configuration|ev1
 CONTAINS|workspace:notification-chain->package:notification-service|configuration|ev1
 DEFINES_KEY|locale:notification-service/locales/de.json->locale:notification-service/locales/de.json#nda.signature_request.body|configuration|ev1

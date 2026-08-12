@@ -19,6 +19,15 @@ export interface TerraformAttribute {
   /** A whole number written literally in the source — `count = 3` and nothing cleverer. */
   readonly integer?: number;
   readonly interpolated: boolean;
+  /**
+   * Addresses referenced inside THIS attribute's value (ADR-0017).
+   *
+   * The block-level `references` list cannot answer "what does `local.frontend_service_urls` point
+   * at", because a `locals` block holds many independent entries and the block-level list merges
+   * them. That merge is why the aggregator hop was unfollowable: every local in the file looked
+   * like it referenced everything any local referenced.
+   */
+  readonly references: readonly TerraformReference[];
 }
 
 export interface TerraformSecretRef {
@@ -168,6 +177,27 @@ const scanBody = (body: Node): BlockScan => {
   return scan;
 };
 
+/** Bounded walk of one attribute's value collecting the addresses it names. */
+const referencesWithin = (expression: Node): readonly TerraformReference[] => {
+  const found: TerraformReference[] = [];
+  const stack: Node[] = [expression];
+  let visited = 0;
+  while (stack.length > 0 && visited < MAX_BLOCK_NODES) {
+    const node = stack.pop();
+    if (node === undefined) {
+      continue;
+    }
+    visited += 1;
+    const reference = readReference(node);
+    if (reference !== undefined) {
+      found.push(reference);
+      continue;
+    }
+    stack.push(...namedChildrenOf(node));
+  }
+  return found;
+};
+
 const topLevelAttributes = (body: Node | undefined): ReadonlyMap<string, TerraformAttribute> => {
   const map = new Map<string, TerraformAttribute>();
   for (const child of body === undefined ? [] : namedChildrenOf(body)) {
@@ -181,6 +211,7 @@ const topLevelAttributes = (body: Node | undefined): ReadonlyMap<string, Terrafo
     map.set(name, {
       range: rangeOfNode(child),
       interpolated: value.interpolated,
+      references: referencesWithin(expression),
       ...(value.literal === undefined ? {} : { literal: value.literal }),
       ...(integer === undefined ? {} : { integer }),
     });
