@@ -43,6 +43,8 @@ export const NODE_TYPES_BY_CATEGORY = Object.freeze({
     // ADR-0017 — symbol members. Resolution stopped at the file and the top-level symbol, so
     // `ItemType.ANGEBOT` could be assumed by a specification and never contradicted, because
     // `ItemType` existed and nothing modelled what was inside it.
+    /** An enum declaration — the container whose members a specification may assume. */
+    'enum',
     /** One member of an enum. */
     'enum-member',
     /** One literal of a union type or a const-object value set. */

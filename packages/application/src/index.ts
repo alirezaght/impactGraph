@@ -146,3 +146,67 @@ export type {
 } from './clarify-specification/interpretation-port.js';
 export { buildCoChangeIndex } from './history/co-change-index.js';
 export type { CoChangeIndex } from './history/co-change-index.js';
+
+// ADR-0017 — constraint extraction, runtime topology and the adversarial preflight pass.
+export type {
+  GuardFile,
+  ExtractedConstraint,
+  ConstraintRecognizer,
+} from './extract-constraints/types.js';
+export { looksLikeGuardPath, GUARD_PATH_PATTERNS } from './extract-constraints/types.js';
+export type {
+  ExtractConstraintsRequest,
+  ExtractConstraintsResult,
+} from './extract-constraints/extract-constraints.js';
+export {
+  extractConstraints,
+  DEFAULT_RECOGNIZERS,
+} from './extract-constraints/extract-constraints.js';
+export type { DeclaredConstraintEntry } from './extract-constraints/recognizers/declared-manifest.js';
+export {
+  fromDeclaredEntries,
+  CONSTRAINTS_MANIFEST_PATH,
+} from './extract-constraints/recognizers/declared-manifest.js';
+export { unenforcedGuards } from './extract-constraints/recognizers/ci-workflow.js';
+
+export type { ResolveRuntimePathsInput } from './build-runtime-topology/resolve-runtime-paths.js';
+export {
+  resolveRuntimePaths,
+  configuredNamesByProcess,
+} from './build-runtime-topology/resolve-runtime-paths.js';
+
+export type {
+  ProposedMechanism,
+  ProposedEndpoint,
+  ProposedEdge,
+  ResolvedConcept,
+  DeriveProposedEdgesInput,
+} from './preflight/proposed-edges.js';
+export { deriveProposedEdges, PROPOSED_MECHANISMS } from './preflight/proposed-edges.js';
+export type { CheckConstraintsInput } from './preflight/check-constraints.js';
+export { checkConstraints } from './preflight/check-constraints.js';
+export type { CheckRuntimeInput } from './preflight/check-runtime.js';
+export { checkRuntime } from './preflight/check-runtime.js';
+export type { AssumptionCheckInput } from './preflight/check-assumptions.js';
+export { checkAssumptions } from './preflight/check-assumptions.js';
+export type {
+  ConfigSemantic,
+  ConfigDeclaration,
+  CheckConfigSemanticsInput,
+} from './preflight/check-config-semantics.js';
+export {
+  CONFIG_SEMANTICS,
+  classifyConfig,
+  checkConfigSemantics,
+} from './preflight/check-config-semantics.js';
+export type {
+  RequirementSignalInput,
+  ClassifyRequirementsInput,
+} from './preflight/classify-requirements.js';
+export { classifyRequirements } from './preflight/classify-requirements.js';
+export type {
+  PreflightRequirement,
+  RunPreflightInput,
+  PreflightResult,
+} from './preflight/run-preflight.js';
+export { runPreflight } from './preflight/run-preflight.js';

@@ -43,7 +43,7 @@ describe('node vocabulary (PRD §12.1)', () => {
     expect(NODE_TYPES_BY_CATEGORY.intent).toHaveLength(7);
     expect(NODE_TYPES_BY_CATEGORY.domain).toHaveLength(10);
     // +enum-member, union-literal: symbol members, so `ItemType.ANGEBOT` can be contradicted.
-    expect(NODE_TYPES_BY_CATEGORY.application).toHaveLength(19);
+    expect(NODE_TYPES_BY_CATEGORY.application).toHaveLength(20);
     // +field: a named payload attribute, for field-level flow (item 7).
     expect(NODE_TYPES_BY_CATEGORY.data).toHaveLength(10);
     // +outbox-record, push-endpoint, projection, unresolved-external-boundary (items 5, 11).
