@@ -18,6 +18,13 @@ describe('evidence provenance', () => {
     expect(isIndependent('USER_SUPPLIED')).toBe(false);
   });
 
+  it('labels non-independent matches as leads so the label never contradicts the count', () => {
+    expect(provenanceLabel('WEAK_LEXICAL')).toBe('lead');
+    expect(provenanceLabel('TRANSITIVE')).toBe('lead');
+    expect(provenanceLabel('STRUCTURALLY_INFERRED')).toBe('discovery');
+    expect(provenanceLabel('CONSTRAINT_DERIVED')).toBe('discovery');
+  });
+
   it('weights an echo far below an independent discovery', () => {
     expect(independenceWeight('USER_SUPPLIED')).toBeLessThan(
       independenceWeight('INDEPENDENTLY_DISCOVERED') / 5,

@@ -148,7 +148,11 @@ describe('evidence provenance is persisted and reported (ADR-0017 §5)', () => {
     for (const row of page.impacts) {
       expect(row.evidenceProvenance).toBeDefined();
       expect(row.provenanceLabel).toBe(
-        row.evidenceProvenance === 'USER_SUPPLIED' ? 'confirmation' : 'discovery',
+        row.evidenceProvenance === 'USER_SUPPLIED'
+          ? 'confirmation'
+          : ['WEAK_LEXICAL', 'TRANSITIVE'].includes(row.evidenceProvenance ?? '')
+            ? 'lead'
+            : 'discovery',
       );
     }
   });

@@ -88,7 +88,7 @@ const summaryImpactSchema = z
      */
     evidenceProvenance: z.enum(EVIDENCE_PROVENANCE_VALUES).optional(),
     /** The reader-facing word for it: an echo is 'confirmation', everything else 'discovery'. */
-    provenanceLabel: z.enum(['confirmation', 'discovery']).optional(),
+    provenanceLabel: z.enum(['confirmation', 'discovery', 'lead']).optional(),
   })
   .strict();
 

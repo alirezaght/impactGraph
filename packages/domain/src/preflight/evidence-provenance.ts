@@ -131,8 +131,16 @@ export const summariseIndependence = (
 /**
  * The label a report shows. Keeping this in the domain stops each surface from inventing its own
  * wording for the distinction the whole mechanism exists to make.
+ *
+ * Three labels, not two: calling a weak lexical or transitive match a "discovery" would let the
+ * label contradict the independence count that excludes it. What the engine merely suspects is a
+ * `lead`.
  */
-export type ProvenanceLabel = 'confirmation' | 'discovery';
+export type ProvenanceLabel = 'confirmation' | 'discovery' | 'lead';
 
-export const provenanceLabel = (provenance: EvidenceProvenance): ProvenanceLabel =>
-  provenance === 'USER_SUPPLIED' ? 'confirmation' : 'discovery';
+export const provenanceLabel = (provenance: EvidenceProvenance): ProvenanceLabel => {
+  if (provenance === 'USER_SUPPLIED') {
+    return 'confirmation';
+  }
+  return isIndependent(provenance) ? 'discovery' : 'lead';
+};

@@ -451,7 +451,7 @@
               },
               "provenanceLabel": {
                 "type": "string",
-                "enum": ["confirmation", "discovery"]
+                "enum": ["confirmation", "discovery", "lead"]
               }
             },
             "required": [
