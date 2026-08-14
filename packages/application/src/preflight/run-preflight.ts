@@ -60,6 +60,8 @@ export interface RunPreflightInput {
   readonly blockingQuestions: number;
   readonly coverageInsufficient: boolean;
   readonly score?: number;
+  /** Why the caller withheld the score, when it deliberately computed none. */
+  readonly scoreWithheldReason?: string;
   readonly nextId: (seed: string) => string;
 }
 
@@ -189,6 +191,9 @@ export const runPreflight = (input: RunPreflightInput): PreflightResult => {
       blockingQuestions: input.blockingQuestions,
       coverageInsufficient: input.coverageInsufficient,
       ...(input.score === undefined ? {} : { score: input.score }),
+      ...(input.scoreWithheldReason === undefined
+        ? {}
+        : { scoreWithheldReason: input.scoreWithheldReason }),
     }),
   };
 };

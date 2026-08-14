@@ -31,8 +31,47 @@ describe('assessCoverageSufficiency', () => {
     const verdict = assessCoverageSufficiency({ ...base, unmatchedRequirementCount: 5 });
     expect(verdict.status).toBe('insufficient-coverage');
     expect(verdict.reasons).toEqual([
-      '5 of 10 requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.',
+      '5 of 10 requirements match no indexed component — either they describe new surface, or their vocabulary does not match the indexed components; no registered repository is missing from the index.',
     ]);
+  });
+
+  it('does not assert missing repositories when the roster shows none are missing', () => {
+    const verdict = assessCoverageSufficiency({ ...base, unmatchedRequirementCount: 5 });
+    expect(verdict.reasons.join(' ')).not.toContain('likely do not contain');
+    expect(verdict.reasons.join(' ')).toContain('no registered repository is missing');
+  });
+
+  it('keeps the missing-repositories reading when a registered repository IS missing', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 5,
+      missingRepositoryCount: 1,
+    });
+    expect(verdict.status).toBe('insufficient-coverage');
+    expect(verdict.reasons[0]).toBe(
+      '5 of 10 requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.',
+    );
+  });
+
+  it('excludes NEW_SURFACE requirements from the unmatched ratio', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 6,
+      newSurfaceRequirementCount: 3,
+    });
+    // 3 of 10 unexplained — new construction matching nothing is expected, not missing coverage.
+    expect(verdict.status).toBe('adequate');
+    expect(verdict.reasons).toEqual([]);
+  });
+
+  it('still reports a gap when unexplained requirements alone cross the threshold', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 8,
+      newSurfaceRequirementCount: 3,
+    });
+    expect(verdict.status).toBe('insufficient-coverage');
+    expect(verdict.reasons[0]).toContain('5 of 10 requirements');
   });
 
   it('stays adequate just below the unmatched threshold', () => {

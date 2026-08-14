@@ -64,6 +64,12 @@ export interface AssessmentInput {
   readonly coverageInsufficient: boolean;
   /** The readiness figure the existing deterministic calculation produced, when available. */
   readonly score?: number;
+  /**
+   * Why the caller withheld the score when it deliberately computed none (provisional extraction,
+   * insufficient coverage). Threading the real reason stops the generic "no score was supplied"
+   * from masking a withholding decision the caller already explained elsewhere.
+   */
+  readonly scoreWithheldReason?: string;
 }
 
 const countOf = (findings: readonly PreflightFinding[], kind: PreflightFindingKind): number =>
@@ -167,7 +173,8 @@ export const assessPlan = (input: AssessmentInput): PlanAssessment => {
           scoreWithheldReason:
             feasibility === 'INSUFFICIENT_COVERAGE'
               ? 'Repository coverage is insufficient — a score over a graph missing the feature’s code would be misleading.'
-              : 'No deterministic score was supplied for this analysis.',
+              : (input.scoreWithheldReason ??
+                'No deterministic score was supplied for this analysis.'),
         }
       : { score: input.score };
   return {

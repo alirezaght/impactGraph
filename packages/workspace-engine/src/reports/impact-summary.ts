@@ -345,6 +345,7 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     specification,
     analysis,
     context: input.workspace,
+    graph,
   });
   const evidenceQuality = buildEvidenceQuality(grouped);
   const reasons = provisionalReasons(input, workspaceCoverage, evidenceQuality);

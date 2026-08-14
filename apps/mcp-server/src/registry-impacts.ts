@@ -14,9 +14,11 @@ import {
   recordActualImpact,
   runPreflightForAnalysis,
   buildWorkspaceCoverage,
+  unindexedRegisteredRepositories,
 } from '@impactgraph/workspace-engine';
 
 import type { ToolHandler } from './handler-types.js';
+import type { PreflightContext, WorkspaceRepositoryContext } from '@impactgraph/workspace-engine';
 
 /**
  * The impact-analysis tools (items 9 and 10 of the trial follow-up).
@@ -27,6 +29,31 @@ import type { ToolHandler } from './handler-types.js';
  * agent could not read it, so the tool's answer was unusable as an answer. The detail did not go
  * away; it moved to `list_impacts`, which pages.
  */
+
+/**
+ * The coverage verdict and the adversarial pass, fed from the SAME WorkspaceRepositoryContext.
+ * Coverage is computed first, because every downstream judgement — "this is new surface", "this
+ * symbol does not exist" — is unfounded over code that was never searched. The missing-repository
+ * names are a roster FACT from that context — never "every unmatched requirement", which once made
+ * a fully indexed workspace report unindexed repositories that its own workspaceCoverage block
+ * said did not exist.
+ */
+const runCoveragePreflight = (
+  context: Omit<PreflightContext, 'coverageInsufficient' | 'missingRepositoryNames'>,
+  workspace: WorkspaceRepositoryContext,
+) => {
+  const coverage = buildWorkspaceCoverage({
+    specification: context.specification,
+    analysis: context.analysis,
+    context: workspace,
+    graph: context.graph,
+  });
+  return runPreflightForAnalysis({
+    ...context,
+    coverageInsufficient: coverage.status === 'insufficient-coverage',
+    missingRepositoryNames: unindexedRegisteredRepositories(workspace).map((state) => state.name),
+  });
+};
 
 const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   const { specificationId, ...filters } = input;
@@ -56,26 +83,20 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   if (!workspace.ok) {
     return workspace;
   }
-  const coverage = buildWorkspaceCoverage({
-    specification: spec.value,
-    analysis: built.value.analysis,
-    context: workspace.value,
-  });
   // The adversarial pass runs here, unconditionally. Making it a separate tool would recreate the
   // failure this whole change exists to fix: the questions were always answerable, and nobody knew
   // to ask them (ADR-0017).
-  const preflight = runPreflightForAnalysis({
-    rootDir,
-    specification: spec.value,
-    specificationText: spec.value.rawText,
-    analysis: built.value.analysis,
-    graph: built.value.graph,
-    snapshotId: built.value.snapshotId,
-    // Coverage is computed first, because every downstream judgement — "this is new surface",
-    // "this symbol does not exist" — is unfounded over code that was never searched.
-    coverageInsufficient: coverage.status === 'insufficient-coverage',
-    coverageAffectedRequirementIds: coverage.affectedRequirementIds ?? [],
-  });
+  const preflight = runCoveragePreflight(
+    {
+      rootDir,
+      specification: spec.value,
+      specificationText: spec.value.rawText,
+      analysis: built.value.analysis,
+      graph: built.value.graph,
+      snapshotId: built.value.snapshotId,
+    },
+    workspace.value,
+  );
   return {
     ok: true,
     value: buildImpactSummary({

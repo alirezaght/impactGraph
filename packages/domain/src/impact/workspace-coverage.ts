@@ -19,6 +19,12 @@ export interface CoverageSufficiencyInput {
   readonly unresolvedConceptCount: number;
   /** Registered, enabled repositories that are absent from disk or from the current index. */
   readonly missingRepositoryCount: number;
+  /**
+   * Unmatched requirements the deterministic classifier read as NEW_SURFACE. New construction
+   * matches nothing by definition, so it is excluded from the unmatched ratio — counting it made
+   * a fully indexed workspace of a construction-heavy specification look uncovered.
+   */
+  readonly newSurfaceRequirementCount?: number;
 }
 
 export interface WorkspaceCoverageVerdict {
@@ -39,9 +45,20 @@ export const assessCoverageSufficiency = (
   if (input.requirementCount === 0) {
     return { status: 'adequate', reasons };
   }
-  if (input.unmatchedRequirementCount / input.requirementCount >= UNMATCHED_RATIO_THRESHOLD) {
+  // "Missing repositories are likely" is only an honest reading of a high unmatched ratio when a
+  // registered repository IS actually missing. Otherwise the same ratio has two mundane causes —
+  // new surface, or vocabulary that does not match the index — and asserting missing repositories
+  // would contradict the roster facts reported next to this verdict.
+  const newSurface = Math.min(
+    input.newSurfaceRequirementCount ?? 0,
+    input.unmatchedRequirementCount,
+  );
+  const unexplained = input.unmatchedRequirementCount - newSurface;
+  if (unexplained / input.requirementCount >= UNMATCHED_RATIO_THRESHOLD) {
     reasons.push(
-      `${String(input.unmatchedRequirementCount)} of ${String(input.requirementCount)} requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.`,
+      input.missingRepositoryCount > 0
+        ? `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.`
+        : `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — either they describe new surface, or their vocabulary does not match the indexed components; no registered repository is missing from the index.`,
     );
   }
   if (input.totalConceptCount > 0 && input.unresolvedConceptCount >= input.totalConceptCount) {

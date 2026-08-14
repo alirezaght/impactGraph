@@ -4,8 +4,19 @@ export { captureSnapshot, snapshotSummary, GIT_FAILURES } from './snapshot.js';
 export { performIndexRun, indexWarnings } from './indexing.js';
 export type { IndexRunOutcome, IndexRunResult } from './indexing.js';
 export type { IndexSummary } from '@impactgraph/repository-intelligence';
-export { loadApprovedAnalysis, loadAnalysis, latestAnalysis, listAnalyses } from './analyses.js';
-export type { AnalysisListing } from './analyses.js';
+export {
+  loadApprovedAnalysis,
+  loadAnalysis,
+  loadReviewBaseline,
+  latestAnalysis,
+  listAnalyses,
+} from './analyses.js';
+export type {
+  AnalysisListing,
+  BaselineAuthority,
+  ReviewBaseline,
+  ReviewBaselineOptions,
+} from './analyses.js';
 export { loadGraphAt, loadGraphForSnapshot, loadCurrentGraph, withIndexStore } from './graphs.js';
 export type { CurrentGraph } from './graphs.js';
 export {
@@ -281,7 +292,10 @@ export type { PreflightContext, PreflightOutcome } from './preflight.js';
 export { runPreflightForAnalysis } from './preflight.js';
 export type { LoadedConstraints } from './preflight-guards.js';
 export { collectGuardFiles, loadConstraints } from './preflight-guards.js';
-export { buildWorkspaceCoverage } from './reports/workspace-coverage-block.js';
+export {
+  buildWorkspaceCoverage,
+  unindexedRegisteredRepositories,
+} from './reports/workspace-coverage-block.js';
 export {
   SUMMARY_FINDING_LIMIT,
   toFindingDto,

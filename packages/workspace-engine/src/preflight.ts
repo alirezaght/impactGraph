@@ -1,9 +1,11 @@
 import { assignEvidenceProvenance, runPreflight } from '@impactgraph/application';
-import { stableContentId } from '@impactgraph/domain';
+import { computeReadiness, stableContentId } from '@impactgraph/domain';
 
 import { loadConstraints } from './preflight-guards.js';
+import { unmatchedRequirements } from './reports/impact-summary-facts.js';
+import { buildRequirementSignals, indexedTypes } from './requirement-signals.js';
 
-import type { PreflightRequirement, RequirementSignalInput } from '@impactgraph/application';
+import type { PreflightRequirement } from '@impactgraph/application';
 import type {
   EvidenceIndependence,
   ImpactAnalysis,
@@ -22,50 +24,6 @@ import type {
  * the impact model, the coverage verdict — so the pass adds a comparison, not a second opinion.
  */
 
-/**
- * Language that describes bringing something into existence rather than changing something.
- *
- * The first version of this list held only `add`/`create`/`new`/`introduce`, and a self-run showed
- * why that is too narrow: "Index repository rules as first-class entities" and "Model runtime
- * topology" both create surface, and both fell through to `NO_EVIDENCE` — the honest fallback, but
- * the wrong answer. A specification writes creation as whatever verb suits the noun.
- *
- * Widening this is safe only because it is one signal among several and only ever consulted for a
- * requirement that matched NOTHING. A requirement that modifies existing surface has impacts, so it
- * is never classified at all.
- */
-const CREATION =
-  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for|index|model|models|modelled|emit|emits|expose|exposes|record|records|classify|classifies|derive|derives|represent|represents|extract|extracts|validate|validates)\b/i;
-/** Language that names a system this repository does not contain. */
-const EXTERNAL =
-  /\b(third[- ]party|external (?:service|system|api)|vendor|upstream provider|sendgrid|stripe|twilio)\b/i;
-
-/** Node types that indicate a KIND of surface is indexed at all — the NEW_SURFACE evidence. */
-const SURFACE_KINDS: readonly { readonly pattern: RegExp; readonly types: readonly string[] }[] = [
-  {
-    pattern: /\b(localization|localisation|i18n|translation|locale)\b/i,
-    types: ['locale-bundle', 'translation-key'],
-  },
-  { pattern: /\b(route|endpoint|path)\b/i, types: ['api-endpoint', 'controller', 'handler'] },
-  { pattern: /\b(schema|contract)\b/i, types: ['json-schema', 'openapi-document', 'schema'] },
-  { pattern: /\b(migration)\b/i, types: ['migration'] },
-  { pattern: /\b(feature flag)\b/i, types: ['feature-flag'] },
-  { pattern: /\b(event|topic|queue)\b/i, types: ['topic', 'pubsub-topic', 'domain-event'] },
-];
-
-const indexedTypes = (graph: KnowledgeGraph): ReadonlySet<string> => {
-  const types = new Set<string>();
-  for (const node of graph.nodes.values()) {
-    types.add(node.type);
-  }
-  return types;
-};
-
-const siblingSurfaceIndexed = (statement: string, types: ReadonlySet<string>): boolean =>
-  SURFACE_KINDS.some(
-    (kind) => kind.pattern.test(statement) && kind.types.some((type) => types.has(type)),
-  );
-
 export interface PreflightContext {
   readonly rootDir: string;
   readonly specification: Specification;
@@ -74,8 +32,14 @@ export interface PreflightContext {
   readonly graph: KnowledgeGraph;
   readonly snapshotId: string;
   readonly coverageInsufficient: boolean;
-  /** Requirement ids the coverage check flagged as depending on unindexed repositories. */
-  readonly coverageAffectedRequirementIds: readonly string[];
+  /**
+   * Registered, enabled repositories absent from the current index — a roster FACT, sourced from
+   * the SAME WorkspaceRepositoryContext that builds the coverage DTO (see
+   * `unindexedRegisteredRepositories`). Empty on a fully indexed workspace, in which case no
+   * classification may claim an unindexed repository.
+   */
+  readonly missingRepositoryNames: readonly string[];
+  /** A caller-supplied readiness score. When absent, computed here unless it must be withheld. */
   readonly score?: number | undefined;
 }
 
@@ -119,26 +83,13 @@ const namedConcepts = (
   return concepts;
 };
 
-const signalsFor = (
-  statement: string,
-  requirementId: string,
-  context: PreflightContext,
-  types: ReadonlySet<string>,
-): RequirementSignalInput => ({
-  hasInvalidSymbolAssumption: false,
-  touchesUnindexedRepository: context.coverageAffectedRequirementIds.includes(requirementId),
-  touchesIndexingGap: false,
-  usesCreationLanguage: CREATION.test(statement),
-  referencesExternalBoundary: EXTERNAL.test(statement),
-  hasAmbiguousConcept: context.analysis.warnings.some(
-    (warning) => warning.code === 'ambiguous-concept' && warning.requirementId === requirementId,
-  ),
-  siblingSurfaceIndexed: siblingSurfaceIndexed(statement, types),
-});
-
 /** Every requirement, in the shape the analyzers consume, built from state analysis already holds. */
 const preflightRequirements = (context: PreflightContext): readonly PreflightRequirement[] => {
-  const types = indexedTypes(context.graph);
+  const signalContext = {
+    analysis: context.analysis,
+    missingRepositoryCount: context.missingRepositoryNames.length,
+    indexedNodeTypes: indexedTypes(context.graph),
+  };
   const withImpact = new Set(
     context.analysis.requirementImpacts.map((impact) => impact.requirementId),
   );
@@ -148,8 +99,40 @@ const preflightRequirements = (context: PreflightContext): readonly PreflightReq
     statement: requirement.statement,
     concepts: namedConcepts(context.analysis, context.graph, requirement.id),
     hasStructuralImpact: withImpact.has(requirement.id),
-    signals: signalsFor(requirement.statement, requirement.id, context, types),
+    signals: buildRequirementSignals(requirement.statement, requirement.id, signalContext),
   }));
+};
+
+/**
+ * The deterministic readiness score the assessment carries, withheld under exactly the conditions
+ * the report's specification block withholds it (provisional extraction, insufficient coverage) —
+ * and when withheld, the assessment states THAT reason, never "no score was supplied".
+ */
+const scoreFields = (
+  context: PreflightContext,
+): { readonly score: number } | { readonly scoreWithheldReason: string } => {
+  if (context.score !== undefined) {
+    return { score: context.score };
+  }
+  if (context.specification.extractionQuality?.provisional === true) {
+    return {
+      scoreWithheldReason:
+        'The requirement list was cut out of prose by the extractor, so a readiness score would rate invented requirements.',
+    };
+  }
+  if (context.coverageInsufficient) {
+    return {
+      scoreWithheldReason:
+        'Repository coverage is insufficient — a readiness score over a graph that is missing the feature’s repositories would be misleading.',
+    };
+  }
+  return {
+    score: computeReadiness(context.specification, {
+      unmatchedRequirementIds: unmatchedRequirements(context.specification, context.analysis).map(
+        (requirement) => requirement.id,
+      ),
+    }).score,
+  };
 };
 
 export const runPreflightForAnalysis = (context: PreflightContext): PreflightOutcome => {
@@ -173,7 +156,7 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
       (question) => question.status === 'open' && question.severity === 'blocking',
     ).length,
     coverageInsufficient: context.coverageInsufficient,
-    ...(context.score === undefined ? {} : { score: context.score }),
+    ...scoreFields(context),
     nextId: (seed) => stableContentId('finding', seed),
   });
 

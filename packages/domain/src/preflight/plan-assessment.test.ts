@@ -38,6 +38,16 @@ const input = (overrides: Partial<AssessmentInput> = {}): AssessmentInput => ({
   ...overrides,
 });
 
+/** The same fixture with NO score at all — `score: undefined` is not the same thing under exactOptionalPropertyTypes. */
+const scoreless = (overrides: Partial<AssessmentInput> = {}): AssessmentInput => ({
+  findings: [],
+  classifications: [],
+  expectedChangeSurfaces: 12,
+  blockingQuestions: 0,
+  coverageInsufficient: false,
+  ...overrides,
+});
+
 describe('assessPlan', () => {
   it('reports BLOCKED for a hard invariant violation even when coverage is excellent', () => {
     const assessment = assessPlan(input({ findings: [finding()], expectedChangeSurfaces: 40 }));
@@ -90,6 +100,37 @@ describe('assessPlan', () => {
     expect(assessment.feasibility).toBe('READY');
     expect(assessment.counts.newSurfaces).toBe(1);
     expect(assessment.decision).toContain('new surface');
+  });
+
+  it('states the caller’s withholding reason instead of the generic "no score was supplied"', () => {
+    const assessment = assessPlan(
+      scoreless({
+        scoreWithheldReason:
+          'The requirement list was cut out of prose by the extractor, so a readiness score would rate invented requirements.',
+      }),
+    );
+    expect(assessment.score).toBeUndefined();
+    expect(assessment.scoreWithheldReason).toContain('cut out of prose');
+    expect(assessment.scoreWithheldReason).not.toContain('No deterministic score was supplied');
+  });
+
+  it('falls back to the generic reason only when the caller gave none', () => {
+    const assessment = assessPlan(scoreless());
+    expect(assessment.scoreWithheldReason).toBe(
+      'No deterministic score was supplied for this analysis.',
+    );
+  });
+
+  it('keeps the caller’s coverage reason when a blocking violation outranks INSUFFICIENT_COVERAGE', () => {
+    const assessment = assessPlan(
+      scoreless({
+        findings: [finding()],
+        coverageInsufficient: true,
+        scoreWithheldReason: 'Repository coverage is insufficient — no score was computed.',
+      }),
+    );
+    expect(assessment.feasibility).toBe('BLOCKED');
+    expect(assessment.scoreWithheldReason).toContain('coverage is insufficient');
   });
 
   it('keeps the score as a secondary field, never the decision', () => {

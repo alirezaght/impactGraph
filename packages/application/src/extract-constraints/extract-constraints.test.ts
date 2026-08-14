@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { extractConstraints } from './extract-constraints.js';
 import { fromDeclaredEntries } from './recognizers/declared-manifest.js';
+import { looksLikeGuardPath } from './types.js';
 
 import type { ExtractConstraintsRequest } from './extract-constraints.js';
 import type { GuardFile } from './types.js';
@@ -143,6 +144,31 @@ describe('extractConstraints — CI enforcement', () => {
     expect(
       enforced.some((entry) => entry.name.includes('ci/scripts/check-service-peer-http.py')),
     ).toBe(true);
+  });
+});
+
+describe('looksLikeGuardPath — guard discovery stays out of product source and test material', () => {
+  it.each([
+    'ci/scripts/check-service-peer-http.py',
+    'scripts/quality/secret-scan.ts',
+    'scripts/quality/effective-loc/src/cli.ts',
+    'check-links.py',
+    'tools/checks/verify-schema.sh',
+  ])('treats %s as a guard candidate', (path) => {
+    expect(looksLikeGuardPath(path)).toBe(true);
+  });
+
+  it.each([
+    // Guard-shaped NAMES inside product source trees are application code, not repository guards.
+    'packages/application/src/preflight/check-assumptions.ts',
+    'packages/application/src/review-implementation/check-plan-contract.ts',
+    // Fixtures and tests are material FOR checks, never checks — whatever directory holds them.
+    'scripts/quality/effective-loc/fixtures/over-limit.ts',
+    'scripts/quality/effective-loc/tests/analyzer.test.ts',
+    'ci/scripts/__tests__/check-service-peer-http.test.py',
+    'scripts/quality/secret-scan.spec.ts',
+  ])('never treats %s as a guard candidate', (path) => {
+    expect(looksLikeGuardPath(path)).toBe(false);
   });
 });
 

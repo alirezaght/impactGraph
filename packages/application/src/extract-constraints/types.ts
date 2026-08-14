@@ -47,13 +47,42 @@ export interface ConstraintRecognizer {
   recognize(file: GuardFile): readonly ExtractedConstraint[];
 }
 
-/** Paths that conventionally hold repository guards. */
-export const GUARD_PATH_PATTERNS: readonly RegExp[] = [
+/** Directories that conventionally hold repository guards. */
+const GUARD_DIRECTORY_PATTERNS: readonly RegExp[] = [
   /(^|\/)ci\/(scripts|checks)\//,
   /(^|\/)scripts\/(quality|ci|checks|lint)\//,
   /(^|\/)tools\/(ci|checks)\//,
-  /(^|\/)(check|verify|validate|enforce|assert)[-_][\w-]+\.(py|sh|ts|js|mjs)$/,
 ];
 
-export const looksLikeGuardPath = (path: string): boolean =>
-  GUARD_PATH_PATTERNS.some((pattern) => pattern.test(path));
+/** Files whose NAME is guard-shaped, wherever they live: `check-*.py` at the repo root. */
+const GUARD_NAME_PATTERN =
+  /(^|\/)(check|verify|validate|enforce|assert)[-_][\w-]+\.(py|sh|ts|js|mjs)$/;
+
+/** Paths that conventionally hold repository guards. */
+export const GUARD_PATH_PATTERNS: readonly RegExp[] = [
+  ...GUARD_DIRECTORY_PATTERNS,
+  GUARD_NAME_PATTERN,
+];
+
+/**
+ * Test and fixture material is never a repository guard, whatever it is named: a self-run reported
+ * the LOC checker's own `fixtures/over-limit.ts` and `tests/analyzer.test.ts` as opaque guards.
+ */
+const TEST_OR_FIXTURE_PATH = /(^|\/)(test|tests|__tests__|fixtures)\/|\.(test|spec)\.\w+$/;
+
+/**
+ * Product source trees. A guard-shaped NAME under `src/` is application code (the same self-run
+ * flagged `packages/application/src/preflight/check-assumptions.ts`); the conventional guard
+ * DIRECTORIES stay authoritative wherever they appear.
+ */
+const SOURCE_TREE_PATH = /(^|\/)src\//;
+
+export const looksLikeGuardPath = (path: string): boolean => {
+  if (TEST_OR_FIXTURE_PATH.test(path)) {
+    return false;
+  }
+  if (GUARD_DIRECTORY_PATTERNS.some((pattern) => pattern.test(path))) {
+    return true;
+  }
+  return !SOURCE_TREE_PATH.test(path) && GUARD_NAME_PATTERN.test(path);
+};
