@@ -59,6 +59,7 @@ export { extractSpecification } from './analyze-specification/extract-specificat
 
 export type {
   MatchMechanism,
+  ConceptCollision,
   ConceptMatch,
   ConceptMatchResult,
 } from './build-impact-model/concept-matching.js';

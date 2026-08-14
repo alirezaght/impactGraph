@@ -43,6 +43,8 @@ const candidate = (
     edgeEvidenceIds: [],
     structuralDepth: 0,
     chainHops: 0,
+    anchorConcepts: ['DealService'],
+    propagationCorroborated: false,
     match: {
       concept: 'DealService',
       nodeId: 'n1',

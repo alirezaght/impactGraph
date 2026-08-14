@@ -10,7 +10,7 @@ req-73684d15|deal-service.test.ts|possible|testing|indirect|0.05|IMPORTS|13565da
 req-73684d15|deal-service.ts|possible|domain-model|indirect|0.20|IMPORTS|7aef6b57|ambiguity+direct-import+graph-distance+semantic-concept-match|name-similarity|-
 req-73684d15|index.ts|possible|domain-model|indirect|0.05|IMPORTS|13565da6|ambiguity+direct-import+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
 req-73684d15|index.ts|possible|domain-model|indirect|0.05|IMPORTS|13565da6|ambiguity+direct-import+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
-req-73684d15|ts-basic|likely|domain-model|indirect|0.10|CONTAINS|39c00e85|ambiguity+graph-distance+semantic-concept-match|name-similarity|-
+req-73684d15|ts-basic|unlikely|domain-model|indirect|0.10|CONTAINS|771eefaf|ambiguity+graph-distance+semantic-concept-match|name-similarity|-
 req-73684d15|tsconfig.json|possible|domain-model|indirect|0.05|CONTAINS|48ec99a4|ambiguity+graph-distance+graph-distance+semantic-concept-match|name-similarity|-
 
 warnings:

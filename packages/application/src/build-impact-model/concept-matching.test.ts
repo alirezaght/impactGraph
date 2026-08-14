@@ -345,6 +345,8 @@ describe('matchConcepts architectural stem coverage (ADR-0016)', () => {
         edgeEvidenceIds: [],
         structuralDepth: 0,
         chainHops: 0,
+        anchorConcepts: [match.concept],
+        propagationCorroborated: false,
         match,
       },
       ctrl,

@@ -100,6 +100,12 @@ const reviewGolden = (review: ImplementationReview): string =>
  * absent-component sample gained 12 candidates, every one on the `name-similarity` basis:
  * the two anchors capped at `likely` (`tierCappedBy`), nothing at `required`, the rest of the
  * traversal at `possible`/`likely`. The ground truth was re-judged in evaluation-samples.ts.
+ *
+ * 84 → 84 (one demotion, count steady): the container fan-out guard. The `ts-basic` package
+ * node, reached one CONTAINS hop from the absent-component sample's fuzzy anchor, moved
+ * `likely` → `unlikely` — a container reached only through ownership edges from a name guess is
+ * not a prediction, and a live run showed that shape flooding 9 of 12 shown impacts with
+ * `package.json` files. Exact anchors and propagating routes to containers were not touched.
  */
 const EXPECTED_CANDIDATE_MOVEMENT: Readonly<Record<string, number>> = {
   unchanged: 84,

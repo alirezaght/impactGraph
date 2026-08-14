@@ -2,6 +2,7 @@ import { capLikelihood, computeImpactConfidence } from '@impactgraph/domain';
 
 import { obligationFor } from './change-kind.js';
 import { basisFor } from './evidence-basis.js';
+import { isOwnershipFamilyEdge } from './traversal-edge-semantics.js';
 
 import type { ImpactCandidate } from './candidate-traversal.js';
 import type { PredictedChange } from './change-kind.js';
@@ -121,6 +122,39 @@ export const signalsFor = (
   return signals;
 };
 
+/** Node kinds that contain other components rather than being one (§12.1 vocabulary). */
+const CONTAINER_NODE_TYPES = new Set(['package', 'workspace', 'repository']);
+
+/** Mechanisms where the engine GUESSED which component the specification meant. */
+const GUESSED_MECHANISMS = new Set<string>(['name-similarity', 'semantic', 'lexical']);
+
+/**
+ * Field finding: a fuzzy anchor walked CONTAINS up to its package and DEPENDS_ON up to every
+ * dependent package, so 9 of 12 shown impacts were package manifests at `possible`. Ownership and
+ * declaration edges locate where a guess lives; they do not make its whole dependency cone an
+ * impact. Exact/alias anchors and any route with a non-ownership edge keep today's behavior.
+ */
+const isContainerFanOut = (candidate: ImpactCandidate, node: GraphNode): boolean =>
+  candidate.distance > 0 &&
+  CONTAINER_NODE_TYPES.has(node.type) &&
+  GUESSED_MECHANISMS.has(candidate.match.mechanism) &&
+  candidate.corroboratingEdgeTypes.length > 0 &&
+  candidate.corroboratingEdgeTypes.every((type) => isOwnershipFamilyEdge(type));
+
+/**
+ * Whether anything ties a collided anchor to the requirement beyond its name: another concept of
+ * the same requirement arriving at the node, or a propagating route from a different anchor.
+ */
+const collisionCorroborated = (candidate: ImpactCandidate): boolean =>
+  candidate.propagationCorroborated ||
+  candidate.anchorConcepts.some((concept) => concept !== candidate.match.concept);
+
+interface LikelihoodProposal {
+  readonly likelihood: ImpactLikelihood;
+  /** When a guard demoted the tier, the sentence the explanation must carry (auditability). */
+  readonly caveat?: string;
+}
+
 /**
  * Structural reachability is evidence of POSSIBLE impact; it is not by itself enough for LIKELY.
  *
@@ -133,33 +167,57 @@ export const signalsFor = (
  * EXTENDS or IMPLEMENTS, or recent co-change history. Failing that, the predicted change kind
  * decides: an added method obliges no caller, a changed signature obliges every call site.
  */
+const anchorProposal = (candidate: ImpactCandidate): LikelihoodProposal => {
+  const { collision } = candidate.match;
+  // A collided exact match is one of N same-named coincidences until corroborated. Distance 0
+  // proves the name exists, not that THIS copy is the component the requirement is about.
+  if (collision !== undefined && !collisionCorroborated(candidate)) {
+    return {
+      likelihood: 'possible',
+      caveat: `The name '${candidate.match.concept}' exists in ${String(collision.count)} places (${collision.containers.join(', ')}); nothing structural ties this one to the requirement.`,
+    };
+  }
+  // An anchor is `required` only when the specification named it by identifier. A `semantic` or
+  // `lexical` anchor means the engine GUESSED which component was meant, and guessing is not an
+  // obligation — the tier ceiling for those bases holds it lower (item 3). A `name-similarity`
+  // anchor proposes `required` and lets the `likely` ceiling cap it, so the record carries
+  // `tierCappedBy` and the downgrade is auditable rather than silent (dogfooding item 4).
+  return {
+    likelihood:
+      candidate.match.mechanism === 'semantic' || candidate.match.mechanism === 'lexical'
+        ? 'possible'
+        : 'required',
+  };
+};
+
 const likelihoodFor = (
   candidate: ImpactCandidate,
+  node: GraphNode,
   context: ClassifyContext,
   corroborated: boolean,
-): ImpactLikelihood => {
+): LikelihoodProposal => {
   if (candidate.distance === 0) {
-    // An anchor is `required` only when the specification named it by identifier. A `semantic` or
-    // `lexical` anchor means the engine GUESSED which component was meant, and guessing is not an
-    // obligation — the tier ceiling for those bases holds it lower (item 3). A `name-similarity`
-    // anchor proposes `required` and lets the `likely` ceiling cap it, so the record carries
-    // `tierCappedBy` and the downgrade is auditable rather than silent (dogfooding item 4).
-    return candidate.match.mechanism === 'semantic' || candidate.match.mechanism === 'lexical'
-      ? 'possible'
-      : 'required';
+    return anchorProposal(candidate);
+  }
+  if (isContainerFanOut(candidate, node)) {
+    // `unlikely` ranks below `possible`, so the default view's minLikelihood filter excludes it.
+    return {
+      likelihood: 'unlikely',
+      caveat: 'Container reached only through ownership edges from a fuzzy name match.',
+    };
   }
   if (candidate.distance > 1) {
-    return 'possible';
+    return { likelihood: 'possible' };
   }
   if (!candidate.weakLinkOnly || corroborated) {
-    return 'likely';
+    return { likelihood: 'likely' };
   }
   // The only link is a reverse call, import or use. Whether that obliges a change depends on the
   // shape of the change: a new method obliges no caller, a changed signature obliges every one.
   const change = context.change ?? { kind: 'unknown', compatibility: 'unknown', cue: 'not read' };
   // No recorded edge type means we cannot say what the relationship was, so it gets the weakest
   // reading rather than the reference default, which can still promote on a removal.
-  return obligationFor(change, candidate.edgeTypes[0] ?? 'USES_UNKNOWN');
+  return { likelihood: obligationFor(change, candidate.edgeTypes[0] ?? 'USES_UNKNOWN') };
 };
 
 const explanationFor = (
@@ -198,8 +256,10 @@ export const classifyCandidate = (
     ]),
   ];
   const basis = basisFor(candidate, node);
-  const proposed = likelihoodFor(candidate, context, (context.coChangeCount ?? 0) >= 2);
+  const proposal = likelihoodFor(candidate, node, context, (context.coChangeCount ?? 0) >= 2);
+  const proposed = proposal.likelihood;
   const likelihood = capLikelihood(proposed, basis.evidenceTypes);
+  const caveat = proposal.caveat === undefined ? '' : ` ${proposal.caveat}`;
   return {
     ok: true,
     value: {
@@ -210,7 +270,7 @@ export const classifyCandidate = (
       directness,
       confidence: confidence.value.value,
       confidenceSignals: confidence.value.signals,
-      explanation: `${explanationFor(candidate, node, context)} Basis: ${basis.primary}.`,
+      explanation: `${explanationFor(candidate, node, context)}${caveat} Basis: ${basis.primary}.`,
       expectedChanges: [`Review ${node.name} against requirement ${requirementId}`],
       evidenceIds,
       dependencyPath: candidate.dependencyPath,

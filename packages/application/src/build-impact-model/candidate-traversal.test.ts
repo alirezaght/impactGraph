@@ -60,13 +60,86 @@ const graph = ((): KnowledgeGraph => {
   return result.value;
 })();
 
-const match = (nodeId: string): ConceptMatch => ({
-  concept: 'c',
+const match = (nodeId: string, concept = 'c'): ConceptMatch => ({
+  concept,
   nodeId,
   mechanism: 'exact',
   evidenceIds: ['ev-1'],
   ambiguous: false,
   testOnly: false,
+});
+
+const smallGraph = (
+  edgeSpecs: readonly { type: string; sourceId: string; targetId: string }[],
+): KnowledgeGraph => {
+  const ids = [...new Set(edgeSpecs.flatMap((spec) => [spec.sourceId, spec.targetId]))];
+  const nodes = ids.map((id) => {
+    const result = createGraphNode({
+      id,
+      category: 'repository',
+      type: 'symbol',
+      name: id,
+      knowledge,
+    });
+    if (!result.ok) {
+      throw new Error(`node ${id}`);
+    }
+    return result.value;
+  });
+  const edges = edgeSpecs.map((spec, index) => {
+    const result = createGraphEdge({ ...spec, id: `edge-${String(index)}`, knowledge });
+    if (!result.ok) {
+      throw new Error(`edge ${String(index)}`);
+    }
+    return result.value;
+  });
+  const result = createKnowledgeGraph(nodes, edges);
+  if (!result.ok) {
+    throw new Error('graph invalid');
+  }
+  return result.value;
+};
+
+// The collision guard (concept-matching) asks whether anything ELSE ties a node to the
+// requirement. Route dominance is untouched — a longer route still never replaces or rescores the
+// kept one — but its arrival is recorded as corroboration metadata.
+describe('traverseCandidates corroboration metadata', () => {
+  it('records every concept whose routes reached a node, even over a longer route', () => {
+    // symbol:service imports symbol:auth; each is anchored by its own concept.
+    const graph = smallGraph([
+      { type: 'IMPORTS', sourceId: 'symbol:service', targetId: 'symbol:auth' },
+    ]);
+
+    const result = traverseCandidates(graph, [
+      match('symbol:auth', 'require_internal_auth'),
+      match('symbol:service', 'AuthService'),
+    ]);
+    const auth = result.candidates.find((candidate) => candidate.nodeId === 'symbol:auth');
+
+    expect(auth?.distance).toBe(0);
+    expect(auth?.anchorConcepts).toEqual(['AuthService', 'require_internal_auth']);
+    expect(auth?.propagationCorroborated).toBe(true);
+  });
+
+  it('never lets a walk out of a node and back corroborate the node itself', () => {
+    const graph = smallGraph([{ type: 'IMPORTS', sourceId: 'symbol:x', targetId: 'symbol:y' }]);
+
+    const result = traverseCandidates(graph, [match('symbol:x')]);
+    const anchor = result.candidates.find((candidate) => candidate.nodeId === 'symbol:x');
+
+    expect(anchor?.anchorConcepts).toEqual(['c']);
+    expect(anchor?.propagationCorroborated).toBe(false);
+  });
+
+  it('counts a supporting route as another concept but not as propagation', () => {
+    const graph = smallGraph([{ type: 'USES', sourceId: 'symbol:z', targetId: 'symbol:x' }]);
+
+    const result = traverseCandidates(graph, [match('symbol:x', 'c1'), match('symbol:z', 'c2')]);
+    const anchor = result.candidates.find((candidate) => candidate.nodeId === 'symbol:x');
+
+    expect(anchor?.anchorConcepts).toEqual(['c1', 'c2']);
+    expect(anchor?.propagationCorroborated).toBe(false);
+  });
 });
 
 describe('traverseCandidates and external dependencies', () => {

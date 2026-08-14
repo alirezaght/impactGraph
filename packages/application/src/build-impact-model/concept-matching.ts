@@ -1,5 +1,6 @@
 import { coversArchitecturalStem } from './architectural-stem.js';
 import { assessUbiquity } from './dependency-ubiquity.js';
+import { containerOf, containerRoots } from './top-level-container.js';
 
 import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
 
@@ -20,6 +21,20 @@ import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
  */
 export type MatchMechanism = 'exact' | 'alias' | 'name-similarity' | 'semantic' | 'lexical';
 
+/**
+ * An exact name that resolves to several nodes in DIFFERENT top-level containers. Field finding:
+ * `require_internal_auth` existed in five unrelated services and every copy arrived `required` —
+ * distance 0 with no warning. Same-named symbols in different packages are N coincidences until
+ * something structural ties one of them to the requirement, so the collision is recorded on each
+ * match and classification caps the tier at `possible` unless the node is corroborated.
+ */
+export interface ConceptCollision {
+  /** How many nodes share the exact name. */
+  readonly count: number;
+  /** The distinct top-level containers those nodes live in, sorted. */
+  readonly containers: readonly string[];
+}
+
 export interface ConceptMatch {
   readonly concept: string;
   readonly nodeId: string;
@@ -29,6 +44,8 @@ export interface ConceptMatch {
   readonly ambiguous: boolean;
   /** True when the concept resolved only to test artifacts — feeds the §14 test-only penalty. */
   readonly testOnly: boolean;
+  /** Present when the exact name exists in several top-level containers (see ConceptCollision). */
+  readonly collision?: ConceptCollision;
 }
 
 export interface ConceptMatchResult {
@@ -197,6 +214,79 @@ const resolve = (
   return { mechanism: 'name-similarity', nodes: similar };
 };
 
+/**
+ * A concept qualified by a path or a file extension names one specific place; only a bare
+ * identifier can coincidentally exist in several containers, so only bare identifiers collide.
+ */
+const isPathQualified = (concept: string): boolean =>
+  concept.includes('/') || /\.[A-Za-z0-9]{1,5}$/.test(concept);
+
+interface CollisionAssessment {
+  /** True when some same-kind group collides beyond MAX_SIMILAR_MATCHES — the concept escalates. */
+  readonly escalate: boolean;
+  /** Collision record per colliding node id; correspondence partners are absent. */
+  readonly byNodeId: ReadonlyMap<string, ConceptCollision>;
+}
+
+const NO_COLLISIONS: CollisionAssessment = { escalate: false, byNodeId: new Map() };
+
+/**
+ * The exact-collision guard. Assessed AFTER test artifacts are dropped — a production symbol
+ * whose only same-named twin is a test double is not a collision — and only for exact matches:
+ * an alias is a human-maintained mapping (the human said which component was meant), and fuzzy
+ * matches already carry the MAX_SIMILAR_MATCHES escalation.
+ *
+ * Only nodes of the SAME category collide. Five same-named symbols in five services are five
+ * coincidences; a package, the Terraform resource that deploys it, and the topic it publishes to
+ * sharing one name are ONE component manifesting across stacks — the §C16 correspondence the
+ * engine exists to surface, never a collision. Nodes whose container cannot be determined are
+ * ignored rather than guessed, so an indeterminate graph keeps today's behavior.
+ */
+const groupCollision = (
+  group: readonly GraphNode[],
+  roots: readonly string[],
+): ConceptCollision | undefined => {
+  const containers = new Set<string>();
+  for (const node of group) {
+    const container = containerOf(node, roots);
+    if (container !== undefined) {
+      containers.add(container);
+    }
+  }
+  if (group.length < 2 || containers.size < 2) {
+    return undefined;
+  }
+  return { count: group.length, containers: [...containers].sort() };
+};
+
+const assessCollisions = (
+  concept: string,
+  mechanism: MatchMechanism,
+  nodes: readonly GraphNode[],
+  roots: () => readonly string[],
+): CollisionAssessment => {
+  if (mechanism !== 'exact' || nodes.length < 2 || isPathQualified(concept)) {
+    return NO_COLLISIONS;
+  }
+  const byCategory = new Map<string, GraphNode[]>();
+  for (const node of nodes) {
+    byCategory.set(node.category, [...(byCategory.get(node.category) ?? []), node]);
+  }
+  const byNodeId = new Map<string, ConceptCollision>();
+  let escalate = false;
+  for (const group of byCategory.values()) {
+    const collision = groupCollision(group, roots());
+    if (collision === undefined) {
+      continue;
+    }
+    escalate = escalate || collision.count > MAX_SIMILAR_MATCHES;
+    for (const node of group) {
+      byNodeId.set(node.id, collision);
+    }
+  }
+  return { escalate, byNodeId };
+};
+
 /** Production code wins outright; a test-only resolution is kept but marked. */
 const preferProduction = (
   nodes: readonly GraphNode[],
@@ -216,6 +306,9 @@ export const matchConcepts = (
   const unknownConcepts: string[] = [];
   const ambiguousConcepts: string[] = [];
   const notes: string[] = [];
+  // Lazy: the roots scan only runs when an exact name actually resolved to several nodes.
+  let cachedRoots: readonly string[] | undefined;
+  const roots = (): readonly string[] => (cachedRoots ??= containerRoots(graph));
   for (const concept of [...new Set(concepts)].sort()) {
     const found = resolve(graph, concept, aliases, notes);
     if (found === undefined) {
@@ -227,8 +320,17 @@ export const matchConcepts = (
       continue;
     }
     const ranked = preferProduction(found.nodes);
+    const collisions = assessCollisions(concept, found.mechanism, ranked.nodes, roots);
+    // Past the same bound the fuzzy overflow uses, a cross-container collision is the same
+    // situation — too many unrelated places to anchor — and takes the same exit: the existing
+    // ambiguous-concept warning instead of an impact per coincidence.
+    if (collisions.escalate) {
+      ambiguousConcepts.push(concept);
+      continue;
+    }
     const bounded = ranked.nodes.slice(0, MAX_MATCHES_PER_CONCEPT);
     for (const node of bounded) {
+      const collision = collisions.byNodeId.get(node.id);
       matches.push({
         concept,
         nodeId: node.id,
@@ -236,6 +338,7 @@ export const matchConcepts = (
         evidenceIds: node.knowledge.evidenceIds,
         ambiguous: bounded.length > 1,
         testOnly: ranked.testOnly,
+        ...(collision === undefined ? {} : { collision }),
       });
     }
   }
