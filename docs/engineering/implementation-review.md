@@ -12,8 +12,13 @@ in `bounded-contexts.md`. Code: `application/review-implementation` + `domain/re
 
 A review takes exactly three inputs, all identified by stable IDs (`data-contracts.md`):
 
-1. **Approved analysis snapshot** — the immutable approved `ImpactAnalysis` (PRD §40.3) with its
-   `repositorySnapshotId` (the _baseline_ state the prediction was made against).
+1. **Baseline analysis** — by default the immutable approved `ImpactAnalysis` (PRD §40.3) with
+   its `repositorySnapshotId` (the _baseline_ state the prediction was made against). A caller
+   may instead compare against an unapproved draft with an explicit
+   `allowUnapprovedBaseline` acknowledgement (ADR-0019): the report then carries a `baseline`
+   block with `authority: 'unapproved-prediction'`, confidence is capped at `limited` with the
+   limitation stated, and `accept_review_deviation` is refused — a provisional comparison never
+   becomes a contract. Superseded analyses are never a baseline.
 2. **Review target** — MVP: current working tree vs. current commit
    (`impactgraph review --working-tree`), or current commit snapshot
    (`--commit HEAD`). Branch/range/PR targets are post-MVP (PRD §23.3) but the target descriptor

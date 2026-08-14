@@ -69,6 +69,25 @@ reachability finding is that `USES_UNKNOWN` has no live producer, so a by-produc
 metric would report zero by construction, and attaching derivation provenance to those paths would
 instrument code that never runs. Both wait for a producer that can actually fail to classify.
 
+## Member calls are name-matched, never type-resolved
+
+`find_references` (ADR-0020) answers "who calls this symbol" from two channels: resolved `CALLS`
+edges (bare-identifier calls the assembler could resolve) and name-matched call sites from the
+fragment cache (`receiver.method(...)` facts). The second channel is a deterministic fact that *a
+call with this member name occurs at this location* — the receiver's type is not resolved, so a
+same-named member on an unrelated class matches too. Every answer labels the channel and states
+this limit; a consumer must never present a name match as a resolved edge. TypeScript records
+member calls only when a string-literal argument is present, and non-exported module-scope arrow
+functions have no symbol node to be a caller. **What would close it:** type-checker-backed
+resolution, deliberately out of scope (ImpactGraph is not an LSP).
+
+## Literal search covers call and decorator arguments, not file contents
+
+`search_literals` searches string literals passed to calls and decorators at the indexed
+revision. SQL inside an f-string, a bare module-level constant, or a template file is invisible
+to it. The scope statement on every answer says exactly this; grep remains the tool for full-text
+questions. **What would close it:** a content index (FTS), rejected for now in ADR-0020.
+
 ## The predicted change kind is inferred from specification wording only
 
 Propagation depends on what kind of change a requirement implies — adding a method obliges no
