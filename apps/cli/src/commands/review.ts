@@ -11,8 +11,10 @@ import type { CliFailure, CommandContext, CommandResult } from '../context.js';
 import type { ReviewTarget, Result } from '@impactgraph/domain';
 
 // Story 11.4 — `impactgraph review [working-tree|commit]`: compare the latest APPROVED analysis
-// against reality via the shared engine. Discrepancies set exit code 3; humans decide policy
-// (§43.6). The approved analysis is never modified by this command.
+// against reality via the shared engine. `--analysis <id>` targets a specific stored analysis;
+// `--allow-unapproved-baseline` explicitly compares against a never-approved one, and the report
+// labels itself provisional. Discrepancies set exit code 3; humans decide policy (§43.6). The
+// baseline analysis is never modified by this command, and nothing here approves anything (§40.3).
 
 const parseTarget = (context: CommandContext): Result<ReviewTarget, CliFailure> => {
   const target = context.args[0] ?? 'working-tree';
@@ -42,7 +44,10 @@ export const runReview = async (context: CommandContext): Promise<CommandResult>
   if (!target.ok) {
     return failed(target.error);
   }
-  const bundle = await runReviewPipeline(context.rootDir, target.value);
+  const bundle = await runReviewPipeline(context.rootDir, target.value, {
+    ...(context.analysisId === undefined ? {} : { analysisId: context.analysisId }),
+    ...(context.allowUnapprovedBaseline === true ? { allowUnapproved: true } : {}),
+  });
   if (!bundle.ok) {
     return failed(bundle.error);
   }

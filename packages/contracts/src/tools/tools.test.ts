@@ -219,3 +219,21 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
     );
   });
 });
+
+describe('review baseline inputs (PRD §24/§40.3)', () => {
+  it('review tools encode the unapproved-baseline opt-in like the §35 confirmation idiom', () => {
+    for (const name of ['review_implementation', 'get_review_report'] as const) {
+      const { input } = MCP_TOOL_CONTRACTS[name];
+      // additive: the v1 shapes keep parsing
+      expect(input.safeParse({}).success, name).toBe(true);
+      expect(input.safeParse({ target: 'working-tree' }).success, name).toBe(true);
+      // the opt-in is stated, never defaulted — only the literal `true` parses
+      expect(
+        input.safeParse({ analysisId: 'a-1', allowUnapprovedBaseline: true }).success,
+        name,
+      ).toBe(true);
+      expect(input.safeParse({ allowUnapprovedBaseline: false }).success, name).toBe(false);
+      expect(input.safeParse({ analysisId: '' }).success, name).toBe(false);
+    }
+  });
+});

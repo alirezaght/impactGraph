@@ -163,3 +163,106 @@ export const loadApprovedAnalysis = async (
   }
   return { ok: true, value: latest };
 };
+
+/** What the review baseline speaks for: a human-approved contract, or a draft prediction. */
+export type BaselineAuthority = 'approved-contract' | 'unapproved-prediction';
+
+export interface ReviewBaseline {
+  readonly analysis: ImpactAnalysis;
+  readonly authority: BaselineAuthority;
+}
+
+export interface ReviewBaselineOptions {
+  /** Load exactly this analysis instead of resolving the default baseline. */
+  readonly analysisId?: string | undefined;
+  /** The caller explicitly allows a never-approved baseline — stated, never defaulted. */
+  readonly allowUnapproved?: boolean | undefined;
+}
+
+/** Live-but-unapproved analyses (draft/reviewed), newest last — provisional-baseline candidates. */
+const unapprovedCandidates = async (rootDir: string): Promise<readonly ImpactAnalysis[]> => {
+  const all = await createImpactAnalysisArtifactStore(artifactsPath(rootDir)).listAll();
+  if (!all.ok) {
+    return [];
+  }
+  return all.value
+    .filter((analysis) => analysis.status === 'draft' || analysis.status === 'reviewed')
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+};
+
+/** When approval is missing but a draft exists, the refusal names the way forward (best effort). */
+const withDraftHint = async (
+  rootDir: string,
+  error: { category: string; message: string },
+  analysisId: string | undefined,
+): Promise<{ category: 'configurationError'; message: string }> => {
+  const candidates = await unapprovedCandidates(rootDir);
+  const requested = candidates.find((analysis) => analysis.id === analysisId);
+  const suggested = requested ?? candidates[candidates.length - 1];
+  return {
+    category: 'configurationError',
+    message:
+      suggested === undefined
+        ? error.message
+        : `${error.message} — or pass allowUnapprovedBaseline (CLI: --allow-unapproved-baseline) to compare against draft analysis '${suggested.id}' (provisional)`,
+  };
+};
+
+/**
+ * Resolve the analysis a review compares the implementation against, with its authority.
+ * Default: exactly `loadApprovedAnalysis` — the §40.3 gate — plus a recovery hint when a draft
+ * exists. With `allowUnapproved` the caller explicitly accepts a provisional baseline: the named
+ * analysis, or the most recent non-superseded one. `superseded` is always rejected — a retired
+ * record is not a prediction. Nothing here approves anything; §40.3 is untouched.
+ */
+export const loadReviewBaseline = async (
+  rootDir: string,
+  options: ReviewBaselineOptions = {},
+): Promise<Failable<ReviewBaseline>> => {
+  if (options.allowUnapproved !== true) {
+    const approved = await loadApprovedAnalysis(rootDir, options.analysisId);
+    if (approved.ok) {
+      return { ok: true, value: { analysis: approved.value, authority: 'approved-contract' } };
+    }
+    return { ok: false, error: await withDraftHint(rootDir, approved.error, options.analysisId) };
+  }
+  if (options.analysisId !== undefined) {
+    const loaded = await loadAnalysis(rootDir, options.analysisId);
+    if (!loaded.ok) {
+      return loaded;
+    }
+    if (loaded.value.status === 'superseded') {
+      return {
+        ok: false,
+        error: {
+          category: 'configurationError',
+          message: `analysis '${options.analysisId}' is superseded — a retired record is not a prediction; review against its successor or the approved baseline`,
+        },
+      };
+    }
+    return { ok: true, value: toBaseline(loaded.value) };
+  }
+  const approved = await loadApprovedAnalysis(rootDir);
+  const candidates = await unapprovedCandidates(rootDir);
+  const newestUnapproved = candidates[candidates.length - 1];
+  // "Most recent non-superseded": the newest of the approved baseline and the live drafts.
+  const newest = [approved.ok ? approved.value : undefined, newestUnapproved]
+    .filter((analysis): analysis is ImpactAnalysis => analysis !== undefined)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .pop();
+  if (newest === undefined) {
+    return {
+      ok: false,
+      error: {
+        category: 'configurationError',
+        message: 'no impact analysis has been built yet — run analyze_impact first',
+      },
+    };
+  }
+  return { ok: true, value: toBaseline(newest) };
+};
+
+const toBaseline = (analysis: ImpactAnalysis): ReviewBaseline => ({
+  analysis,
+  authority: analysis.status === 'approved' ? 'approved-contract' : 'unapproved-prediction',
+});

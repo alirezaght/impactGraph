@@ -77,6 +77,32 @@ describe('review artifact contract (Story 11.2, PRD §24.1/§28)', () => {
     ).toBe(false);
   });
 
+  it('the review document may carry the additive baseline-provenance block', () => {
+    const baseline = {
+      analysisId: 'analysis-1',
+      status: 'draft',
+      authority: 'unapproved-prediction',
+      snapshotId: 'snap-1',
+    } as const;
+    const provisional = { ...validDocument, baseline };
+    expect(
+      reviewArtifactSchema.safeParse({ ...validArtifact, document: provisional }).success,
+    ).toBe(true);
+    // a superseded record can never be a baseline; the authority vocabulary is closed
+    expect(
+      reviewArtifactSchema.safeParse({
+        ...validArtifact,
+        document: { ...validDocument, baseline: { ...baseline, status: 'superseded' } },
+      }).success,
+    ).toBe(false);
+    expect(
+      reviewArtifactSchema.safeParse({
+        ...validArtifact,
+        document: { ...validDocument, baseline: { ...baseline, authority: 'approved' } },
+      }).success,
+    ).toBe(false);
+  });
+
   it('the review document carries the acceptance mark without rewriting the finding', () => {
     const marked = {
       ...validDocument,

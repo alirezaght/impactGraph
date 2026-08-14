@@ -23,7 +23,13 @@ export interface ReviewScopeInput {
   readonly repositoryScope?: ReviewRepositoryScope;
   /** Drift entries the per-category caps cut (item 7) — zero/undefined means nothing was cut. */
   readonly driftOmitted?: number;
+  /** Set to the baseline analysis id when it was never approved — the review is provisional. */
+  readonly unapprovedBaselineId?: string;
 }
+
+/** The one sentence a provisional review must never lose: what its baseline is NOT. */
+const unapprovedBaselineReason = (analysisId: string): string =>
+  `Baseline analysis '${analysisId}' was never approved — findings compare the implementation against a draft prediction, not a committed plan.`;
 
 const omittedEdgeCount = (review: ImplementationReview): number =>
   (review.edgeChanges.omittedAdded ?? 0) + (review.edgeChanges.omittedRemoved ?? 0);
@@ -51,6 +57,9 @@ const repositoryLimitations = (scope: ReviewRepositoryScope | undefined): string
 export const deriveScopeLimitations = (input: ReviewScopeInput): string[] => {
   const omitted = omittedEdgeCount(input.review);
   return [
+    ...(input.unapprovedBaselineId === undefined
+      ? []
+      : [unapprovedBaselineReason(input.unapprovedBaselineId)]),
     'Only this workspace was compared; repositories not registered in the workspace were not analyzed.',
     ...repositoryLimitations(input.repositoryScope),
     ...(omitted > 0
@@ -122,6 +131,14 @@ export const deriveReviewConfidence = (
   input: ReviewScopeInput,
 ): NonNullable<CliReviewBreakdown['confidence']> => {
   const factors: ConfidenceFactor[] = [...repositoryFactors(input.repositoryScope)];
+  if (input.unapprovedBaselineId !== undefined) {
+    // A provisional baseline caps confidence at 'limited' — a review against a draft prediction
+    // can never claim 'high', however clean the comparison itself was.
+    factors.push({
+      severity: 'moderate',
+      reason: unapprovedBaselineReason(input.unapprovedBaselineId),
+    });
+  }
   const unverifiable = unverifiableFactor(input.review);
   if (unverifiable !== undefined) {
     factors.push(unverifiable);

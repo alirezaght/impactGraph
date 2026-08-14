@@ -56,6 +56,24 @@ const breakdownDto = (
     ...(context.drift === undefined ? {} : { driftOmitted: driftOmittedTotal(context.drift) }),
   });
 
+/**
+ * The additive baseline-provenance block: which analysis the review compared against and with
+ * what authority. A superseded analysis never reaches a review (`loadReviewBaseline` rejects it),
+ * so the impossible case emits no block rather than a false claim.
+ */
+const baselineDto = (analysis: ImpactAnalysis): Pick<CliReviewOutput, 'baseline'> =>
+  analysis.status === 'superseded'
+    ? {}
+    : {
+        baseline: {
+          analysisId: analysis.id,
+          status: analysis.status,
+          authority:
+            analysis.status === 'approved' ? 'approved-contract' : 'unapproved-prediction',
+          snapshotId: analysis.repositorySnapshotId,
+        },
+      };
+
 export const buildReviewOutput = (
   review: ImplementationReview,
   analysis: ImpactAnalysis,
@@ -71,6 +89,7 @@ export const buildReviewOutput = (
     specificationVersion: analysis.specificationVersion,
     approvedSnapshotId: analysis.repositorySnapshotId,
   },
+  ...baselineDto(analysis),
   target: review.target,
   reviewSnapshotId: review.reviewSnapshotId,
   changedFiles: [...review.changedFiles],

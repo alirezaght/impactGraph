@@ -2,7 +2,7 @@ import { evidenceTypesOf, primaryEvidenceType, nonGoalsOf } from '@impactgraph/d
 
 import { deriveReviewConfidence, deriveScopeLimitations } from './review-scope.js';
 
-import type { ReviewRepositoryScope } from './review-scope.js';
+import type { ReviewRepositoryScope, ReviewScopeInput } from './review-scope.js';
 import type { CliReviewBreakdown } from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
@@ -167,9 +167,22 @@ export const buildReviewBreakdown = (
     migrationChanges: byCategory(MIGRATION_PATH),
     nonGoalContradictions: nonGoalContradictions(input, changed),
     scope: scopeOf(input),
-    confidence: deriveReviewConfidence(input),
+    confidence: deriveReviewConfidence(scopeInputOf(input)),
   };
 };
+
+/**
+ * The scope/confidence inputs, derived from the breakdown inputs. A baseline that was never
+ * approved (draft/reviewed) makes the whole review provisional: it becomes a stated limitation
+ * and caps the review's own confidence at 'limited' — never 'high'.
+ */
+const scopeInputOf = (input: ReviewBreakdownInput): ReviewScopeInput => ({
+  review: input.review,
+  ...(input.addedPaths === undefined ? {} : { addedPaths: input.addedPaths }),
+  ...(input.repositoryScope === undefined ? {} : { repositoryScope: input.repositoryScope }),
+  ...(input.driftOmitted === undefined ? {} : { driftOmitted: input.driftOmitted }),
+  ...(input.analysis.status === 'approved' ? {} : { unapprovedBaselineId: input.analysis.id }),
+});
 
 /**
  * The analyzed scope, stated on every review (item 13: "Always state the analyzed scope").
@@ -185,5 +198,5 @@ const scopeOf = (input: ReviewBreakdownInput): CliReviewBreakdown['scope'] => ({
   target: input.review.target,
   changedFileCount: input.review.changedFiles.length,
   indexedComponentCount: input.currentGraph.nodes.size,
-  limitations: deriveScopeLimitations(input),
+  limitations: deriveScopeLimitations(scopeInputOf(input)),
 });

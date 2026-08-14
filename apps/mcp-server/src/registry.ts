@@ -124,10 +124,10 @@ const HANDLERS: ToolHandlerMap = {
     }
     return { ok: true, value: buildExportOutput(bundle.value.context) };
   },
-  review_implementation: async (rootDir, input) => reviewDocument(rootDir, input.target),
+  review_implementation: async (rootDir, input) => reviewDocument(rootDir, input),
   get_review_report: async (rootDir, input) => {
     if (input.reviewId === undefined) {
-      return reviewDocument(rootDir, input.target);
+      return reviewDocument(rootDir, input);
     }
     // Story 11.2: render the persisted review with its accepted deviations marked (§24.1).
     const stored = loadReviewArtifact(rootDir, input.reviewId);
@@ -340,15 +340,25 @@ const HANDLERS: ToolHandlerMap = {
   ...GOVERNANCE_HANDLERS,
 };
 
+/** The baseline inputs shared by review_implementation and a re-running get_review_report. */
+interface ReviewRunInput {
+  readonly target?: 'working-tree' | 'commit' | undefined;
+  readonly analysisId?: string | undefined;
+  readonly allowUnapprovedBaseline?: true | undefined;
+}
+
 const reviewDocument = async (
   rootDir: string,
-  target: 'working-tree' | 'commit' | undefined,
+  input: ReviewRunInput,
 ): Promise<Failable<unknown>> => {
   const initialized = requireInitialized(rootDir);
   if (!initialized.ok) {
     return initialized;
   }
-  const bundle = await runReviewPipeline(rootDir, target ?? 'working-tree');
+  const bundle = await runReviewPipeline(rootDir, input.target ?? 'working-tree', {
+    ...(input.analysisId === undefined ? {} : { analysisId: input.analysisId }),
+    ...(input.allowUnapprovedBaseline === true ? { allowUnapproved: true } : {}),
+  });
   if (!bundle.ok) {
     return bundle;
   }

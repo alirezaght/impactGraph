@@ -2,7 +2,7 @@ import { compareImplementation } from '@impactgraph/application';
 import { createGitCliAdapter } from '@impactgraph/git';
 import { readArchitectureConfig } from '@impactgraph/persistence';
 
-import { loadApprovedAnalysis } from './analyses.js';
+import { loadReviewBaseline } from './analyses.js';
 import { failWith } from './failure.js';
 import { loadGraphAt, withIndexStore } from './graphs.js';
 import { performIndexRun } from './indexing.js';
@@ -17,6 +17,7 @@ import { evaluateConfiguredRules, loadProjectKnowledge } from './rules.js';
 import { GIT_FAILURES } from './snapshot.js';
 import { loadSpecification } from './specifications.js';
 
+import type { BaselineAuthority, ReviewBaselineOptions } from './analyses.js';
 import type { Failable } from './failure.js';
 import type { ReviewBreakdownContext } from './reports/review-output.js';
 import type { ReviewRepositoryScope } from './reports/review-scope.js';
@@ -32,12 +33,15 @@ import type {
 } from '@impactgraph/domain';
 
 // The review workflow (PRD §23–§25): reindex current state, diff, compare against the frozen
-// approved analysis, evaluate §27 rules. Fully deterministic and offline; the approved
-// analysis is never modified.
+// baseline analysis — the approved one by default, or an explicitly allowed unapproved draft
+// (labeled provisional throughout) — and evaluate §27 rules. Fully deterministic and offline;
+// the baseline analysis is never modified.
 
 export interface ReviewBundle {
   readonly review: ImplementationReview;
   readonly analysis: ImpactAnalysis;
+  /** Whether the baseline is a human-approved contract or a draft prediction (provisional). */
+  readonly baselineAuthority: BaselineAuthority;
   readonly violations: readonly RuleViolation[];
   /** Item 13: what the review document needs to split its findings by kind and state its scope. */
   readonly breakdownContext: ReviewBreakdownContext;
@@ -61,15 +65,17 @@ const readDiff = async (
 export const runReviewPipeline = async (
   rootDir: string,
   target: ReviewTarget,
+  baselineOptions: ReviewBaselineOptions = {},
 ): Promise<Failable<ReviewBundle>> => {
-  const analysis = await loadApprovedAnalysis(rootDir);
-  if (!analysis.ok) {
-    return analysis;
+  const baseline = await loadReviewBaseline(rootDir, baselineOptions);
+  if (!baseline.ok) {
+    return baseline;
   }
+  const analysis = baseline.value.analysis;
   const specification = await loadSpecification(
     rootDir,
-    analysis.value.specificationId,
-    analysis.value.specificationVersion,
+    analysis.specificationId,
+    analysis.specificationVersion,
   );
   if (!specification.ok) {
     return specification;
@@ -82,10 +88,11 @@ export const runReviewPipeline = async (
   if (!indexed.ok) {
     return { ok: false, error: indexed.failure };
   }
-  return compareAgainstApproved({
+  return compareAgainstBaseline({
     rootDir,
     target,
-    analysis: analysis.value,
+    analysis,
+    baselineAuthority: baseline.value.authority,
     specification: specification.value,
     diff: diff.value,
     reviewSnapshotId: indexed.value.snapshot.id,
@@ -96,6 +103,7 @@ interface CompareInputs {
   readonly rootDir: string;
   readonly target: ReviewTarget;
   readonly analysis: ImpactAnalysis;
+  readonly baselineAuthority: BaselineAuthority;
   readonly specification: Specification;
   readonly diff: GitDiffResult;
   readonly reviewSnapshotId: string;
@@ -120,7 +128,7 @@ const withPlanContract = (
   };
 };
 
-/** Both graphs a comparison needs: the one approval was bound to, and the one just indexed. */
+/** Both graphs a comparison needs: the one the baseline was bound to, and the one just indexed. */
 const loadComparisonGraphs = async (
   store: Parameters<Parameters<typeof withIndexStore>[1]>[0],
   analysis: ImpactAnalysis,
@@ -133,7 +141,7 @@ const loadComparisonGraphs = async (
   if (approvedGraph.value.nodes.size === 0 && analysis.requirementImpacts.length > 0) {
     return failWith(
       'indexingFailure',
-      `approved snapshot ${analysis.repositorySnapshotId} is no longer in the local index — the cache was rebuilt since approval`,
+      `baseline snapshot ${analysis.repositorySnapshotId} is no longer in the local index — the cache was rebuilt since the analysis was created`,
     );
   }
   const currentGraph = await loadGraphAt(store, reviewSnapshotId, 'current');
@@ -143,7 +151,7 @@ const loadComparisonGraphs = async (
   return { ok: true, value: { approved: approvedGraph.value, current: currentGraph.value } };
 };
 
-const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<ReviewBundle>> => {
+const compareAgainstBaseline = async (inputs: CompareInputs): Promise<Failable<ReviewBundle>> => {
   const { rootDir, analysis, specification, diff, reviewSnapshotId, target } = inputs;
   return withIndexStore(rootDir, async (store) => {
     const graphs = await loadComparisonGraphs(store, analysis, reviewSnapshotId);
@@ -179,18 +187,15 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
       approvedGraph: approvedGraph.value,
       currentGraph: currentGraph.value,
     });
-    const persisted = persistReviewDocument(
-      rootDir,
-      withPlanContract(
-        buildReviewOutput(review.value, analysis, violations.value, breakdownContext),
-        {
-          rootDir,
-          analysis,
-          review: review.value,
-          approvedGraph: approvedGraph.value,
-          currentGraph: currentGraph.value,
-        },
-      ),
+    const persisted = persistWithPlanContract(
+      inputs,
+      {
+        review: review.value,
+        approvedGraph: approvedGraph.value,
+        currentGraph: currentGraph.value,
+      },
+      violations.value,
+      breakdownContext,
     );
     if (!persisted.ok) {
       return persisted;
@@ -198,7 +203,13 @@ const compareAgainstApproved = async (inputs: CompareInputs): Promise<Failable<R
     recordReviewLearning(rootDir, review.value.changedFiles);
     return {
       ok: true,
-      value: { review: review.value, analysis, violations: violations.value, breakdownContext },
+      value: {
+        review: review.value,
+        analysis,
+        baselineAuthority: inputs.baselineAuthority,
+        violations: violations.value,
+        breakdownContext,
+      },
     };
   });
 };
@@ -208,6 +219,27 @@ interface ComparedGraphs {
   readonly approvedGraph: KnowledgeGraph;
   readonly currentGraph: KnowledgeGraph;
 }
+
+/** Build the §38.2 document (plan contract attached, ADR-0017) and persist it (§24.1). */
+const persistWithPlanContract = (
+  inputs: CompareInputs,
+  compared: ComparedGraphs,
+  violations: readonly RuleViolation[],
+  breakdownContext: ReviewBreakdownContext,
+): Failable<void> =>
+  persistReviewDocument(
+    inputs.rootDir,
+    withPlanContract(
+      buildReviewOutput(compared.review, inputs.analysis, violations, breakdownContext),
+      {
+        rootDir: inputs.rootDir,
+        analysis: inputs.analysis,
+        review: compared.review,
+        approvedGraph: compared.approvedGraph,
+        currentGraph: compared.currentGraph,
+      },
+    ),
+  );
 
 /**
  * Item 7/13: everything the review document adds around the findings — the breakdown inputs,

@@ -71,9 +71,29 @@ export const cliReviewOutputSchema = z
         id: z.string().min(1),
         specificationId: z.string().min(1),
         specificationVersion: z.number().int().min(1),
+        /** Misnomer kept for v1 compatibility: this is the analysis's repositorySnapshotId
+         *  whatever the baseline's authority. `baseline` (below) supersedes it. */
         approvedSnapshotId: z.string().min(1),
       })
       .strict(),
+    /**
+     * Additive v1 field: WHICH analysis the implementation was compared against, and what
+     * authority that baseline carries. `authority: 'unapproved-prediction'` marks a review whose
+     * baseline was never human-approved — the findings compare the implementation against a
+     * draft prediction, not a committed plan (§40.3 approval semantics are untouched).
+     * Supersedes `analysis.approvedSnapshotId`. Absent on producers that predate it, which only
+     * ever reviewed against an approved analysis — absent therefore means 'approved-contract'.
+     */
+    baseline: z
+      .object({
+        analysisId: z.string().min(1),
+        /** `superseded` can never be a baseline — a retired record is not a prediction. */
+        status: z.enum(['draft', 'reviewed', 'approved']),
+        authority: z.enum(['approved-contract', 'unapproved-prediction']),
+        snapshotId: z.string().min(1),
+      })
+      .strict()
+      .optional(),
     target: z.enum(['working-tree', 'commit']),
     reviewSnapshotId: z.string().min(1),
     changedFiles: z.array(z.string()),

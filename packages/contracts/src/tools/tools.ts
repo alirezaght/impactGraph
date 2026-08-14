@@ -233,18 +233,36 @@ export const MCP_TOOL_CONTRACTS = {
   },
   review_implementation: {
     description:
-      'Compare the approved analysis against the working tree or current commit (§24). Reindexes; findings are inputs to human judgment, never an automatic verdict (§43.6).',
-    input: z.object({ target: reviewTargetSchema.optional() }).strict(),
+      'Compare the approved analysis — or, with allowUnapprovedBaseline: true, an unapproved draft baseline — against the working tree or current commit (§24). Reindexes; findings are inputs to human judgment, never an automatic verdict (§43.6). An unapproved baseline is provisional: the report labels it, caps its confidence, and its deviations cannot be accepted.',
+    input: z
+      .object({
+        target: reviewTargetSchema.optional(),
+        /** Additive v1 field: review against this stored analysis instead of the latest approved. */
+        analysisId: z.string().min(1).optional(),
+        /**
+         * Additive v1 field: the caller explicitly asks to compare against a never-approved
+         * (draft/reviewed) analysis. Mirrors the confirmedByUser idiom — only `true` parses; the
+         * choice is stated, never defaulted. §40.3 stays intact: this never approves anything,
+         * and superseded analyses are always rejected as baselines.
+         */
+        allowUnapprovedBaseline: z.literal(true).optional(),
+      })
+      .strict(),
     output: cliReviewOutputSchema,
   },
   get_review_report: {
     description:
-      'Produce the §38.2 review report: re-runs the deterministic review, or — when reviewId is given — renders the persisted review artifact with its accepted deviations marked (§24.1).',
+      'Produce the §38.2 review report: re-runs the deterministic review (accepting the same baseline inputs as review_implementation), or — when reviewId is given — renders the persisted review artifact with its accepted deviations marked (§24.1).',
     input: z
       .object({
         target: reviewTargetSchema.optional(),
         /** Additive v1 field (Story 11.2): render a stored review instead of re-running. */
         reviewId: z.string().min(1).optional(),
+        /** Additive v1 field: when re-running, review against this stored analysis. */
+        analysisId: z.string().min(1).optional(),
+        /** Additive v1 field: when re-running, allow a never-approved baseline (see
+         *  review_implementation — same semantics, same provisional labeling). */
+        allowUnapprovedBaseline: z.literal(true).optional(),
       })
       .strict(),
     output: cliReviewOutputSchema,

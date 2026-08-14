@@ -148,6 +148,48 @@ describe('accepted deviations (Story 11.2, PRD §24.1)', () => {
     expect(latest.ok && latest.value.acceptedDeviations).toEqual([]);
   });
 
+  it('refuses to accept a deviation when the review baseline was never approved', () => {
+    const provisional: ReviewArtifactDto = {
+      schemaVersion: 1,
+      id: 'review-3',
+      createdAt: '2026-08-01T11:00:00.000Z',
+      document: {
+        ...documentFor('review-3'),
+        baseline: {
+          analysisId: 'analysis-1',
+          status: 'draft',
+          authority: 'unapproved-prediction',
+          snapshotId: 'snap-1',
+        },
+      },
+      acceptedDeviations: [],
+    };
+    const saved = saveReviewArtifact(rootDir, provisional);
+    expect(saved.ok).toBe(true);
+    const refused = acceptDeviation({
+      rootDir,
+      reviewId: 'review-3',
+      nodeId: 'sym:rogue',
+      reason: 'intentional',
+      actor: 'user',
+    });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) {
+      expect(refused.error.category).toBe('configurationError');
+      expect(refused.error.message).toContain("unapproved analysis 'analysis-1'");
+      expect(refused.error.message).toContain('approve the analysis and re-run the review');
+    }
+    // the guard also protects the omitted-reviewId path (review-3 is now the latest)
+    const latestRefused = acceptDeviation({
+      rootDir,
+      nodeId: 'sym:rogue',
+      reason: 'intentional',
+      actor: 'user',
+    });
+    expect(latestRefused.ok).toBe(false);
+    // an artifact WITHOUT the block (approved era) stays acceptable — proven by review-1 above
+  });
+
   it('report rendering marks accepted findings and fills the §38.2 section', () => {
     const stored = loadReviewArtifact(rootDir, 'review-1');
     if (!stored.ok) {

@@ -78,6 +78,38 @@ describe('buildReviewMarkdown scope and confidence (item 7)', () => {
   });
 });
 
+describe('buildReviewMarkdown baseline wording (unapproved-baseline reviews)', () => {
+  const unapprovedBaseline: NonNullable<CliReviewOutput['baseline']> = {
+    analysisId: 'analysis-1',
+    status: 'draft',
+    authority: 'unapproved-prediction',
+    snapshotId: 'snap-1',
+  };
+
+  it('names an unapproved baseline for what it is — draft headings, baseline snapshot', () => {
+    const markdown = buildReviewMarkdown({
+      ...baseReport,
+      baseline: unapprovedBaseline,
+      breakdown,
+    }).join('\n');
+    expect(markdown).toContain('## Baseline Specification (unapproved draft)');
+    expect(markdown).not.toContain('## Approved Specification');
+    expect(markdown).toContain('baseline snapshot snap-1');
+    expect(markdown).not.toContain('approved snapshot');
+  });
+
+  it('an approved baseline renders byte-for-byte like a document without the block', () => {
+    const withBlock = buildReviewMarkdown({
+      ...baseReport,
+      baseline: { ...unapprovedBaseline, status: 'approved', authority: 'approved-contract' },
+      breakdown,
+    });
+    expect(withBlock).toEqual(buildReviewMarkdown({ ...baseReport, breakdown }));
+    expect(withBlock.join('\n')).toContain('## Approved Specification');
+    expect(withBlock.join('\n')).toContain('approved snapshot snap-1');
+  });
+});
+
 const drift: NonNullable<CliReviewOutput['drift']> = {
   entries: [
     {

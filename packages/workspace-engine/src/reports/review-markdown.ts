@@ -19,6 +19,10 @@ const SECTION_TITLES: Record<ReviewCategory, string> = {
 
 type Finding = CliReviewOutput['findings'][number];
 
+/** The baseline was never approved: every "approved" wording must say "baseline" instead. */
+const isProvisional = (report: CliReviewOutput): boolean =>
+  report.baseline?.authority === 'unapproved-prediction';
+
 /** §24.1: findings whose discrepancy a human accepted (marked, never recategorized). */
 const acceptedFindings = (report: CliReviewOutput): Finding[] =>
   report.findings.filter((finding) => finding.acceptedDeviation !== undefined);
@@ -92,11 +96,12 @@ const scopeSection = (report: CliReviewOutput): string[] => {
     return [];
   }
   const { scope, confidence } = breakdown;
+  const snapshotWording = isProvisional(report) ? 'baseline snapshot' : 'approved snapshot';
   return [
     '',
     '## Scope and Confidence',
     '',
-    `Compared ${String(scope.changedFileCount)} changed files against ${String(scope.indexedComponentCount)} indexed components (approved snapshot ${scope.approvedSnapshotId} → review snapshot ${scope.reviewSnapshotId}).`,
+    `Compared ${String(scope.changedFileCount)} changed files against ${String(scope.indexedComponentCount)} indexed components (${snapshotWording} ${scope.approvedSnapshotId} → review snapshot ${scope.reviewSnapshotId}).`,
     ...(confidence === undefined
       ? []
       : ['', `Confidence: **${confidence.level}**`, ...confidence.reasons.map((r) => `- ${r}`)]),
@@ -155,6 +160,14 @@ const edgeList = (ids: readonly string[], omitted: number | undefined): string =
     : `${listed} (${String(omitted)} more omitted)`;
 };
 
+/** §38.2 baseline heading: an unapproved baseline is named for what it is, never dressed up. */
+const baselineSection = (report: CliReviewOutput): string[] => [
+  '',
+  isProvisional(report) ? '## Baseline Specification (unapproved draft)' : '## Approved Specification',
+  '',
+  `Analysis ${report.analysis.id} · specification ${report.analysis.specificationId} v${String(report.analysis.specificationVersion)} · ${isProvisional(report) ? 'baseline' : 'approved'} snapshot ${report.analysis.approvedSnapshotId}`,
+];
+
 export const buildReviewMarkdown = (report: CliReviewOutput): string[] => [
   '# Implementation Review',
   '',
@@ -163,10 +176,7 @@ export const buildReviewMarkdown = (report: CliReviewOutput): string[] => [
   `Target: ${report.target} · Review snapshot: ${report.reviewSnapshotId}`,
   reviewSummaryLine(report),
   `Overall: ${report.discrepanciesFound ? 'discrepancies found — human judgment required (§43.6)' : 'no discrepancies'}`,
-  '',
-  '## Approved Specification',
-  '',
-  `Analysis ${report.analysis.id} · specification ${report.analysis.specificationId} v${String(report.analysis.specificationVersion)} · approved snapshot ${report.analysis.approvedSnapshotId}`,
+  ...baselineSection(report),
   ...findingSections(report),
   ...coverageSection(report),
   ...violationSection(report),

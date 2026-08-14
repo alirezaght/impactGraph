@@ -11,8 +11,12 @@ export interface CommandContext {
   readonly outPath?: string | undefined;
   /** `--group` — §18.4 grouping key for the graph export. */
   readonly grouping?: GraphGroupingDto | undefined;
-  /** `--analysis` — render that stored analysis's blast radius instead of the architecture. */
+  /** `--analysis` — the stored analysis a command targets (`graph`: render its blast radius;
+   *  `review`: use it as the baseline instead of the latest approved one). */
   readonly analysisId?: string | undefined;
+  /** `--allow-unapproved-baseline` — `review` only: explicitly compare against a never-approved
+   *  analysis. The report is labeled provisional; §40.3 approval semantics are untouched. */
+  readonly allowUnapprovedBaseline?: boolean | undefined;
   /**
    * `--full` — emit the complete analyze document. The default is the BOUNDED summary (item 9):
    * the previous default was hundreds of kilobytes on a real repository, which no agent could read.

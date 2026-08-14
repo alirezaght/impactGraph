@@ -54,6 +54,29 @@
               "required": ["id", "specificationId", "specificationVersion", "approvedSnapshotId"],
               "additionalProperties": false
             },
+            "baseline": {
+              "type": "object",
+              "properties": {
+                "analysisId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["draft", "reviewed", "approved"]
+                },
+                "authority": {
+                  "type": "string",
+                  "enum": ["approved-contract", "unapproved-prediction"]
+                },
+                "snapshotId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["analysisId", "status", "authority", "snapshotId"],
+              "additionalProperties": false
+            },
             "target": {
               "type": "string",
               "enum": ["working-tree", "commit"]

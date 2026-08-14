@@ -38,6 +38,9 @@ const USAGE = [
   '  select-option <analysisId> <optionId> [description]  record a §26/§C8 option selection',
   '  export [id]     export the §22 implementation context for coding agents',
   '  review [target] compare the approved analysis against working-tree|commit (§24)',
+  '                  [--analysis <analysisId>] review against that stored analysis',
+  '                  [--allow-unapproved-baseline] explicitly compare against a draft',
+  '                  analysis — the report is labeled provisional, never authoritative',
   '  review accept <nodeId> "<reason>" [category]  accept a discrepancy as a deviation (§24.1)',
   '  config [history|diff [id]|rollback [id]|restore <id>|drift]  config + §Z12/§Z14/§Z10',
   '  version         print the impactgraph version (also --version)',
@@ -51,6 +54,7 @@ interface ParsedArgs {
   readonly outPath?: string | undefined;
   readonly grouping?: GraphGroupingDto | undefined;
   readonly analysisId?: string | undefined;
+  readonly allowUnapprovedBaseline?: boolean | undefined;
   readonly full?: boolean | undefined;
   readonly impactFilters?: ImpactFilters | undefined;
   readonly invalid?: string;
@@ -64,6 +68,8 @@ interface ParseState {
   outPath?: string | undefined;
   grouping?: GraphGroupingDto | undefined;
   analysisId?: string | undefined;
+  /** `--allow-unapproved-baseline` — review against a draft analysis, labeled provisional. */
+  allowUnapprovedBaseline?: boolean | undefined;
   /** `--full` — emit the complete analyze document instead of the bounded summary (item 9). */
   full?: boolean | undefined;
   impactFilters?: ImpactFilters | undefined;
@@ -87,6 +93,10 @@ const BOOLEAN_FLAG_PARSERS: Record<string, (state: ParseState) => void> = {
   },
   '--include-excluded': (state) => {
     state.impactFilters = { ...state.impactFilters, includeExcluded: true };
+  },
+  /** `review` — the user explicitly accepts a never-approved baseline (labeled provisional). */
+  '--allow-unapproved-baseline': (state) => {
+    state.allowUnapprovedBaseline = true;
   },
 };
 
@@ -261,6 +271,7 @@ export const runCli = async (
     outPath: parsed.outPath,
     grouping: parsed.grouping,
     analysisId: parsed.analysisId,
+    allowUnapprovedBaseline: parsed.allowUnapprovedBaseline,
     full: parsed.full,
     impactFilters: parsed.impactFilters,
     write: options.write,

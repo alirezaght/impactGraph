@@ -7,6 +7,14 @@
         "target": {
           "type": "string",
           "enum": ["working-tree", "commit"]
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowUnapprovedBaseline": {
+          "type": "boolean",
+          "const": true
         }
       },
       "additionalProperties": false

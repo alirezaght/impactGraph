@@ -69,6 +69,19 @@ const resolveCategory = (
   return { ok: true, value: first.category };
 };
 
+/**
+ * Deviations may only be accepted against a human-approved baseline: accepting a deviation from
+ * an unapproved prediction would launder a draft into a contract. An artifact without a baseline
+ * block predates the block and only ever reviewed against an approved analysis — treated as
+ * approved.
+ */
+const baselineGuardIssue = (artifact: ReviewArtifactDto): string | undefined => {
+  const baseline = artifact.document.baseline;
+  return baseline?.authority === 'unapproved-prediction'
+    ? `review '${artifact.id}' compared the implementation against unapproved analysis '${baseline.analysisId}' — accepting a deviation from a draft prediction would turn an uncommitted plan into a contract; approve the analysis and re-run the review first`
+    : undefined;
+};
+
 /** Append an accepted-deviation decision to a stored review (append-only, §24.1). */
 export const acceptDeviation = (
   request: AcceptDeviationRequest,
@@ -79,6 +92,10 @@ export const acceptDeviation = (
   const loaded = loadReviewArtifact(request.rootDir, request.reviewId);
   if (!loaded.ok) {
     return loaded;
+  }
+  const guardIssue = baselineGuardIssue(loaded.value);
+  if (guardIssue !== undefined) {
+    return failWith('configurationError', guardIssue);
   }
   const category = resolveCategory(loaded.value, request);
   if (!category.ok) {

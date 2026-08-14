@@ -29,7 +29,12 @@ export const reviewArtifactSchema = z
     schemaVersion: z.literal(1),
     id: z.string().min(1),
     createdAt: z.string().min(1),
-    /** The full §38.2 review document exactly as produced by the review run. */
+    /** The full §38.2 review document exactly as produced by the review run. Its additive
+     *  `baseline` block is what tells this artifact which analysis it compared against and with
+     *  what authority; an absent block means an approved-era artifact (its baseline was the
+     *  approved analysis) and is treated as 'approved-contract'. Deviations may only be accepted
+     *  on reviews whose baseline authority is 'approved-contract' — accepting a deviation from an
+     *  unapproved prediction would launder a draft into a contract. */
     document: cliReviewOutputSchema,
     /** Append-only accepted-deviation decisions bound to THIS review (§24.1). */
     acceptedDeviations: z.array(acceptedDeviationSchema),

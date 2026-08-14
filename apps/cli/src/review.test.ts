@@ -16,52 +16,53 @@ interface CliRun {
 }
 
 // Story 11.4 end-to-end loop: init → index → analyze → approve → change fixture → review.
+// The fixture harness and hooks are file-scoped so every describe below shares them.
+
+let repoDir: string;
+
+const git = (...args: string[]): void => {
+  execFileSync('git', args, { cwd: repoDir });
+};
+
+const cli = async (...args: string[]): Promise<CliRun> => {
+  const lines: string[] = [];
+  const code = await runCli([...args, '--root', repoDir], {
+    defaultRoot: repoDir,
+    write: (line) => lines.push(line),
+  });
+  return { code, lines, json: () => JSON.parse(lines.join('\n')) as unknown };
+};
+
+/** init → commit → index → analyze the DealService spec → return the analysis id. */
+const analyzeFixtureSpec = async (): Promise<string> => {
+  await cli('init');
+  writeFileSync(
+    join(repoDir, 'feature.md'),
+    '# Deal filtering\nDealService must filter expired deals from search results.\n',
+  );
+  git('add', '.');
+  git('commit', '-m', 'init impactgraph + spec');
+  await cli('index');
+  const analyzed = await cli('analyze', 'feature.md', '--full', '--format', 'json');
+  return cliAnalyzeOutputSchema.parse(analyzed.json()).analysis.id;
+};
+
+beforeEach(() => {
+  repoDir = mkdtempSync(join(tmpdir(), 'impactgraph-review-'));
+  cpSync(fixtureRepoPath('ts-basic'), repoDir, { recursive: true });
+  git('init', '-b', 'main');
+  git('config', 'user.email', 'cli@test.dev');
+  git('config', 'user.name', 'CLI Test');
+  git('config', 'commit.gpgsign', 'false');
+  git('add', '.');
+  git('commit', '-m', 'fixture');
+});
+
+afterEach(() => {
+  rmSync(repoDir, { recursive: true, force: true });
+});
 
 describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () => {
-  let repoDir: string;
-
-  const git = (...args: string[]): void => {
-    execFileSync('git', args, { cwd: repoDir });
-  };
-
-  const cli = async (...args: string[]): Promise<CliRun> => {
-    const lines: string[] = [];
-    const code = await runCli([...args, '--root', repoDir], {
-      defaultRoot: repoDir,
-      write: (line) => lines.push(line),
-    });
-    return { code, lines, json: () => JSON.parse(lines.join('\n')) as unknown };
-  };
-
-  /** init → commit → index → analyze the DealService spec → return the analysis id. */
-  const analyzeFixtureSpec = async (): Promise<string> => {
-    await cli('init');
-    writeFileSync(
-      join(repoDir, 'feature.md'),
-      '# Deal filtering\nDealService must filter expired deals from search results.\n',
-    );
-    git('add', '.');
-    git('commit', '-m', 'init impactgraph + spec');
-    await cli('index');
-    const analyzed = await cli('analyze', 'feature.md', '--full', '--format', 'json');
-    return cliAnalyzeOutputSchema.parse(analyzed.json()).analysis.id;
-  };
-
-  beforeEach(() => {
-    repoDir = mkdtempSync(join(tmpdir(), 'impactgraph-review-'));
-    cpSync(fixtureRepoPath('ts-basic'), repoDir, { recursive: true });
-    git('init', '-b', 'main');
-    git('config', 'user.email', 'cli@test.dev');
-    git('config', 'user.name', 'CLI Test');
-    git('config', 'commit.gpgsign', 'false');
-    git('add', '.');
-    git('commit', '-m', 'fixture');
-  });
-
-  afterEach(() => {
-    rmSync(repoDir, { recursive: true, force: true });
-  });
-
   it('runs the full loop: approve, implement, review — matched impacts, no discrepancies', async () => {
     const analysisId = await analyzeFixtureSpec();
 
@@ -103,7 +104,73 @@ describe('impactgraph approve + review (Story 11.4, PRD §24/§25/§38.2)', () =
     expect(rendered).toContain('Confidence:');
     expect(rendered).toContain('Limitations:');
   });
+});
 
+describe('review over a draft baseline (--allow-unapproved-baseline, PRD §24/§40.3)', () => {
+  it('reviews a draft baseline only with --allow-unapproved-baseline — provisional throughout', async () => {
+    const analysisId = await analyzeFixtureSpec();
+
+    // without the flag: refused exactly as before (§40.3), now naming the way forward
+    const refused = await cli('review', 'working-tree', '--format', 'json');
+    expect(refused.code).toBe(EXIT_CODES.configurationError);
+    const message = refused.lines.join('\n');
+    expect(message).toContain('no approved impact analysis');
+    expect(message).toContain('--allow-unapproved-baseline');
+    expect(message).toContain(analysisId);
+
+    appendFileSync(
+      join(repoDir, 'src/services/deal-service.ts'),
+      '\nexport const filterExpired = true;\n',
+    );
+    writeFileSync(join(repoDir, 'src/rogue.ts'), 'export const rogue = 1;\n');
+
+    const review = await cli(
+      'review',
+      'working-tree',
+      '--allow-unapproved-baseline',
+      '--analysis',
+      analysisId,
+      '--format',
+      'json',
+    );
+    // the comparison itself is status-agnostic: rogue.ts is a discrepancy, exit code 3 as ever
+    expect(review.code).toBe(EXIT_CODES.reviewDiscrepancies);
+    const output = cliReviewOutputSchema.parse(review.json());
+    expect(output.analysis.id).toBe(analysisId); // explicit --analysis respected
+    expect(output.baseline).toEqual({
+      analysisId,
+      status: 'draft',
+      authority: 'unapproved-prediction',
+      snapshotId: output.analysis.approvedSnapshotId,
+    });
+    // never authoritative: confidence capped below 'high', the draft baseline a stated limitation
+    expect(['limited', 'low']).toContain(output.breakdown?.confidence?.level);
+    expect(output.breakdown?.confidence?.reasons.join(' ')).toContain('was never approved');
+    expect(output.breakdown?.scope.limitations.join(' ')).toContain(
+      `Baseline analysis '${analysisId}' was never approved`,
+    );
+    const markdown = await cli(
+      'review',
+      'working-tree',
+      '--allow-unapproved-baseline',
+      '--format',
+      'markdown',
+    );
+    const report = markdown.lines.join('\n');
+    expect(report).toContain('## Baseline Specification (unapproved draft)');
+    expect(report).not.toContain('## Approved Specification');
+    expect(report).toContain('baseline snapshot');
+
+    // accepting a deviation from a draft-baseline review would launder the draft into a contract
+    const unexpectedFinding = output.findings.find((finding) => finding.category === 'unexpected');
+    expect(unexpectedFinding).toBeDefined();
+    const accept = await cli('review', 'accept', unexpectedFinding?.nodeId ?? '', 'intentional');
+    expect(accept.code).toBe(EXIT_CODES.configurationError);
+    expect(accept.lines.join('\n')).toContain('unapproved analysis');
+  });
+});
+
+describe('review discrepancies, rules, and aliases (Story 11.4/8.4/8.1)', () => {
   it('reports missing required impacts (unchanged tree) and unexpected files with exit code 3', async () => {
     const analysisId = await analyzeFixtureSpec();
     await cli('approve', analysisId);

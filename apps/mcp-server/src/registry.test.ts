@@ -25,46 +25,47 @@ import { callTool } from './registry.js';
 import type { McpToolName } from '@impactgraph/contracts';
 
 // Story 12.2 — the §21.1 agent workflow executed via tools alone, sequentially on one fixture
-// repo (state builds up step by step, as a real agent session would).
+// repo (state builds up step by step, as a real agent session would). The harness and hooks are
+// file-scoped so every describe below shares the same session.
+
+let repoDir: string;
+let analysisId = '';
+
+const tool = async (name: McpToolName, args: unknown = {}): Promise<Record<string, unknown>> => {
+  const outcome = await callTool(repoDir, name, args);
+  if (!outcome.ok) {
+    throw new Error(`${name} failed: ${outcome.error.message}`);
+  }
+  return asRecord(outcome.payload);
+};
+
+const toolError = async (name: McpToolName, args: unknown = {}): Promise<string> => {
+  const outcome = await callTool(repoDir, name, args);
+  if (outcome.ok) {
+    throw new Error(`${name} unexpectedly succeeded`);
+  }
+  return outcome.error.message;
+};
+
+beforeAll(() => {
+  repoDir = mkdtempSync(join(tmpdir(), 'impactgraph-mcp-'));
+  cpSync(fixtureRepoPath('ts-basic'), repoDir, { recursive: true });
+  const git = (...args: string[]): void => {
+    execFileSync('git', args, { cwd: repoDir });
+  };
+  git('init', '-b', 'main');
+  git('config', 'user.email', 'mcp@test.dev');
+  git('config', 'user.name', 'MCP Test');
+  git('config', 'commit.gpgsign', 'false');
+  git('add', '.');
+  git('commit', '-m', 'fixture');
+});
+
+afterAll(() => {
+  rmSync(repoDir, { recursive: true, force: true });
+});
 
 describe('MCP tool workflow (§21.1) on a fixture repository', () => {
-  let repoDir: string;
-  let analysisId = '';
-
-  const tool = async (name: McpToolName, args: unknown = {}): Promise<Record<string, unknown>> => {
-    const outcome = await callTool(repoDir, name, args);
-    if (!outcome.ok) {
-      throw new Error(`${name} failed: ${outcome.error.message}`);
-    }
-    return asRecord(outcome.payload);
-  };
-
-  const toolError = async (name: McpToolName, args: unknown = {}): Promise<string> => {
-    const outcome = await callTool(repoDir, name, args);
-    if (outcome.ok) {
-      throw new Error(`${name} unexpectedly succeeded`);
-    }
-    return outcome.error.message;
-  };
-
-  beforeAll(() => {
-    repoDir = mkdtempSync(join(tmpdir(), 'impactgraph-mcp-'));
-    cpSync(fixtureRepoPath('ts-basic'), repoDir, { recursive: true });
-    const git = (...args: string[]): void => {
-      execFileSync('git', args, { cwd: repoDir });
-    };
-    git('init', '-b', 'main');
-    git('config', 'user.email', 'mcp@test.dev');
-    git('config', 'user.name', 'MCP Test');
-    git('config', 'commit.gpgsign', 'false');
-    git('add', '.');
-    git('commit', '-m', 'fixture');
-  });
-
-  afterAll(() => {
-    rmSync(repoDir, { recursive: true, force: true });
-  });
-
   it('steps 3–4: initialize, index, submit the specification', async () => {
     const init = await tool('initialize_workspace');
     expect(init['alreadyInitialized']).toBe(false);
@@ -266,5 +267,58 @@ describe('MCP tool workflow (§21.1) on a fixture repository', () => {
   it('unknown nodes and invalid inputs produce typed errors, never crashes', async () => {
     expect(await toolError('explain_node', { nodeId: 'ghost' })).toContain('not found');
     expect(await toolError('find_components', {})).toContain('invalid input');
+  });
+});
+
+describe('review over a draft baseline via MCP tools (PRD §24/§40.3)', () => {
+  it('review_implementation threads analysisId + allowUnapprovedBaseline to the engine', async () => {
+    // an unknown baseline id proves the input reaches the engine rather than being dropped
+    expect(
+      await toolError('review_implementation', {
+        analysisId: 'analysis-ghost',
+        allowUnapprovedBaseline: true,
+      }),
+    ).toContain('analysis not found: analysis-ghost');
+    // the opt-in is contract-enforced: `false` never parses (mirrors confirmedByUser)
+    expect(await toolError('review_implementation', { allowUnapprovedBaseline: false })).toContain(
+      'invalid input',
+    );
+
+    // a fresh draft (same spec, never approved) reviewed explicitly — provisional end to end
+    const analyzed = await tool('analyze_impact', { specificationId: 'spec-feature' });
+    const draftId = asRecord(analyzed['analysis'])['id'] as string;
+    const review = await tool('review_implementation', {
+      target: 'working-tree',
+      analysisId: draftId,
+      allowUnapprovedBaseline: true,
+    });
+    const baseline = asRecord(review['baseline']);
+    expect(baseline['analysisId']).toBe(draftId);
+    expect(baseline['authority']).toBe('unapproved-prediction');
+    expect(baseline['status']).toBe('draft');
+    // accepting a deviation from the provisional review is refused (§24.1 stays approval-bound)
+    const findings = review['findings'] as { category: string; nodeId: string }[];
+    const discrepancy = findings.find((finding) => finding.category === 'unexpected');
+    expect(discrepancy).toBeDefined();
+    expect(
+      await toolError('accept_review_deviation', {
+        reviewId: review['reviewId'],
+        nodeId: discrepancy?.nodeId ?? '',
+        reason: 'x',
+        confirmedByUser: true,
+      }),
+    ).toContain('unapproved analysis');
+
+    // get_review_report re-runs with the same baseline inputs
+    const rerun = await tool('get_review_report', {
+      analysisId: draftId,
+      allowUnapprovedBaseline: true,
+    });
+    expect(asRecord(rerun['baseline'])['authority']).toBe('unapproved-prediction');
+
+    // the persisted provisional review still ran the plan-contract check — labeled, not skipped
+    const stored = await tool('get_review_report', { reviewId: review['reviewId'] });
+    expect(asRecord(stored['baseline'])['authority']).toBe('unapproved-prediction');
+    expect(stored['planContract']).toBeDefined();
   });
 });

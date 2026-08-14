@@ -116,14 +116,17 @@ const impact = (
   evidenceTypes: evidenceTypes as never,
 });
 
-const analysis = (impacts: readonly ReturnType<typeof impact>[]): ImpactAnalysis => {
+const analysis = (
+  impacts: readonly ReturnType<typeof impact>[],
+  status: 'approved' | 'draft' = 'approved',
+): ImpactAnalysis => {
   const created = createImpactAnalysis({
     id: 'analysis-1',
     specificationId: 'spec-1',
     specificationVersion: 1,
     repositorySnapshotId: 'snap-1',
     createdAt: '2026-08-04T10:00:00.000Z',
-    status: 'approved',
+    status,
     requirementImpacts: impacts,
     architecturalOptions: [],
     warnings: [],
@@ -374,5 +377,37 @@ describe('buildReviewBreakdown', () => {
     });
     expect(breakdown.scope.limitations.join(' ')).toContain('registered-repository index state');
     expect(breakdown.confidence?.level).toBe('limited');
+  });
+});
+
+describe('buildReviewBreakdown over an unapproved baseline (PRD §24/§40.3)', () => {
+  it('caps confidence at limited and states the limitation for a never-approved baseline', () => {
+    // this input is otherwise pristine — the SAME input with an approved baseline scores 'high'
+    const pristine = {
+      review: review(['src/renderer.ts'], {
+        findings: [findingOf('matched', 'file:src/renderer.ts')],
+      }),
+      specification: specification(),
+      currentGraph: graph(NODES),
+      addedPaths: [] as readonly string[],
+      repositoryScope: { unindexedRegistered: [], unregisteredCandidates: [] },
+    };
+    const approved = buildReviewBreakdown({
+      ...pristine,
+      analysis: analysis([impact('file:src/renderer.ts', 'required')]),
+    });
+    expect(approved.confidence?.level).toBe('high');
+
+    const provisional = buildReviewBreakdown({
+      ...pristine,
+      analysis: analysis([impact('file:src/renderer.ts', 'required')], 'draft'),
+    });
+    expect(provisional.confidence?.level).toBe('limited');
+    expect(provisional.confidence?.reasons.join(' ')).toContain('was never approved');
+    expect(provisional.scope.limitations.join(' ')).toContain(
+      "Baseline analysis 'analysis-1' was never approved — findings compare the implementation against a draft prediction, not a committed plan.",
+    );
+    // the approved run carries neither the limitation nor the reason — byte-identical to before
+    expect(approved.scope.limitations.join(' ')).not.toContain('was never approved');
   });
 });
