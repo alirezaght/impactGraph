@@ -23,6 +23,7 @@ import { CONFIG_TOOL_CONTRACTS } from './config-tools.js';
 import { DECISION_TOOL_CONTRACTS } from './decision-tools.js';
 import { GRAPH_EXPORT_TOOL_CONTRACTS } from './graph-export-tools.js';
 import { OUTCOME_TOOL_CONTRACTS } from './outcome-tools.js';
+import { REFERENCE_TOOL_CONTRACTS } from './reference-tools.js';
 import { STRUCTURE_TOOL_CONTRACTS } from './structure-tools.js';
 
 // PRD §21 — the MCP tool boundary. One Zod source of truth per tool, validated on BOTH ends
@@ -292,6 +293,7 @@ export const MCP_TOOL_CONTRACTS = {
   ...DECISION_TOOL_CONTRACTS,
   ...GRAPH_EXPORT_TOOL_CONTRACTS,
   ...OUTCOME_TOOL_CONTRACTS,
+  ...REFERENCE_TOOL_CONTRACTS,
   find_components: {
     description:
       'Find components by identifier OR by concept. A conceptual query ("NDA signature request notification message rendering") is matched against names, normalized naming, paths, node kinds and graph neighbourhoods; each hit states its matchKind so an identifier match is distinguishable from a lead. The result carries an explicit query outcome: an empty result says whether the query ran, what scope it covered, and what was not searched.',

@@ -31,6 +31,8 @@ export {
 } from './impact-view-builders.js';
 export { createFakeModelProvider } from './fakes/model-provider.js';
 export type { FakeModelProvider } from './fakes/model-provider.js';
+export { createFakeIndexStore } from './fakes/index-store.js';
+export type { FakeIndexStoreInput } from './fakes/index-store.js';
 export {
   LANGUAGE_ADAPTER_CONTRACT_CHECKS,
   runLanguageAdapterContractChecks,

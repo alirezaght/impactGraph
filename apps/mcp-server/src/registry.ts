@@ -34,6 +34,7 @@ import { GOVERNANCE_HANDLERS } from './registry-governance.js';
 import { GRAPH_HANDLERS } from './registry-graph.js';
 import { IMPACT_HANDLERS } from './registry-impacts.js';
 import { HANDLER_EXTENSIONS } from './registry-read.js';
+import { REFERENCE_HANDLERS } from './registry-references.js';
 import { STRUCTURE_HANDLERS } from './registry-structure.js';
 import { WORKSPACE_HANDLERS } from './registry-workspace.js';
 
@@ -338,6 +339,7 @@ const HANDLERS: ToolHandlerMap = {
   ...CONFIG_MAINTENANCE_HANDLERS,
   ...GRAPH_HANDLERS,
   ...GOVERNANCE_HANDLERS,
+  ...REFERENCE_HANDLERS,
 };
 
 /** The baseline inputs shared by review_implementation and a re-running get_review_report. */

@@ -1,0 +1,38 @@
+{
+  "$ref": "#/definitions/Tool_find_references_InputV1",
+  "definitions": {
+    "Tool_find_references_InputV1": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "callers",
+              "callees",
+              "implementations",
+              "extensions",
+              "importers",
+              "imports",
+              "injections"
+            ]
+          },
+          "minItems": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "required": ["query"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

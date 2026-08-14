@@ -34,6 +34,10 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
         // a plan is BLOCKED needs to open the rule that blocked it.
         'list_constraints',
         'query_runtime_path',
+        // Structural reference queries over existing index data — born from a session where
+        // "who implements X / who calls Y / where else is this SQL fragment" needed grep.
+        'find_references',
+        'search_literals',
         'preview_configuration_change',
         'apply_configuration_change',
         'rollback_configuration_change',

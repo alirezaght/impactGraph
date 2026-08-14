@@ -1,0 +1,199 @@
+{
+  "$ref": "#/definitions/Tool_find_references_OutputV1",
+  "definitions": {
+    "Tool_find_references_OutputV1": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolution": {
+          "type": "string",
+          "enum": ["resolved", "ambiguous", "not-found"]
+        },
+        "resolved": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["nodeId", "name", "type"],
+          "additionalProperties": false
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tool_find_references_OutputV1/properties/resolved"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "callers",
+                  "callees",
+                  "implementations",
+                  "extensions",
+                  "importers",
+                  "imports",
+                  "injections"
+                ]
+              },
+              "edgeType": {
+                "type": "string",
+                "minLength": 1
+              },
+              "direction": {
+                "type": "string",
+                "enum": ["incoming", "outgoing"]
+              },
+              "counterparts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "nodeId": {
+                      "$ref": "#/definitions/Tool_find_references_OutputV1/properties/resolved/properties/nodeId"
+                    },
+                    "name": {
+                      "$ref": "#/definitions/Tool_find_references_OutputV1/properties/resolved/properties/name"
+                    },
+                    "type": {
+                      "$ref": "#/definitions/Tool_find_references_OutputV1/properties/resolved/properties/type"
+                    },
+                    "path": {
+                      "$ref": "#/definitions/Tool_find_references_OutputV1/properties/resolved/properties/path"
+                    },
+                    "provenance": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["nodeId", "name", "type", "provenance"],
+                  "additionalProperties": false
+                }
+              },
+              "totalCount": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": ["kind", "edgeType", "direction", "counterparts", "totalCount"],
+            "additionalProperties": false
+          }
+        },
+        "nameMatchedCallSites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "basis": {
+                "type": "string",
+                "const": "name-match"
+              },
+              "filePath": {
+                "type": "string",
+                "minLength": 1
+              },
+              "calleeName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "receiver": {
+                "type": "string",
+                "minLength": 1
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "sampleArgument": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sampleArgumentTruncated": {
+                "type": "boolean"
+              }
+            },
+            "required": ["basis", "filePath", "calleeName"],
+            "additionalProperties": false
+          }
+        },
+        "nameMatchedCallSiteTotal": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "snapshotId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "searched": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            },
+            "knownLimits": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            },
+            "filesSearched": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "filesWithoutCachedFacts": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "snapshotId",
+            "searched",
+            "knownLimits",
+            "filesSearched",
+            "filesWithoutCachedFacts"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "query",
+        "resolution",
+        "references",
+        "nameMatchedCallSites",
+        "nameMatchedCallSiteTotal",
+        "coverage"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

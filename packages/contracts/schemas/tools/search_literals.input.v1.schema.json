@@ -1,0 +1,25 @@
+{
+  "$ref": "#/definitions/Tool_search_literals_InputV1",
+  "definitions": {
+    "Tool_search_literals_InputV1": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "minLength": 1
+        },
+        "regex": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "required": ["pattern"],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
