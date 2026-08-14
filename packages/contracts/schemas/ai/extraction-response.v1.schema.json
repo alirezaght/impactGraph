@@ -57,6 +57,17 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 2000
+              },
+              "origin": {
+                "type": "string",
+                "enum": [
+                  "explicit-label",
+                  "numbered-item",
+                  "acceptance-criterion",
+                  "task-item",
+                  "bullet-item",
+                  "prose-fallback"
+                ]
               }
             },
             "required": ["statement", "type", "concepts", "actors"],

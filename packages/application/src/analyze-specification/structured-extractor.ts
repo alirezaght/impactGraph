@@ -28,7 +28,12 @@ const REQUIREMENT_ROLES: readonly SectionRole[] = ['requirements', 'acceptance-c
 
 const NOTE_KIND_BY_ROLE: Readonly<Partial<Record<SectionRole, SpecNoteKind>>> = {
   context: 'context',
+  // Goals/objectives frame intent — explanatory, like context; never a requirement.
+  goals: 'context',
   'implementation-notes': 'implementation-note',
+  // Decisions are advisory how-to: they name real components but demand nothing on their own,
+  // exactly the implementation-note semantics. Their items must never inflate the requirements.
+  decisions: 'implementation-note',
   'non-goals': 'non-goal',
 };
 
@@ -154,14 +159,19 @@ const proseFallback = (sections: readonly SpecSection[]): ExtractedRequirementDr
   return drafts;
 };
 
+// The remediation names every accepted shape — telling the user only the narrowest one
+// ("R1, R2, …") sent authors of well-structured specs chasing a format they did not need.
+const ACCEPTED_SHAPES =
+  'a Requirements, Acceptance Criteria, or task section containing bulleted (-, *, +, •) or ' +
+  'numbered items; explicit labels like R1/FR-2 are optional';
+
 const fallbackWarning = (count: number, provisional: boolean): string =>
   `FALLBACK EXTRACTION: the specification declared no requirements list, acceptance criteria, or ` +
   `task list, so all ${String(count)} requirement(s) below were cut out of running prose by the ` +
   `extractor — they are the extractor's reading, not the author's list.` +
   (provisional
-    ? ' The analysis is PROVISIONAL and readiness is withheld. Add an explicit requirements' +
-      ' section (R1, R2, … or a numbered list) and re-submit.'
-    : ' Add an explicit requirements section to remove the guesswork.');
+    ? ` The analysis is PROVISIONAL and readiness is withheld. Add ${ACCEPTED_SHAPES} — then re-submit.`
+    : ` Add ${ACCEPTED_SHAPES} — that removes the guesswork.`);
 
 export const structuredExtraction = (rawText: string): SpecificationExtraction => {
   const sections = splitSections(rawText);

@@ -20,6 +20,10 @@ export type SectionRole =
   | 'constraints'
   /** An explicit exclusion — a negative signal, never a positive impact. */
   | 'non-goals'
+  /** A recorded design/technical decision — advisory how-to, never a requirement on its own. */
+  | 'decisions'
+  /** Intent framing (goals, objectives, scope) — explanatory, never a requirement. */
+  | 'goals'
   /** Advisory how-to — never a requirement on its own. */
   | 'implementation-notes'
   /** Open questions the author already knows about. */
@@ -54,10 +58,14 @@ const HEADING_RULES: readonly HeadingRule[] = [
     role: 'context',
     pattern: /\b(context|background|motivation|why|problem\s+statement|intro)\b/i,
   },
+  // Field feedback: realistic specs carry Decisions/Goals sections. Their statements are NOT
+  // requirements — but the sections must be recognized so their content lands somewhere instead
+  // of vanishing. After context so "design constraints"/"goals and motivation" keep their roles.
+  { role: 'decisions', pattern: /\b(decisions?|design|approach|architecture\s+notes?)\b/i },
+  { role: 'goals', pattern: /\b(goals?|objectives?|scope)\b/i },
   {
     role: 'requirements',
-    pattern:
-      /\b(requirements?|behaviou?rs?|scope|what\s+to\s+(build|change|implement)|changes?)\b/i,
+    pattern: /\b(requirements?|behaviou?rs?|what\s+to\s+(build|change|implement)|changes?)\b/i,
   },
 ];
 
@@ -130,9 +138,9 @@ const headingAt = (line: string, nextLine: string): Heading | undefined => {
     };
   }
   const isSetext =
-    line.trim().length > 0 && SETEXT_UNDERLINE.test(nextLine) && !/^[-*+]\s/.test(line.trim());
+    line.trim().length > 0 && SETEXT_UNDERLINE.test(nextLine) && !LIST_MARKER.test(line.trim());
   if (!isSetext) {
-    return undefined;
+    return pseudoHeadingAt(line);
   }
   return {
     heading: line.trim(),
@@ -140,6 +148,48 @@ const headingAt = (line: string, nextLine: string): Heading | undefined => {
     consumed: line.length + 1 + nextLine.length + 1,
     twoLine: true,
   };
+};
+
+// Formatting tolerance (field feedback): authors write `**Acceptance Criteria**` or
+// `Acceptance Criteria:` as headings, and treating those lines as body prose silently drops the
+// document's whole structure. Deliberately conservative — the line must stand alone, be short and
+// title-like, and (for the colon form) match the heading vocabulary. ATX/setext take precedence.
+
+/** A line that is nothing but one bold/italic phrase, optionally colon-terminated. */
+const EMPHASIS_ONLY = /^(\*{1,2}|_{1,2})([^*_]+?)\1:?$/;
+/** A short line ending with `:` — a heading only when the vocabulary recognizes its text. */
+const COLON_HEADING = /^[A-Z][^:]{0,47}:$/;
+/** A list item is never a pseudo-heading, even when it is bold or colon-terminated. */
+const LIST_MARKER = /^([-*+•–—]\s|\d{1,3}[.)]\s)/;
+/** Deeper than any real heading in practice, so an enclosing ATX section keeps its role. */
+const PSEUDO_LEVEL = 3;
+const MAX_PSEUDO_LENGTH = 60;
+const MAX_PSEUDO_WORDS = 6;
+
+/** Title-like: a few words, no sentence-ending punctuation. `**Do not ship this.**` is emphasis. */
+const isShortTitle = (text: string): boolean =>
+  text.length > 0 && text.split(/\s+/).length <= MAX_PSEUDO_WORDS && !/[.!?]$/.test(text);
+
+const pseudoHeadingAt = (line: string): Heading | undefined => {
+  const trimmed = line.trim();
+  if (trimmed.length === 0 || trimmed.length > MAX_PSEUDO_LENGTH || LIST_MARKER.test(trimmed)) {
+    return undefined;
+  }
+  const consumed = line.length + 1;
+  const emphasis = EMPHASIS_ONLY.exec(trimmed);
+  if (emphasis !== null) {
+    const text = (emphasis[2] ?? '').trim().replace(/:$/, '').trim();
+    return isShortTitle(text)
+      ? { heading: text, level: PSEUDO_LEVEL, consumed, twoLine: false }
+      : undefined;
+  }
+  if (COLON_HEADING.test(trimmed)) {
+    const text = trimmed.slice(0, -1).trim();
+    if (isShortTitle(text) && roleForHeading(text) !== 'unknown') {
+      return { heading: text, level: PSEUDO_LEVEL, consumed, twoLine: false };
+    }
+  }
+  return undefined;
 };
 
 export const splitSections = (rawText: string): readonly SpecSection[] => {

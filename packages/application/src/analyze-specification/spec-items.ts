@@ -28,8 +28,8 @@ const NUMBERED_MARKER = /^(\d{1,3})[.)]\s+(?=\S)/;
 /** `- [ ]` / `* [x]` — a task-list item. */
 const TASK_MARKER = /^[-*+]\s+\[[ xX]\]\s+(?=\S)/;
 
-/** A plain bullet. */
-const BULLET_MARKER = /^[-*+]\s+(?=\S)/;
+/** A plain bullet. `•`/`–`/`—` are accepted too — authors paste them from rich-text editors. */
+const BULLET_MARKER = /^[-*+•–—]\s+(?=\S)/;
 
 /** Nested list items are continuations of their parent item, not requirements of their own. */
 const INDENT = /^(\s*)/;

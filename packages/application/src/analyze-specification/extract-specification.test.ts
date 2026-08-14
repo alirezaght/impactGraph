@@ -92,6 +92,35 @@ describe('extractSpecification with a provider (Story 5.3)', () => {
     expect(spec.constraints[0]?.statement).toBe('No breaking API changes.');
   });
 
+  it('honors a provider-reported structured origin; absent origin stays prose-fallback', async () => {
+    const [firstDraft, secondDraft] = providerExtraction.requirements;
+    if (firstDraft === undefined || secondDraft === undefined) {
+      throw new Error('fixture must declare two requirement drafts');
+    }
+    const withOrigins: SpecificationExtraction = {
+      ...providerExtraction,
+      requirements: [
+        { ...firstDraft, origin: 'acceptance-criterion' },
+        secondDraft, // no origin — must coerce to the weakest reading
+      ],
+    };
+    const outcome = await extractSpecification(request, {
+      clock,
+      extractor: stubExtractor(ok(withOrigins)),
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) {
+      return;
+    }
+    const spec = outcome.value.specification;
+    expect(spec.requirements.map((requirement) => requirement.origin)).toEqual([
+      'acceptance-criterion',
+      'prose-fallback',
+    ]);
+    expect(spec.extractionQuality?.structuredRequirementCount).toBe(1);
+    expect(spec.extractionQuality?.proseRequirementCount).toBe(1);
+  });
+
   it('re-extraction appends version 2 and keeps unchanged requirement ids stable', async () => {
     const deps: ExtractSpecificationDeps = {
       clock,

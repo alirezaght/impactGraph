@@ -153,6 +153,64 @@ describe('structuredExtraction — other structured shapes', () => {
   });
 });
 
+describe('structuredExtraction — formatting tolerance (field feedback)', () => {
+  // A realistic engineering spec: bold pseudo-headings, • bullets, no R1/R2 numbering at all.
+  const FIELD_SPEC = [
+    '# Preflight rollout',
+    '',
+    '**Goals**',
+    '',
+    'Ship the new preflight check to all tenants.',
+    '',
+    '**Decisions**',
+    '',
+    '• Reuse `preflight-runner.ts` for the execution loop.',
+    '• Keep `tenant-flags.yml` as the rollout switch.',
+    '',
+    '**Acceptance Criteria**',
+    '',
+    '• The check runs on every submission.',
+    '• A failed check blocks the submission.',
+    '',
+  ].join('\n');
+  const extraction = structuredExtraction(FIELD_SPEC);
+
+  it('reads bold pseudo-headings with • bullets as structured acceptance criteria', () => {
+    expect(extraction.requirements.map((requirement) => requirement.origin)).toEqual([
+      'acceptance-criterion',
+      'acceptance-criterion',
+    ]);
+    expect(extraction.quality?.strategy).toBe('structured');
+    expect(extraction.quality?.provisional).toBe(false);
+    expect(extraction.quality?.warnings).toEqual([]);
+  });
+
+  it('recognizes Goals and Decisions sections instead of dropping them', () => {
+    expect(extraction.quality?.recognizedSections).toEqual([
+      'Goals',
+      'Decisions',
+      'Acceptance Criteria',
+    ]);
+  });
+
+  it('keeps decisions and goals as notes, never inflating the requirement list', () => {
+    expect(extraction.requirements).toHaveLength(2);
+    const notes = extraction.notes ?? [];
+    expect(notes.some((note) => note.statement.includes('preflight-runner.ts'))).toBe(true);
+    expect(notes.some((note) => note.statement.includes('Ship the new preflight check'))).toBe(
+      true,
+    );
+  });
+
+  it('reads a colon-terminated heading line as a section start', () => {
+    const colonSpec = structuredExtraction(
+      'Acceptance Criteria:\n\n- The export includes headers.\n',
+    );
+    expect(colonSpec.requirements[0]?.origin).toBe('acceptance-criterion');
+    expect(colonSpec.quality?.provisional).toBe(false);
+  });
+});
+
 describe('structuredExtraction — prose fallback', () => {
   const extraction = structuredExtraction(
     '# Notes\n\nThe notification service should render the message. The buyer must see it in their inbox.\n\n## Out of scope\n\nRewriting the mailer.\n',
@@ -171,6 +229,16 @@ describe('structuredExtraction — prose fallback', () => {
     // Two statements is not the inflation failure — the strategy is reported, readiness is not
     // withheld. See PROSE_PROVISIONAL_THRESHOLD.
     expect(extraction.quality?.provisional).toBe(false);
+  });
+
+  it('names the actually accepted shapes instead of demanding R1/R2 phrasing', () => {
+    // The extractor accepts several structured shapes; the remediation text must not name only
+    // the narrowest one (field feedback: "R1, R2, … or a numbered list" was misleading).
+    const warning = extraction.quality?.warnings[0] ?? '';
+    expect(warning).not.toContain('R1, R2');
+    expect(warning).toContain('Acceptance Criteria');
+    expect(warning).toContain('•');
+    expect(warning).toContain('optional');
   });
 
   it('marks the extraction provisional once the guess becomes load-bearing', () => {

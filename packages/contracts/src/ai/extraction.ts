@@ -20,6 +20,20 @@ const requirementTypeSchema = z.enum([
   'documentation',
 ]);
 
+// Where the statement came from in the specification (domain REQUIREMENT_ORIGINS). Additive,
+// optional: a provider MAY report that a statement is the author's own list item so a structured
+// specification is not misread as prose. Absent origins are coerced to 'prose-fallback' — the
+// weakest reading — by the application layer; a provider can therefore never inflate a claim by
+// omission, only substantiate one by declaring it.
+const requirementOriginSchema = z.enum([
+  'explicit-label',
+  'numbered-item',
+  'acceptance-criterion',
+  'task-item',
+  'bullet-item',
+  'prose-fallback',
+]);
+
 const extractedRequirementSchema = z
   .object({
     statement: z.string().min(1).max(2000),
@@ -28,6 +42,7 @@ const extractedRequirementSchema = z
     actors: z.array(z.string().min(1).max(200)).max(20),
     priority: z.enum(['must', 'should', 'could']).optional(),
     sourceExcerpt: z.string().min(1).max(2000).optional(),
+    origin: requirementOriginSchema.optional(),
   })
   .strict();
 
