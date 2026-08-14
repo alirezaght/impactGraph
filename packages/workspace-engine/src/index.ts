@@ -59,6 +59,25 @@ export type { ReviewBundle } from './review.js';
 export { buildExportBundle } from './export.js';
 export type { ExportBundle } from './export.js';
 export { findComponents, explainNode, explainEdge } from './queries.js';
+export {
+  findReferences,
+  findReferencesInStore,
+  REFERENCE_KNOWN_LIMITS,
+} from './symbol-references.js';
+export type {
+  FindReferencesRequest,
+  FindReferencesResult,
+  NameMatchedCallSite,
+  ReferenceCoverage,
+  ReferenceCounterpart,
+  ReferenceGroup,
+  ReferenceKind,
+  ReferencedNode,
+} from './symbol-references.js';
+export { searchLiterals, searchLiteralsInStore } from './literal-search.js';
+export type { LiteralMatch, LiteralSearchRequest, LiteralSearchResult } from './literal-search.js';
+export { loadFragmentFacts } from './fragment-facts.js';
+export type { FragmentFacts } from './fragment-facts.js';
 export type {
   ComponentHit,
   KnowledgeExplanation,
@@ -290,6 +309,14 @@ export type { EnsureIndexedOutcome, WorkspaceRepositoryContext } from './reposit
 // ADR-0017 — the adversarial preflight pass and the constraint layer it reads.
 export type { PreflightContext, PreflightOutcome } from './preflight.js';
 export { runPreflightForAnalysis } from './preflight.js';
+export type { CoveragePreflightContext } from './coverage-preflight.js';
+export { runCoveragePreflight } from './coverage-preflight.js';
+export type { SuppliedIdentifierResolution } from './supplied-identifiers.js';
+export {
+  resolveSuppliedIdentifiers,
+  toSuppliedIdentifiersDto,
+  UNRESOLVED_IDENTIFIER_LIMIT,
+} from './supplied-identifiers.js';
 export type { LoadedConstraints } from './preflight-guards.js';
 export { collectGuardFiles, loadConstraints } from './preflight-guards.js';
 export {

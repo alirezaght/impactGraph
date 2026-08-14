@@ -12,6 +12,7 @@ import {
   createWorkspaceAiServices,
   ensureRegisteredRepositoriesIndexed,
   lastRunWarningInputs,
+  runCoveragePreflight,
   submitSpecification,
 } from '@impactgraph/workspace-engine';
 
@@ -110,13 +111,30 @@ const render = async (
     return;
   }
   const workspace = await collectWorkspaceRepositoryContext(context.rootDir);
+  // The same coverage-first adversarial pass the MCP `analyze_impact` tool runs (ADR-0017): the
+  // CLI summary carries planAssessment, preflight findings, and evidence provenance too. Skipped
+  // only when no workspace roster could be read — absence then means "did not run", never "clean".
+  const preflight = workspace.ok
+    ? runCoveragePreflight(
+        {
+          rootDir: context.rootDir,
+          specification: submitted.specification,
+          specificationText: submitted.specification.rawText,
+          analysis: built.analysis,
+          graph: built.graph,
+          snapshotId: built.snapshotId,
+        },
+        workspace.value,
+      )
+    : undefined;
   renderImpactSummary(
     context,
     buildImpactSummary({
       specification: submitted.specification,
-      analysis: built.analysis,
+      analysis: preflight?.analysis ?? built.analysis,
       graph: built.graph,
       ...(workspace.ok ? { workspace: workspace.value } : {}),
+      ...(preflight === undefined ? {} : { preflight }),
       freshness: await assessWorkspaceFreshness({
         rootDir: context.rootDir,
         snapshotId: built.snapshotId,

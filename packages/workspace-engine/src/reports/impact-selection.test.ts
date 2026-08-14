@@ -111,6 +111,48 @@ describe('byStrength — ordering', () => {
   });
 });
 
+describe('byStrength — provenance tiebreak (ADR-0017 §5)', () => {
+  it('at equal tier and basis, a discovery outranks a specification echo — even a more confident one', () => {
+    // The echo wins BOTH later comparators (higher confidence, earlier node id); only the
+    // provenance tiebreak can put the discovery first, which is exactly what this pins.
+    const echo = impact('sym:a-echo', 'required', ['direct-structural'], {
+      evidenceProvenance: 'USER_SUPPLIED',
+      confidence: 0.95,
+    });
+    const found = impact('sym:b-found', 'required', ['direct-structural'], {
+      evidenceProvenance: 'INDEPENDENTLY_DISCOVERED',
+      confidence: 0.6,
+    });
+    expect(byStrength(found, echo)).toBeLessThan(0);
+    const selected = selectImpacts(analysisWith([echo, found]));
+    expect(selected.impacts.map((entry) => entry.nodeId)).toEqual(['sym:b-found', 'sym:a-echo']);
+  });
+
+  it('never crosses tier or basis: a required echo still beats a likely discovery', () => {
+    const requiredEcho = impact('sym:echo', 'required', ['direct-structural'], {
+      evidenceProvenance: 'USER_SUPPLIED',
+    });
+    const likelyFound = impact('sym:found', 'likely', ['direct-structural'], {
+      evidenceProvenance: 'INDEPENDENTLY_DISCOVERED',
+    });
+    expect(byStrength(requiredEcho, likelyFound)).toBeLessThan(0);
+
+    const directEcho = impact('sym:echo', 'likely', ['direct-structural'], {
+      evidenceProvenance: 'USER_SUPPLIED',
+    });
+    const asyncFound = impact('sym:found', 'likely', ['async-event'], {
+      evidenceProvenance: 'INDEPENDENTLY_DISCOVERED',
+    });
+    expect(byStrength(directEcho, asyncFound)).toBeLessThan(0);
+  });
+
+  it('legacy analyses without provenance are untouched — confidence still decides the tie', () => {
+    const confident = impact('sym:z', 'likely', ['direct-structural'], { confidence: 0.9 });
+    const hesitant = impact('sym:a', 'likely', ['direct-structural'], { confidence: 0.4 });
+    expect(byStrength(confident, hesitant)).toBeLessThan(0);
+  });
+});
+
 describe('selectImpacts — filters and paging', () => {
   const analysis = analysisWith([
     impact('sym:a', 'required', ['direct-structural']),

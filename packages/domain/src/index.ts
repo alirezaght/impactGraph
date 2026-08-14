@@ -292,7 +292,11 @@ export type {
 } from './constraint/repository-constraint.js';
 export { createRepositoryConstraint, isExempt } from './constraint/repository-constraint.js';
 
-export type { EvidenceProvenance, EvidenceIndependence } from './preflight/evidence-provenance.js';
+export type {
+  EvidenceProvenance,
+  EvidenceIndependence,
+  ProvenanceLabel,
+} from './preflight/evidence-provenance.js';
 export {
   EVIDENCE_PROVENANCES,
   INDEPENDENT_PROVENANCES,
@@ -397,6 +401,7 @@ export type {
 } from './impact/workspace-coverage.js';
 export { assessEvidenceQuality } from './impact/evidence-quality.js';
 export type {
+  EvidenceQualityContext,
   EvidenceQualityCounts,
   EvidenceQualityStatus,
   EvidenceQualityVerdict,

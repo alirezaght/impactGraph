@@ -66,14 +66,36 @@ export interface RequirementSignalContext {
    */
   readonly missingRepositoryCount: number;
   readonly indexedNodeTypes: ReadonlySet<string>;
+  /**
+   * The specification's path-shaped identifiers that resolve to NOTHING indexed (lowercased) —
+   * from `resolveSuppliedIdentifiers`, the same computation the analyze summary reports. A
+   * requirement that states one of these without creation language is asserting a file that does
+   * not exist at the indexed revision.
+   */
+  readonly unresolvedSuppliedIdentifiers: readonly string[];
 }
+
+/**
+ * "Modify services/x.py" when x.py does not exist IS an invalid assumption; "add file foo/bar.ts"
+ * is not — creation language means the file is SUPPOSED to be missing.
+ */
+const assertsMissingIdentifier = (statement: string, unresolved: readonly string[]): boolean => {
+  if (unresolved.length === 0 || CREATION.test(statement)) {
+    return false;
+  }
+  const lower = statement.toLowerCase();
+  return unresolved.some((token) => lower.includes(token));
+};
 
 export const buildRequirementSignals = (
   statement: string,
   requirementId: string,
   context: RequirementSignalContext,
 ): RequirementSignalInput => ({
-  hasInvalidSymbolAssumption: false,
+  hasInvalidSymbolAssumption: assertsMissingIdentifier(
+    statement,
+    context.unresolvedSuppliedIdentifiers,
+  ),
   // A roster fact, never an inference from "nothing matched": when no registered repository is
   // missing, an unmatched requirement flows to NEW_SURFACE / NO_EVIDENCE / AMBIGUOUS /
   // EXTERNAL_DEPENDENCY instead of a coverage claim the roster contradicts.

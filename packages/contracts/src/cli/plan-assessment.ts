@@ -125,6 +125,12 @@ export const evidenceIndependenceSchema = z
     confirmationCount: z.number().int().min(0),
     weightedIndependence: z.number().min(0),
     totalCount: z.number().int().min(0),
+    /**
+     * Additive v1: the honest completeness sentence, composed deterministically in the domain —
+     * e.g. "4 of 12 impacts were independently discovered; 5 confirm components the specification
+     * itself named; 3 rest on weak lexical or transitive matches." Absent on older producers.
+     */
+    statement: z.string().min(1).optional(),
   })
   .strict();
 

@@ -1,6 +1,8 @@
 import {
+  evidenceProvenanceOf,
   evidenceStrengthRank,
   evidenceTypesOf,
+  isIndependent,
   likelihoodRank,
   primaryEvidenceType,
 } from '@impactgraph/domain';
@@ -41,15 +43,28 @@ const DEFAULTS = {
 } as const;
 
 /**
- * Rank: strongest tier, then strongest evidence basis, then confidence, then node id.
+ * Independent discoveries before confirmations and lexical noise — WITHIN a tier and basis, never
+ * across them (ADR-0017 §5). An echo of the specification keeps its honest tier, but it no longer
+ * outranks an equally-tiered impact the engine actually found. Absent provenance reads as the
+ * weakest class, matching `evidenceProvenanceOf`.
+ */
+const provenanceClassRank = (impact: RequirementImpact): number =>
+  isIndependent(evidenceProvenanceOf(impact)) ? 0 : 1;
+
+/**
+ * Rank: strongest tier, then strongest evidence basis, then provenance class (discovery before
+ * confirmation), then confidence, then node id.
  *
  * Tier before basis is deliberate. A reader acts on "must this change?" first; the basis explains
  * why. Sorting by basis first would put a `possible` async finding above a `required` structural one.
+ * Provenance before confidence is equally deliberate: an echo's confidence is high precisely
+ * because the engine matched the name it was given, so confidence must not decide that tie.
  */
 export const byStrength = (a: RequirementImpact, b: RequirementImpact): number =>
   likelihoodRank(a.likelihood) - likelihoodRank(b.likelihood) ||
   evidenceStrengthRank(primaryEvidenceType(evidenceTypesOf(a))) -
     evidenceStrengthRank(primaryEvidenceType(evidenceTypesOf(b))) ||
+  provenanceClassRank(a) - provenanceClassRank(b) ||
   b.confidence - a.confidence ||
   a.nodeId.localeCompare(b.nodeId);
 

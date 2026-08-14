@@ -18,6 +18,16 @@ export const buildEvidenceQuality = (shown: readonly GroupedImpact[]): EvidenceQ
       hops: Math.max(0, impact.dependencyPath.length - 1),
       tierCapped: impact.tierCappedBy !== undefined,
     })),
+    {
+      // ADR-0017 §5: how many of the ACTIONABLE lines merely echo the specification. When it is
+      // all of them, the verdict says so — a strong tier of echoes reads confident and proves
+      // nothing the reader did not already write.
+      strongTierUserSuppliedCount: shown.filter(
+        ({ impact }) =>
+          (impact.likelihood === 'required' || impact.likelihood === 'likely') &&
+          impact.evidenceProvenance === 'USER_SUPPLIED',
+      ).length,
+    },
   );
   return { status: verdict.status, reasons: [...verdict.reasons], counts: verdict.counts };
 };

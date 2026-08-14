@@ -4,7 +4,13 @@ import {
   evidenceTypesOf,
   originOf,
   primaryEvidenceType,
+  provenanceLabel,
 } from '@impactgraph/domain';
+
+import {
+  resolveSuppliedIdentifiers,
+  toSuppliedIdentifiersDto,
+} from '../supplied-identifiers.js';
 
 import { buildEvidenceQuality, evidenceLimitations } from './evidence-quality-block.js';
 import {
@@ -133,6 +139,14 @@ const impactLine = (
     requirementLabels: [...new Set(grouped.requirementLabels)].sort(),
     reason: impact.explanation,
     ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
+    // Absent when the stored analysis predates the provenance axis — absence must never read as
+    // "independently discovered", so nothing is defaulted here (ADR-0017 §5).
+    ...(impact.evidenceProvenance === undefined
+      ? {}
+      : {
+          evidenceProvenance: impact.evidenceProvenance,
+          provenanceLabel: provenanceLabel(impact.evidenceProvenance),
+        }),
   };
 };
 
@@ -375,6 +389,11 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
       unmatchedLine(input, requirement),
     ),
     unresolvedConcepts: unresolvedConcepts(analysis),
+    // The specification's path-shaped identifiers, resolved against the graph — always computable,
+    // so a reader can see "the spec names files that do not exist" even without the preflight pass.
+    suppliedIdentifiers: toSuppliedIdentifiersDto(
+      resolveSuppliedIdentifiers(specification.rawText, graph),
+    ),
     ...preflightBlock(input),
     ...blockersBlock(input),
     warnings: warnings.kept,

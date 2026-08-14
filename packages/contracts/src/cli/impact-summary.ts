@@ -5,6 +5,7 @@ import { impactLikelihoodSchema } from './impact-export.js';
 import { indexFreshnessSchema, indexWarningReportSchema } from './index-health.js';
 import { readinessSchema } from './outputs.js';
 import {
+  EVIDENCE_PROVENANCE_VALUES,
   evidenceIndependenceSchema,
   planAssessmentSchema,
   preflightFindingSchema,
@@ -80,6 +81,14 @@ const summaryImpactSchema = z
     reason: z.string().min(1),
     /** Set when the tier was reduced because the evidence did not support the stronger one. */
     tierCappedBy: impactEvidenceTypeSchema.optional(),
+    /**
+     * Additive v1 (ADR-0017 §5): WHERE the evidence came from — did the engine find this, or did
+     * the specification hand it over? Absent on analyses stored before the axis existed; absence
+     * means "not classified", never "independent".
+     */
+    evidenceProvenance: z.enum(EVIDENCE_PROVENANCE_VALUES).optional(),
+    /** The reader-facing word for it: an echo is 'confirmation', everything else 'discovery'. */
+    provenanceLabel: z.enum(['confirmation', 'discovery']).optional(),
   })
   .strict();
 
@@ -308,6 +317,21 @@ export const cliImpactSummarySchema = z
     preflightFindings: z.array(preflightFindingSchema).optional(),
     /** How much of the evidence was discovered rather than supplied by the specification. */
     evidenceIndependence: evidenceIndependenceSchema.optional(),
+    /**
+     * Additive v1 (ADR-0017 §5): the specification's PATH-SHAPED identifiers (containing '/' or a
+     * file extension — prose words are excluded deliberately) resolved against the indexed graph.
+     * A named file that resolves to nothing is either new surface or a wrong assumption, and the
+     * per-requirement classification says which; this block gives the counts and the misses.
+     */
+    suppliedIdentifiers: z
+      .object({
+        pathShapedCount: z.number().int().min(0),
+        resolvedCount: z.number().int().min(0),
+        /** The unresolved identifiers, bounded — at most 10 are listed. */
+        unresolved: z.array(z.string().min(1)).max(10),
+      })
+      .strict()
+      .optional(),
     constraintCoverage: z
       .object({
         indexedConstraintCount: z.number().int().min(0),

@@ -4,6 +4,7 @@ import { computeReadiness, stableContentId } from '@impactgraph/domain';
 import { loadConstraints } from './preflight-guards.js';
 import { unmatchedRequirements } from './reports/impact-summary-facts.js';
 import { buildRequirementSignals, indexedTypes } from './requirement-signals.js';
+import { resolveSuppliedIdentifiers } from './supplied-identifiers.js';
 
 import type { PreflightRequirement } from '@impactgraph/application';
 import type {
@@ -89,6 +90,12 @@ const preflightRequirements = (context: PreflightContext): readonly PreflightReq
     analysis: context.analysis,
     missingRepositoryCount: context.missingRepositoryNames.length,
     indexedNodeTypes: indexedTypes(context.graph),
+    // The same resolution the analyze summary's suppliedIdentifiers block reports — one
+    // computation, so a signal can never claim a missing file the summary says resolved.
+    unresolvedSuppliedIdentifiers: resolveSuppliedIdentifiers(
+      context.specificationText,
+      context.graph,
+    ).unresolved,
   };
   const withImpact = new Set(
     context.analysis.requirementImpacts.map((impact) => impact.requirementId),

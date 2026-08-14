@@ -75,6 +75,14 @@ describe('impactgraph analyze — the bounded summary (item 9)', () => {
     expect(top?.likelihood).toBe('required');
     expect(top?.evidenceType).toBe('direct-structural');
     expect(top?.requirementLabels).toContain('R1');
+    // ADR-0017 §5: the CLI runs the SAME coverage+preflight pass as the MCP server, so the summary
+    // carries the plan assessment, the completeness statement, and per-impact provenance — and the
+    // spec named `DealService` verbatim, so its impact is a confirmation, never a discovery.
+    expect(summary.planAssessment).toBeDefined();
+    expect(summary.evidenceIndependence?.statement).toContain('impacts');
+    expect(summary.suppliedIdentifiers).toBeDefined();
+    expect(top?.evidenceProvenance).toBe('USER_SUPPLIED');
+    expect(top?.provenanceLabel).toBe('confirmation');
     // freshness and query scope are always stated (items 10, 11)
     expect(summary.freshness.state.length).toBeGreaterThan(0);
     expect(summary.impactQuery.scope).toContain('snapshot');

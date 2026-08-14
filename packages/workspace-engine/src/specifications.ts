@@ -1,6 +1,7 @@
 import { basename } from 'node:path';
 
 import {
+  assignEvidenceProvenance,
   buildImpactModel,
   clarifySpecification,
   extractSpecification,
@@ -359,6 +360,16 @@ const refineAndPersist = async (input: FinalizeInput): Promise<Failable<Analysis
       classificationMode = refined.value.classificationMode;
     }
   }
+  // Base evidence provenance is assigned BEFORE the artifact is persisted (ADR-0017 §5), so every
+  // reader of the stored analysis — list_impacts, get_impact_analysis, review, export — can tell an
+  // echo of the specification from a discovery. Constraint- and runtime-derived UPGRADES cannot
+  // happen here: those provenances only exist after the preflight constraint pass, which re-assigns
+  // in memory (see preflight.ts) without rewriting the stored artifact.
+  finalAnalysis = assignEvidenceProvenance({
+    analysis: finalAnalysis,
+    graph: input.graph,
+    specificationText: input.specification.rawText,
+  }).analysis;
   const analysisStore = createImpactAnalysisArtifactStore(artifactsPath(input.rootDir));
   const persisted = await analysisStore.save(finalAnalysis);
   if (!persisted.ok) {

@@ -436,6 +436,22 @@
               },
               "tierCappedBy": {
                 "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/topImpacts/items/properties/evidenceType"
+              },
+              "evidenceProvenance": {
+                "type": "string",
+                "enum": [
+                  "USER_SUPPLIED",
+                  "INDEPENDENTLY_DISCOVERED",
+                  "STRUCTURALLY_INFERRED",
+                  "CONSTRAINT_DERIVED",
+                  "RUNTIME_DERIVED",
+                  "TRANSITIVE",
+                  "WEAK_LEXICAL"
+                ]
+              },
+              "provenanceLabel": {
+                "type": "string",
+                "enum": ["confirmation", "discovery"]
               }
             },
             "required": [
@@ -740,6 +756,10 @@
             "totalCount": {
               "type": "integer",
               "minimum": 0
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -748,6 +768,29 @@
             "weightedIndependence",
             "totalCount"
           ],
+          "additionalProperties": false
+        },
+        "suppliedIdentifiers": {
+          "type": "object",
+          "properties": {
+            "pathShapedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "resolvedCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unresolved": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "maxItems": 10
+            }
+          },
+          "required": ["pathShapedCount", "resolvedCount", "unresolved"],
           "additionalProperties": false
         },
         "constraintCoverage": {

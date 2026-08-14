@@ -215,6 +215,7 @@ export type { ImplementationContextDto } from './export/implementation-context.j
 export { MCP_TOOL_CONTRACTS, MCP_TOOL_NAMES, MCP_TOOL_PREFIX } from './tools/tools.js';
 export type { McpToolName } from './tools/tools.js';
 export { MCP_SERVER_INSTRUCTIONS } from './tools/guidance.js';
+export { REFERENCE_KINDS } from './tools/reference-tools.js';
 export {
   repositoryIndexStateSchema,
   repositoryReasonCodeSchema,

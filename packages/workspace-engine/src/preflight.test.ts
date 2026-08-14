@@ -238,3 +238,70 @@ describe('runPreflightForAnalysis — repository facts, not reinterpreted covera
     expect(preflight.assessment.scoreWithheldReason).toContain('extractor');
   });
 });
+
+/**
+ * The invalid-assumption signal (ADR-0017 §5): a specification that says "modify services/x.py"
+ * when no such file is indexed is asserting something false, and the classifier must say so —
+ * while "add file foo/bar.ts" is creation, where the file is SUPPOSED to be missing.
+ */
+const specWithStatements = (statements: readonly string[]): Specification => {
+  const created = createSpecification({
+    id: 'spec-2',
+    title: 'assumption fixture',
+    sourceType: 'markdown',
+    rawText: statements.join('\n'),
+    version: 1,
+    createdAt: '2026-08-14T10:00:00.000Z',
+    updatedAt: '2026-08-14T10:00:00.000Z',
+    requirements: statements.map((statement, index) => ({
+      id: `req-${String(index + 1)}`,
+      statement,
+      type: 'functional' as const,
+      concepts: [],
+      actors: [],
+      status: 'draft' as const,
+    })),
+    actors: [],
+    constraints: [],
+    openQuestions: [],
+    decisions: [],
+  });
+  if (!created.ok) {
+    throw new Error('bad fixture spec');
+  }
+  return created.value;
+};
+
+describe('runPreflightForAnalysis — unresolved path-shaped identifiers (ADR-0017 §5)', () => {
+  const classify = (statements: readonly string[]) => {
+    const spec = specWithStatements(statements);
+    const preflight = preflightFor(fullyIndexed, {
+      specification: spec,
+      specificationText: spec.rawText,
+      // no impacts at all: every requirement is unmatched and reaches the classifier
+      analysis: { ...analysis(), requirementImpacts: [] },
+    });
+    return new Map(
+      preflight.classifications.map((entry) => [entry.requirementId, entry.classification]),
+    );
+  };
+
+  it('a modification of a file that does not exist is an INVALID_ASSUMPTION', () => {
+    const classifications = classify(['Modify services/x.py so it relays deal events.']);
+    expect(classifications.get('req-1')).toBe('INVALID_ASSUMPTION');
+  });
+
+  it('creation language is never flagged — the file is supposed to be missing', () => {
+    const classifications = classify(['Add the file foo/bar.ts with the relay handler.']);
+    expect(classifications.get('req-1')).toBe('NEW_SURFACE');
+  });
+
+  it('a requirement that does not state the missing path is not blamed for it', () => {
+    const classifications = classify([
+      'Modify services/x.py so it relays deal events.',
+      'The nightly reconciliation must run twice.',
+    ]);
+    expect(classifications.get('req-1')).toBe('INVALID_ASSUMPTION');
+    expect(classifications.get('req-2')).toBe('NO_EVIDENCE');
+  });
+});

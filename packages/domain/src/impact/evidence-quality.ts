@@ -44,6 +44,15 @@ export interface EvidenceQualityVerdict {
   readonly counts: EvidenceQualityCounts;
 }
 
+/**
+ * Facts about the shown set that the facts themselves cannot carry — today only the echo count.
+ * Optional and additive: a caller with no provenance information simply gets the older verdict.
+ */
+export interface EvidenceQualityContext {
+  /** Strong-tier shown impacts whose evidence provenance is USER_SUPPLIED — spec echoes. */
+  readonly strongTierUserSuppliedCount?: number;
+}
+
 /** Bases that assert only a naming or meaning resemblance — no traversed relationship. */
 const HEURISTIC_BASES: ReadonlySet<ImpactEvidenceType> = new Set([
   'name-similarity',
@@ -69,6 +78,34 @@ const countFacts = (shown: readonly ShownImpactFact[]): EvidenceQualityCounts =>
 
 const n = (value: number): string => String(value);
 
+/** The reasons about the ACTIONABLE tiers: none reached, none structural, or all spec echoes. */
+const strongTierReasons = (
+  counts: EvidenceQualityCounts,
+  context: EvidenceQualityContext,
+): readonly string[] => {
+  const reasons: string[] = [];
+  if (counts.strongTierCount === 0) {
+    reasons.push(
+      `None of the ${n(counts.shownImpactCount)} impacts shown reached required or likely — everything in this view is speculative.`,
+    );
+  } else if (counts.strongTierStructuralCount === 0) {
+    reasons.push(
+      `None of the ${n(counts.strongTierCount)} required/likely impacts rests on structural evidence — the strongest findings are name or meaning matches.`,
+    );
+  }
+  // Echo awareness (ADR-0017): a strong tier that only repeats the specification's own file list
+  // is structurally sound and epistemically empty — the reader learned nothing they did not write.
+  if (
+    counts.strongTierCount > 0 &&
+    context.strongTierUserSuppliedCount === counts.strongTierCount
+  ) {
+    reasons.push(
+      'the strong-tier findings only confirm components the specification already named — treat the completeness check as confirmation, not discovery.',
+    );
+  }
+  return reasons;
+};
+
 /**
  * Thresholds, and why each is where it is:
  *
@@ -88,21 +125,13 @@ const n = (value: number): string => String(value);
  */
 export const assessEvidenceQuality = (
   shown: readonly ShownImpactFact[],
+  context: EvidenceQualityContext = {},
 ): EvidenceQualityVerdict => {
   const counts = countFacts(shown);
   if (counts.shownImpactCount === 0) {
     return { status: 'evidence-backed', reasons: [], counts };
   }
-  const reasons: string[] = [];
-  if (counts.strongTierCount === 0) {
-    reasons.push(
-      `None of the ${n(counts.shownImpactCount)} impacts shown reached required or likely — everything in this view is speculative.`,
-    );
-  } else if (counts.strongTierStructuralCount === 0) {
-    reasons.push(
-      `None of the ${n(counts.strongTierCount)} required/likely impacts rests on structural evidence — the strongest findings are name or meaning matches.`,
-    );
-  }
+  const reasons: string[] = [...strongTierReasons(counts, context)];
   if (counts.fuzzyAnchorCount * 2 > counts.shownImpactCount) {
     reasons.push(
       `${n(counts.fuzzyAnchorCount)} of ${n(counts.shownImpactCount)} shown impacts were matched by fuzzy name similarity rather than an exact identifier or alias — confirm the component names before acting on them.`,

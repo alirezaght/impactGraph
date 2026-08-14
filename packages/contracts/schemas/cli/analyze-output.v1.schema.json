@@ -743,6 +743,10 @@
             "totalCount": {
               "type": "integer",
               "minimum": 0
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [

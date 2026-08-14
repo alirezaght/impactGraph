@@ -105,3 +105,44 @@ describe('assessEvidenceQuality', () => {
     expect(weak.reasons.length).toBeGreaterThan(0);
   });
 });
+
+describe('assessEvidenceQuality — spec echoes in the strong tiers', () => {
+  it('calls out a strong tier made ENTIRELY of components the specification already named', () => {
+    const verdict = assessEvidenceQuality(
+      [
+        fact('required', 'direct-structural'),
+        fact('likely', 'direct-structural'),
+        fact('possible', 'transitive-structural', { hops: 1 }),
+      ],
+      { strongTierUserSuppliedCount: 2 },
+    );
+    expect(verdict.status).toBe('mixed');
+    expect(verdict.reasons.some((reason) => reason.includes('confirmation, not discovery'))).toBe(
+      true,
+    );
+  });
+
+  it('says nothing when at least one strong-tier finding was independently discovered', () => {
+    const verdict = assessEvidenceQuality(
+      [fact('required', 'direct-structural'), fact('likely', 'direct-structural')],
+      { strongTierUserSuppliedCount: 1 },
+    );
+    expect(verdict.status).toBe('evidence-backed');
+    expect(verdict.reasons).toEqual([]);
+  });
+
+  it('keeps the pre-provenance behaviour when the caller supplies no echo count', () => {
+    const verdict = assessEvidenceQuality([fact('required', 'direct-structural')]);
+    expect(verdict.status).toBe('evidence-backed');
+    expect(verdict.reasons).toEqual([]);
+  });
+
+  it('never fires on an empty strong tier — nothing shown cannot be all echoes', () => {
+    const verdict = assessEvidenceQuality([fact('possible', 'transitive-structural')], {
+      strongTierUserSuppliedCount: 0,
+    });
+    expect(verdict.reasons.some((reason) => reason.includes('confirmation, not discovery'))).toBe(
+      false,
+    );
+  });
+});

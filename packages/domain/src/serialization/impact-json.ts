@@ -25,6 +25,7 @@ import type {
   RequirementImpact,
   UserImpactDecision,
 } from '../impact/impact-analysis.js';
+import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
 import type { ConfidenceSignal } from '../provenance/confidence.js';
 
 export const IMPACT_ANALYSIS_SCHEMA_VERSION = 1;
@@ -65,9 +66,44 @@ const readSignal: Reader<ConfidenceSignal> = (raw, path, issues) => {
   };
 };
 
+/**
+ * The additive impact fields, all absent on analyses stored before their axis existed. Left absent
+ * rather than defaulted so `evidenceTypesOf` / `evidenceProvenanceOf` own the one place that
+ * decides what absence means (weakest reading). Unknown values are rejected by
+ * createImpactAnalysis, not read through.
+ */
+const readAdditiveImpactFields = (
+  obj: RawObject,
+  path: string,
+  issues: ValidationIssue[],
+): Partial<RequirementImpact> => {
+  const cappedBy = readOptionalString(obj, 'tierCappedBy', `${path}.tierCappedBy`, issues);
+  const evidenceProvenance = readOptionalString(
+    obj,
+    'evidenceProvenance',
+    `${path}.evidenceProvenance`,
+    issues,
+  );
+  return {
+    ...(obj['evidenceTypes'] === undefined
+      ? {}
+      : {
+          evidenceTypes: readStringArray(
+            obj,
+            'evidenceTypes',
+            `${path}.evidenceTypes`,
+            issues,
+          ) as readonly ImpactEvidenceType[],
+        }),
+    ...(cappedBy === undefined ? {} : { tierCappedBy: cappedBy as ImpactEvidenceType }),
+    ...(evidenceProvenance === undefined
+      ? {}
+      : { evidenceProvenance: evidenceProvenance as EvidenceProvenance }),
+  };
+};
+
 const readImpact: Reader<RequirementImpact> = (raw, path, issues) => {
   const obj = expectObject(raw, path, issues);
-  const cappedBy = readOptionalString(obj, 'tierCappedBy', `${path}.tierCappedBy`, issues);
   return {
     requirementId: readString(obj, 'requirementId', `${path}.requirementId`, issues),
     nodeId: readString(obj, 'nodeId', `${path}.nodeId`, issues),
@@ -106,19 +142,7 @@ const readImpact: Reader<RequirementImpact> = (raw, path, issues) => {
       `${path}.provenance`,
       issues,
     ) as RequirementImpact['provenance'],
-    // Additive: absent on analyses stored before the evidence-basis taxonomy. Left absent rather
-    // than defaulted here so `evidenceTypesOf` owns the one place that decides what absence means.
-    ...(obj['evidenceTypes'] === undefined
-      ? {}
-      : {
-          evidenceTypes: readStringArray(
-            obj,
-            'evidenceTypes',
-            `${path}.evidenceTypes`,
-            issues,
-          ) as readonly ImpactEvidenceType[],
-        }),
-    ...(cappedBy === undefined ? {} : { tierCappedBy: cappedBy as ImpactEvidenceType }),
+    ...readAdditiveImpactFields(obj, path, issues),
   };
 };
 

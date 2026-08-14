@@ -130,6 +130,39 @@ describe('ImpactAnalysis model (PRD §13, Story 6.5)', () => {
     }
     expect(parseImpactAnalysis({ ...json, status: 'final' }).ok).toBe(false);
   });
+
+  it('round-trips evidence provenance — a persisted echo stays labeled an echo (ADR-0017 §5)', () => {
+    const created = createImpactAnalysis({
+      ...analysis,
+      requirementImpacts: [
+        { ...impact, evidenceProvenance: 'USER_SUPPLIED' },
+        { ...impact, nodeId: 'sym:found', evidenceProvenance: 'INDEPENDENTLY_DISCOVERED' },
+      ],
+    });
+    if (!created.ok) {
+      throw new Error('fixture invalid');
+    }
+    const parsed = parseImpactAnalysis(
+      JSON.parse(JSON.stringify(serializeImpactAnalysis(created.value))),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.requirementImpacts.map((entry) => entry.evidenceProvenance)).toEqual([
+        'USER_SUPPLIED',
+        'INDEPENDENTLY_DISCOVERED',
+      ]);
+    }
+    // an unknown provenance value is rejected at the boundary, never read through
+    const tampered = serializeImpactAnalysis(created.value);
+    const raw = JSON.parse(JSON.stringify(tampered)) as {
+      requirementImpacts: { evidenceProvenance?: string }[];
+    };
+    const first = raw.requirementImpacts[0];
+    if (first !== undefined) {
+      first.evidenceProvenance = 'TRUST_ME';
+    }
+    expect(parseImpactAnalysis(raw).ok).toBe(false);
+  });
 });
 
 describe('confidence engine weights (PRD §14, Story 6.4)', () => {

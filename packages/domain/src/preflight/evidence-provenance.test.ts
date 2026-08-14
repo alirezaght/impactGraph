@@ -54,6 +54,48 @@ describe('evidence provenance', () => {
   });
 });
 
+describe('the completeness statement', () => {
+  it('states discovery, confirmation, and weak counts in one deterministic sentence', () => {
+    const independence = summariseIndependence([
+      'INDEPENDENTLY_DISCOVERED',
+      'INDEPENDENTLY_DISCOVERED',
+      'CONSTRAINT_DERIVED',
+      'STRUCTURALLY_INFERRED',
+      'USER_SUPPLIED',
+      'USER_SUPPLIED',
+      'USER_SUPPLIED',
+      'USER_SUPPLIED',
+      'USER_SUPPLIED',
+      'WEAK_LEXICAL',
+      'WEAK_LEXICAL',
+      'TRANSITIVE',
+    ]);
+    expect(independence.statement).toBe(
+      '4 of 12 impacts were independently discovered; 5 confirm components the specification itself named; 3 rest on weak lexical or transitive matches.',
+    );
+  });
+
+  it('says outright when nothing was discovered — the all-echo case the field exists for', () => {
+    const independence = summariseIndependence(['USER_SUPPLIED', 'USER_SUPPLIED']);
+    expect(independence.statement).toBe(
+      '0 of 2 impacts were independently discovered; 2 confirm components the specification itself named.',
+    );
+  });
+
+  it('reads absent provenance as weak, and says so in the statement', () => {
+    const independence = summariseIndependence([undefined, 'INDEPENDENTLY_DISCOVERED']);
+    expect(independence.statement).toBe(
+      '1 of 2 impacts were independently discovered; 1 rest on weak lexical or transitive matches.',
+    );
+  });
+
+  it('has an honest statement for an empty analysis', () => {
+    expect(summariseIndependence([]).statement).toBe(
+      'No impacts were assessed for evidence independence.',
+    );
+  });
+});
+
 const signals = (overrides: Partial<ClassificationSignals> = {}): ClassificationSignals => ({
   hasInvalidSymbolAssumption: false,
   touchesUnindexedRepository: false,

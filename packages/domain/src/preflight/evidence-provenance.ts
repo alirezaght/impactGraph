@@ -81,21 +81,50 @@ export interface EvidenceIndependence {
   /** Summed independence weight — the figure assessment uses, never a raw count. */
   readonly weightedIndependence: number;
   readonly totalCount: number;
+  /**
+   * The completeness claim, stated honestly: how much of this analysis was discovered versus
+   * handed over. One sentence, deterministic, composed here so every surface says the same thing.
+   */
+  readonly statement: string;
 }
+
+const independenceStatement = (
+  independent: number,
+  confirmation: number,
+  total: number,
+): string => {
+  if (total === 0) {
+    return 'No impacts were assessed for evidence independence.';
+  }
+  const weak = total - independent - confirmation;
+  const clauses = [
+    `${String(independent)} of ${String(total)} impacts were independently discovered`,
+  ];
+  if (confirmation > 0) {
+    clauses.push(`${String(confirmation)} confirm components the specification itself named`);
+  }
+  if (weak > 0) {
+    clauses.push(`${String(weak)} rest on weak lexical or transitive matches`);
+  }
+  return `${clauses.join('; ')}.`;
+};
 
 /** Summarise a set of impact provenances. Pure; the caller supplies the list. */
 export const summariseIndependence = (
   provenances: readonly (EvidenceProvenance | undefined)[],
 ): EvidenceIndependence => {
   const resolved = provenances.map(provenanceOf);
+  const independentCount = resolved.filter(isIndependent).length;
+  const confirmationCount = resolved.filter((provenance) => provenance === 'USER_SUPPLIED').length;
   return {
-    independentCount: resolved.filter(isIndependent).length,
-    confirmationCount: resolved.filter((provenance) => provenance === 'USER_SUPPLIED').length,
+    independentCount,
+    confirmationCount,
     weightedIndependence:
       Math.round(
         resolved.reduce((sum, provenance) => sum + independenceWeight(provenance), 0) * 100,
       ) / 100,
     totalCount: resolved.length,
+    statement: independenceStatement(independentCount, confirmationCount, resolved.length),
   };
 };
 
@@ -103,5 +132,7 @@ export const summariseIndependence = (
  * The label a report shows. Keeping this in the domain stops each surface from inventing its own
  * wording for the distinction the whole mechanism exists to make.
  */
-export const provenanceLabel = (provenance: EvidenceProvenance): string =>
+export type ProvenanceLabel = 'confirmation' | 'discovery';
+
+export const provenanceLabel = (provenance: EvidenceProvenance): ProvenanceLabel =>
   provenance === 'USER_SUPPLIED' ? 'confirmation' : 'discovery';

@@ -67,8 +67,11 @@ const impactBlock = (output: CliImpactSummary): string[] => {
   for (const impact of output.topImpacts) {
     const labels =
       impact.requirementLabels.length > 0 ? ` [${impact.requirementLabels.join(', ')}]` : '';
+    // 'confirmation' = the specification itself named this component; 'discovery' = the engine
+    // found it. The word travels on every line so an echo can never read as a finding (ADR-0017).
+    const provenance = impact.provenanceLabel === undefined ? '' : `, ${impact.provenanceLabel}`;
     lines.push(
-      `- ${impact.likelihood.toUpperCase()} ${impact.name}${labels} — ${impact.evidenceType}, ${String(impact.hops)} hop(s), conf ${impact.confidence.toFixed(2)}${impact.path === undefined ? '' : ` (${impact.path})`}`,
+      `- ${impact.likelihood.toUpperCase()} ${impact.name}${labels} — ${impact.evidenceType}${provenance}, ${String(impact.hops)} hop(s), conf ${impact.confidence.toFixed(2)}${impact.path === undefined ? '' : ` (${impact.path})`}`,
     );
     if (impact.tierCappedBy !== undefined) {
       lines.push(`    tier capped by evidence: ${impact.tierCappedBy}`);
@@ -78,6 +81,9 @@ const impactBlock = (output: CliImpactSummary): string[] => {
     lines.push(
       `  … more available — page with cursor '${output.pagination.nextCursor}' or raise topN`,
     );
+  }
+  if (output.evidenceIndependence?.statement !== undefined) {
+    lines.push(`Evidence independence: ${output.evidenceIndependence.statement}`);
   }
   return [...lines, ''];
 };

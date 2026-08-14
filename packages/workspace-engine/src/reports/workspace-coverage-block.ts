@@ -2,6 +2,7 @@ import { assessCoverageSufficiency, classifyUnmatchedRequirement } from '@impact
 
 import { isDisabledState } from '../repository-reasons.js';
 import { buildRequirementSignals, indexedTypes } from '../requirement-signals.js';
+import { resolveSuppliedIdentifiers } from '../supplied-identifiers.js';
 
 import { conceptResolution, unmatchedRequirements } from './impact-summary-facts.js';
 
@@ -53,6 +54,11 @@ const newSurfaceCount = (
     analysis: input.analysis,
     missingRepositoryCount,
     indexedNodeTypes: input.graph === undefined ? new Set<string>() : indexedTypes(input.graph),
+    // Without a graph nothing can be resolved, so no requirement may be called a wrong assumption.
+    unresolvedSuppliedIdentifiers:
+      input.graph === undefined
+        ? []
+        : resolveSuppliedIdentifiers(input.specification.rawText, input.graph).unresolved,
   };
   return unmatched.filter(
     (requirement) =>

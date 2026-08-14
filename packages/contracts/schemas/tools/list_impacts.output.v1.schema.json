@@ -85,6 +85,22 @@
               "tierCappedBy": {
                 "$ref": "#/definitions/Tool_list_impacts_OutputV1/properties/impacts/items/properties/evidenceType"
               },
+              "evidenceProvenance": {
+                "type": "string",
+                "enum": [
+                  "USER_SUPPLIED",
+                  "INDEPENDENTLY_DISCOVERED",
+                  "STRUCTURALLY_INFERRED",
+                  "CONSTRAINT_DERIVED",
+                  "RUNTIME_DERIVED",
+                  "TRANSITIVE",
+                  "WEAK_LEXICAL"
+                ]
+              },
+              "provenanceLabel": {
+                "type": "string",
+                "enum": ["confirmation", "discovery"]
+              },
               "dependencyPath": {
                 "type": "array",
                 "items": {
