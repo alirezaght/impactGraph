@@ -588,6 +588,10 @@
                   "type": "integer",
                   "minimum": 0
                 },
+                "typeSensitiveComparisons": {
+                  "type": "integer",
+                  "minimum": 0
+                },
                 "expectedChangeSurfaces": {
                   "type": "integer",
                   "minimum": 0
@@ -648,7 +652,8 @@
                   "coverage-gap",
                   "unresolved-architectural-question",
                   "missing-consumer",
-                  "guard-not-updated"
+                  "guard-not-updated",
+                  "type-sensitive-comparison"
                 ]
               },
               "severity": {

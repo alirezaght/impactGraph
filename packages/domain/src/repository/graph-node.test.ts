@@ -136,6 +136,29 @@ describe('createGraphNode (PRD §12, Story 1.1)', () => {
     ).toBe(false);
   });
 
+  // ADR-0020 §3 — a member's declared type is a FACT the adapter already parsed, recorded
+  // verbatim. It is never inferred and never normalized, so `Mapped[uuid.UUID]` stays exactly
+  // that text.
+  it('carries an optional declared type verbatim', () => {
+    const result = createGraphNode({ ...validNode, declaredType: 'Mapped[uuid.UUID]' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.declaredType).toBe('Mapped[uuid.UUID]');
+    }
+  });
+
+  it('omits declaredType entirely when none was stated', () => {
+    const result = createGraphNode(validNode);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect('declaredType' in result.value).toBe(false);
+    }
+  });
+
+  it('rejects a blank declaredType — absence is the honest value, not empty text', () => {
+    expect(createGraphNode({ ...validNode, declaredType: '  ' }).ok).toBe(false);
+  });
+
   it('carries an optional specification reference when provided', () => {
     const result = createGraphNode({
       ...validNode,

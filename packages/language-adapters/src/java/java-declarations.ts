@@ -10,6 +10,7 @@ import { handleScopeOf, importsPubSubClient } from './java-pubsub-resources.js';
 import { collectPubSubBodyFacts, detectionFor } from './java-pubsub.js';
 import { collectConstructorInjections, collectHeritage } from './java-references.js';
 import {
+  declaredFieldTypeText,
   fieldInitialiserScope,
   fieldTypesOf,
   methodScope,
@@ -32,6 +33,8 @@ interface SymbolNodeOptions {
   readonly name: string;
   readonly evidenceId: string;
   readonly containerId: string;
+  /** ADR-0020 §3 — the verbatim declared type, set for fields only. */
+  readonly declaredType?: string;
 }
 
 const addSymbolNode = (state: JavaParseState, options: SymbolNodeOptions): void => {
@@ -44,6 +47,7 @@ const addSymbolNode = (state: JavaParseState, options: SymbolNodeOptions): void 
       type: options.type,
       name: options.name,
       path: filePath,
+      ...(options.declaredType === undefined ? {} : { declaredType: options.declaredType }),
       knowledge,
     },
     filePath,
@@ -130,6 +134,9 @@ const collectFieldInitialiserFacts = (
 /** `private final DealService dealService;` — one field node per declarator. */
 const addField = (state: JavaParseState, declaration: Node, owner: Owner): void => {
   recordFieldTypes(state, declaration, owner.nodeId);
+  // One declaration can bind several names (`private String a, b;`) — each carries the same
+  // declared type, recorded verbatim (ADR-0020 §3) where it was previously parsed and discarded.
+  const declaredType = declaredFieldTypeText(declaration);
   for (const declarator of namedChildrenOf(declaration)) {
     if (declarator.type !== 'variable_declarator') {
       continue;
@@ -148,6 +155,7 @@ const addField = (state: JavaParseState, declaration: Node, owner: Owner): void 
       name: `${owner.typeName}.${name}`,
       evidenceId,
       containerId: owner.nodeId,
+      ...(declaredType === undefined ? {} : { declaredType }),
     });
     // Field annotations are facts like any other (`@Autowired`, `@Column`, `@Value`); what they
     // mean is a framework adapter's reading, and without them field injection is invisible.

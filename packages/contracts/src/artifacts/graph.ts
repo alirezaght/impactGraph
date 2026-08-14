@@ -79,6 +79,12 @@ export const graphNodeArtifactSchema = z
     schemaVersion: z.literal(3),
     ...nodeFields,
     route: routeContractSchema.optional(),
+    /**
+     * ADR-0020 §3 — the member's declared type, verbatim. Additive rather than a version bump:
+     * a reader that ignores it makes no wrong claim (absent means "not stated", and no rule may
+     * read anything out of absence), unlike `route`, where ignoring the field changed a claim.
+     */
+    declaredType: z.string().min(1).optional(),
     knowledge: knowledgeEnvelopeSchema,
   })
   .strict();

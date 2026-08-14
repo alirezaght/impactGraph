@@ -90,6 +90,30 @@ describe('JSON serialization round-trips (Story 1.1 AC)', () => {
     }
   });
 
+  // ADR-0020 §3 — declaredType is additive on the same schema version: a node without it stays
+  // byte-identical, a node with it round-trips the verbatim text.
+  it('round-trips a node with a declared type, and omits the field when absent', () => {
+    const typed = mustCreate<GraphNode>(
+      createGraphNode({
+        id: 'field-listing-id',
+        category: 'data',
+        type: 'field',
+        name: 'Listing.id',
+        path: 'app/models.py',
+        declaredType: 'Mapped[uuid.UUID]',
+        knowledge: envelope,
+      }),
+    );
+    const serialized = serializeGraphNode(typed);
+    expect(serialized.declaredType).toBe('Mapped[uuid.UUID]');
+    const parsed = parseGraphNode(roundTrip(serialized));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value).toEqual(typed);
+    }
+    expect('declaredType' in serializeGraphNode(node())).toBe(false);
+  });
+
   it('round-trips a graph edge exactly', () => {
     const original = edge();
     const parsed = parseGraphEdge(roundTrip(serializeGraphEdge(original)));

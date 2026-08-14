@@ -58,7 +58,7 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
   // The adversarial pass runs here, unconditionally. Making it a separate tool would recreate the
   // failure this whole change exists to fix: the questions were always answerable, and nobody knew
   // to ask them (ADR-0017).
-  const preflight = runCoveragePreflight(
+  const preflight = await runCoveragePreflight(
     {
       rootDir,
       specification: spec.value,

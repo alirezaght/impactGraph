@@ -233,7 +233,13 @@ const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
   // container, each container a RECEIVES_ENV edge per declared env binding, and `locals` entries
   // gain RESOLVES_TO/ROUTES_TO edges along the address they carry. All additive; nothing moved.
   // (`CALLS_ENDPOINT`), so the cross-service HTTP flow that was invisible becomes an edge.
-  unchanged: 623,
+  //
+  // 623 → 632: ADR-0020 §3 — Python class-attribute fields, all in `fastapi-app`:
+  // * 5 DECLARES_MEMBER edges: Deal → {id, name, visibility} (models.py, pre-existing Pydantic
+  //   shape) and Listing → {id, title} (listings.py, the new SQLAlchemy model).
+  // * 3 CONTAINS edges for the two new fixture files' symbols (Base, Listing,
+  //   load_listings_by_ids) and 1 EXTENDS edge Listing → Base.
+  unchanged: 632,
 };
 
 /** Expected NODE movement, summed over all fixtures. Steady state is everything unchanged. */
@@ -242,7 +248,13 @@ const EXPECTED_NODE_MOVEMENT: Readonly<Record<string, number>> = {
   // entries and `service-url` entry points that make a deployment chain walkable. All additive.
   // 352 → 424 for the asset adapter and the notification-chain fixture; 424 → 479 for the `field`
   // nodes of item 7 and the `nullable-boundary` fixture.
-  unchanged: 485,
+  //
+  // 485 → 495: ADR-0020 §3 — Python fields, all in `fastapi-app`: 3 `field` nodes on the
+  // pre-existing Pydantic Deal (id, name, visibility) and, from the two new fixture files
+  // (listings.py, queries.py), 2 file nodes, the Listing class, its 2 `field` nodes
+  // (Listing.id — declared UUID — and Listing.title), the Base symbol, and the
+  // load_listings_by_ids function that carries the analogous `= ANY(` SQL literal.
+  unchanged: 495,
 };
 
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {

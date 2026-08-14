@@ -43,6 +43,8 @@ export interface GraphNodeJson {
   readonly name: string;
   readonly path?: string;
   readonly route?: RouteContractJson;
+  /** ADR-0020 §3 — verbatim declared-type text. Additive: absent means "not stated". */
+  readonly declaredType?: string;
   readonly knowledge: KnowledgeEnvelopeJson;
 }
 
@@ -65,7 +67,10 @@ export const serializeGraphNode = (node: GraphNode): GraphNodeJson => {
     knowledge: serializeKnowledgeEnvelope(node.knowledge),
   };
   const withPath = node.path === undefined ? base : { ...base, path: node.path };
-  return node.route === undefined ? withPath : { ...withPath, route: node.route };
+  const withRoute = node.route === undefined ? withPath : { ...withPath, route: node.route };
+  return node.declaredType === undefined
+    ? withRoute
+    : { ...withRoute, declaredType: node.declaredType };
 };
 
 export const serializeGraphEdge = (edge: GraphEdge): GraphEdgeJson => ({
@@ -134,6 +139,7 @@ export const parseGraphNode = (value: unknown): Result<GraphNode, ValidationErro
   const issues: ValidationIssue[] = [];
   checkSchemaVersion(value, GRAPH_NODE_SCHEMA_VERSION, issues);
   const path = readOptionalString(value, 'path', 'path', issues);
+  const declaredType = readOptionalString(value, 'declaredType', 'declaredType', issues);
   const base = {
     id: readString(value, 'id', 'id', issues),
     category: readString(value, 'category', 'category', issues),
@@ -156,6 +162,7 @@ export const parseGraphNode = (value: unknown): Result<GraphNode, ValidationErro
     ...base,
     ...(path === undefined ? {} : { path }),
     ...(route === undefined ? {} : { route }),
+    ...(declaredType === undefined ? {} : { declaredType }),
   });
 };
 

@@ -30,6 +30,8 @@ export const PREFLIGHT_FINDING_KIND_VALUES = [
   'unresolved-architectural-question',
   'missing-consumer',
   'guard-not-updated',
+  /** ADR-0020 §4 — SQL comparing a type-sensitive column against bound parameters. Never blocking. */
+  'type-sensitive-comparison',
 ] as const;
 
 export const UNMATCHED_CLASS_VALUES = [
@@ -94,6 +96,8 @@ export const planAssessmentSchema = z
         unresolvedArchitecturalQuestions: z.number().int().min(0),
         constraintWarnings: z.number().int().min(0),
         missingConsumers: z.number().int().min(0),
+        /** ADR-0020 §4 — additive: absent on assessments produced before the analyzer existed. */
+        typeSensitiveComparisons: z.number().int().min(0).optional(),
         expectedChangeSurfaces: z.number().int().min(0),
       })
       .strict(),

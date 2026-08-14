@@ -554,7 +554,8 @@
                       "coverage-gap",
                       "unresolved-architectural-question",
                       "missing-consumer",
-                      "guard-not-updated"
+                      "guard-not-updated",
+                      "type-sensitive-comparison"
                     ]
                   },
                   "severity": {

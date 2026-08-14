@@ -96,8 +96,12 @@ const literalSources = (facts: FragmentFacts): LiteralSource[] => {
 const scopeStatement = (snapshotId: string, facts: FragmentFacts): string =>
   `string literals passed as call or decorator arguments at the indexed revision (snapshot ${snapshotId}; facts cached for ${String(facts.filesSearched - facts.filesWithoutCachedFacts)} of ${String(facts.filesSearched)} indexed files) — NOT a full-text search of file contents; a literal outside a call or decorator argument was not searched`;
 
-/** All matching literals, sorted deterministically, truncated visibly — before any limit. */
-const collectMatches = (
+/**
+ * All matching literals, sorted deterministically, truncated visibly — before any limit.
+ * Exported for the preflight's analogous-SQL lookup (analogous-sql.ts), which searches the same
+ * corpus under the same rules and must never invent a second literal scan.
+ */
+export const collectLiteralMatches = (
   facts: FragmentFacts,
   matches: (value: string) => boolean,
 ): LiteralMatch[] => {
@@ -159,7 +163,7 @@ export const searchLiteralsInStore = async (
     return facts;
   }
   const limit = request.limit ?? DEFAULT_LIMIT;
-  const all = collectMatches(facts.value, matcher.value);
+  const all = collectLiteralMatches(facts.value, matcher.value);
   return {
     ok: true,
     value: {

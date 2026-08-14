@@ -160,6 +160,10 @@
           },
           "required": ["path", "pathParameters", "queryParameters"],
           "additionalProperties": false
+        },
+        "declaredType": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": ["schemaVersion", "id", "category", "type", "name", "knowledge"],

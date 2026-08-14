@@ -79,6 +79,9 @@ export const collectDeclaredFields = (
       continue;
     }
     const nodeId = fieldNodeId(state.filePath, owner, name);
+    // ADR-0020 §3 — the declared type is a fact the parse already holds: recorded verbatim
+    // (trimmed), never inferred, and absent when the declaration states none.
+    const declaredType = member.type?.getText(state.source).trim();
     state.builder.addNode(
       {
         id: nodeId,
@@ -86,6 +89,7 @@ export const collectDeclaredFields = (
         type: 'field',
         name: isOptionalOrNullable(member) ? `${owner}.${name}?` : `${owner}.${name}`,
         path: state.filePath,
+        ...(declaredType === undefined || declaredType.length === 0 ? {} : { declaredType }),
         knowledge: deterministicEnvelope(state.context, [evidenceId]),
       },
       state.filePath,

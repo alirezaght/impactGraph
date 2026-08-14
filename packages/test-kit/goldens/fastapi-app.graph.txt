@@ -3,8 +3,10 @@ fastapi:app:app/main.py#app|application|application|app|framework-convention|-
 fastapi:router:app/routers/deals.py#router|module|application|router|framework-convention|-
 fastapi:router:app/routers/health.py#router|module|application|router|framework-convention|-
 file:app/clients.py|file|repository|clients.py|static-analysis|-
+file:app/listings.py|file|repository|listings.py|static-analysis|-
 file:app/main.py|file|repository|main.py|static-analysis|-
 file:app/models.py|file|repository|models.py|static-analysis|-
+file:app/queries.py|file|repository|queries.py|static-analysis|-
 file:app/routers/deals.py|file|repository|deals.py|static-analysis|-
 file:app/routers/health.py|file|repository|health.py|static-analysis|-
 file:pyproject.toml|file|repository|pyproject.toml|static-analysis|-
@@ -19,10 +21,18 @@ schema:symbol:app/models.py#Deal|schema|data|Deal|framework-convention|-
 symbol:app/clients.py#load_absolute|function|application|load_absolute|static-analysis|-
 symbol:app/clients.py#load_registry_deals|function|application|load_registry_deals|static-analysis|-
 symbol:app/clients.py#registry|symbol|repository|registry|static-analysis|-
+symbol:app/listings.py#Base|symbol|repository|Base|static-analysis|-
+symbol:app/listings.py#Listing.id|field|data|Listing.id|static-analysis|-
+symbol:app/listings.py#Listing.title|field|data|Listing.title|static-analysis|-
+symbol:app/listings.py#Listing|class|application|Listing|static-analysis|-
 symbol:app/main.py#app|symbol|repository|app|static-analysis|-
 symbol:app/main.py#notify_watchers|function|application|notify_watchers|static-analysis|-
 symbol:app/main.py#publish_deal|function|application|publish_deal|static-analysis|-
+symbol:app/models.py#Deal.id|field|data|Deal.id|static-analysis|-
+symbol:app/models.py#Deal.name|field|data|Deal.name|static-analysis|-
+symbol:app/models.py#Deal.visibility|field|data|Deal.visibility|static-analysis|-
 symbol:app/models.py#Deal|class|application|Deal|static-analysis|-
+symbol:app/queries.py#load_listings_by_ids|function|application|load_listings_by_ids|static-analysis|-
 symbol:app/routers/deals.py#create_deal|function|application|create_deal|static-analysis|-
 symbol:app/routers/deals.py#get_deal|function|application|get_deal|static-analysis|-
 symbol:app/routers/deals.py#list_deals|function|application|list_deals|static-analysis|-
@@ -42,10 +52,13 @@ CONTAINS|fastapi:app:app/main.py#app->fastapi:router:app/routers/health.py#route
 CONTAINS|file:app/clients.py->symbol:app/clients.py#load_absolute|static-analysis|ev1
 CONTAINS|file:app/clients.py->symbol:app/clients.py#load_registry_deals|static-analysis|ev1
 CONTAINS|file:app/clients.py->symbol:app/clients.py#registry|static-analysis|ev1
+CONTAINS|file:app/listings.py->symbol:app/listings.py#Base|static-analysis|ev1
+CONTAINS|file:app/listings.py->symbol:app/listings.py#Listing|static-analysis|ev1
 CONTAINS|file:app/main.py->symbol:app/main.py#app|static-analysis|ev1
 CONTAINS|file:app/main.py->symbol:app/main.py#notify_watchers|static-analysis|ev1
 CONTAINS|file:app/main.py->symbol:app/main.py#publish_deal|static-analysis|ev1
 CONTAINS|file:app/models.py->symbol:app/models.py#Deal|static-analysis|ev1
+CONTAINS|file:app/queries.py->symbol:app/queries.py#load_listings_by_ids|static-analysis|ev1
 CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#create_deal|static-analysis|ev1
 CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#get_deal|static-analysis|ev1
 CONTAINS|file:app/routers/deals.py->symbol:app/routers/deals.py#list_deals|static-analysis|ev1
@@ -55,6 +68,11 @@ CONTAINS|file:app/routers/health.py->symbol:app/routers/health.py#router|static-
 CONTAINS|file:tests/test_deals.py->symbol:tests/test_deals.py#client|static-analysis|ev1
 CONTAINS|file:tests/test_deals.py->symbol:tests/test_deals.py#test_list_deals|static-analysis|ev1
 CONTAINS|symbol:app/models.py#Deal->schema:symbol:app/models.py#Deal|framework-convention|ev1
+DECLARES_MEMBER|symbol:app/listings.py#Listing->symbol:app/listings.py#Listing.id|static-analysis|ev1
+DECLARES_MEMBER|symbol:app/listings.py#Listing->symbol:app/listings.py#Listing.title|static-analysis|ev1
+DECLARES_MEMBER|symbol:app/models.py#Deal->symbol:app/models.py#Deal.id|static-analysis|ev1
+DECLARES_MEMBER|symbol:app/models.py#Deal->symbol:app/models.py#Deal.name|static-analysis|ev1
+DECLARES_MEMBER|symbol:app/models.py#Deal->symbol:app/models.py#Deal.visibility|static-analysis|ev1
 EXPOSES|fastapi:app:app/main.py#app->route:POST /deals/{deal_id}/publish|framework-convention|ev1
 EXPOSES|fastapi:router:app/routers/deals.py#router->route:GET /deals/{deal_id}|framework-convention|ev1
 EXPOSES|fastapi:router:app/routers/deals.py#router->route:GET /deals|framework-convention|ev1
@@ -65,6 +83,7 @@ EXPOSES|symbol:app/routers/deals.py#create_deal->route:POST /deals|framework-con
 EXPOSES|symbol:app/routers/deals.py#get_deal->route:GET /deals/{deal_id}|framework-convention|ev1
 EXPOSES|symbol:app/routers/deals.py#list_deals->route:GET /deals|framework-convention|ev1
 EXPOSES|symbol:app/routers/health.py#health->route:GET /health|framework-convention|ev1
+EXTENDS|symbol:app/listings.py#Listing->symbol:app/listings.py#Base|static-analysis|ev1
 IMPORTS|file:app/main.py->file:app/models.py|static-analysis|ev1
 IMPORTS|file:app/main.py->file:app/routers/deals.py|static-analysis|ev1
 IMPORTS|file:app/main.py->file:app/routers/health.py|static-analysis|ev1

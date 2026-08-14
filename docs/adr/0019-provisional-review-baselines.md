@@ -32,7 +32,7 @@ Review baselines carry an explicit **authority axis**: `approved-contract` or
    refuses when none exists. The refusal now names the newest live draft and the flag that would
    compare against it, so the capability is discoverable exactly where it is wanted.
 2. Comparing against a draft requires an explicit acknowledgement (`allowUnapprovedBaseline:
-   true`, mirroring the `confirmedByUser` idiom) — an agent can never wander into a draft
+true`, mirroring the `confirmedByUser` idiom) — an agent can never wander into a draft
    comparison silently. Superseded analyses are never accepted; a retired record is not a
    prediction.
 3. A provisional review must say so everywhere a reader could form a conclusion: the report

@@ -73,8 +73,8 @@ instrument code that never runs. Both wait for a producer that can actually fail
 
 `find_references` (ADR-0020) answers "who calls this symbol" from two channels: resolved `CALLS`
 edges (bare-identifier calls the assembler could resolve) and name-matched call sites from the
-fragment cache (`receiver.method(...)` facts). The second channel is a deterministic fact that *a
-call with this member name occurs at this location* — the receiver's type is not resolved, so a
+fragment cache (`receiver.method(...)` facts). The second channel is a deterministic fact that _a
+call with this member name occurs at this location_ — the receiver's type is not resolved, so a
 same-named member on an unrelated class matches too. Every answer labels the channel and states
 this limit; a consumer must never present a name match as a resolved edge. TypeScript records
 member calls only when a string-literal argument is present, and non-exported module-scope arrow

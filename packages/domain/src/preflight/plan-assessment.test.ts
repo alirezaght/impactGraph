@@ -89,6 +89,30 @@ describe('assessPlan', () => {
     expect(assessment.decidingFindingIds).toEqual(['finding-2']);
   });
 
+  // ADR-0020 §4 — a type-sensitive comparison is a warning with its own countable slot: it
+  // surfaces a risk with evidence, it never blocks (the ADR-0018 asymmetry).
+  it('counts a type-sensitive comparison and downgrades READY to READY_WITH_WARNINGS', () => {
+    const comparison = finding({
+      id: 'finding-4',
+      kind: 'type-sensitive-comparison',
+      severity: 'warning',
+      statement: 'The plan compares Listing.id (declared UUID) against string-bound parameters.',
+    });
+    const assessment = assessPlan(input({ findings: [comparison] }));
+    expect(assessment.feasibility).toBe('READY_WITH_WARNINGS');
+    expect(assessment.counts.typeSensitiveComparisons).toBe(1);
+    expect(assessment.decidingFindingIds).toEqual(['finding-4']);
+  });
+
+  it('refuses to let a type-sensitive comparison be blocking — it is never a verdict', () => {
+    const result = createPreflightFinding({
+      ...finding(),
+      kind: 'type-sensitive-comparison',
+      severity: 'blocking',
+    });
+    expect(result.ok).toBe(false);
+  });
+
   it('does not treat new surface as a warning', () => {
     const surface = finding({
       id: 'finding-3',

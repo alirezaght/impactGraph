@@ -23,9 +23,10 @@ interface NodeSpec {
   readonly type: string;
   readonly name: string;
   readonly path?: string;
+  readonly declaredType?: string;
 }
 
-const node = ({ id, category, type, name, path }: NodeSpec): GraphNode => {
+const node = ({ id, category, type, name, path, declaredType }: NodeSpec): GraphNode => {
   const result = createGraphNode({
     id,
     category,
@@ -33,6 +34,7 @@ const node = ({ id, category, type, name, path }: NodeSpec): GraphNode => {
     name,
     knowledge,
     ...(path === undefined ? {} : { path }),
+    ...(declaredType === undefined ? {} : { declaredType }),
   });
   if (!result.ok) {
     throw new Error(`node ${id}: ${JSON.stringify(result.error.issues)}`);
@@ -42,6 +44,21 @@ const node = ({ id, category, type, name, path }: NodeSpec): GraphNode => {
 
 const graph = (): KnowledgeGraph => {
   const nodes = [
+    node({
+      id: 'sym:Listing',
+      category: 'application',
+      type: 'class',
+      name: 'Listing',
+      path: 'app/listings.py',
+    }),
+    node({
+      id: 'sym:Listing.id',
+      category: 'data',
+      type: 'field',
+      name: 'Listing.id',
+      path: 'app/listings.py',
+      declaredType: 'UUID',
+    }),
     node({
       id: 'file:services/newsletter-service/api/routes.py',
       category: 'repository',
@@ -77,20 +94,16 @@ const graph = (): KnowledgeGraph => {
       path: 'apps/web/locales/de.json',
     }),
   ];
+  const edge = (id: string, sourceId: string, targetId: string) => {
+    const result = createGraphEdge({ id, type: 'DECLARES_MEMBER', sourceId, targetId, knowledge });
+    if (!result.ok) {
+      throw new Error('edge');
+    }
+    return result.value;
+  };
   const edges = [
-    (() => {
-      const result = createGraphEdge({
-        id: 'e-member',
-        type: 'DECLARES_MEMBER',
-        sourceId: 'sym:ItemType',
-        targetId: 'sym:ItemType.GESUCH',
-        knowledge,
-      });
-      if (!result.ok) {
-        throw new Error('edge');
-      }
-      return result.value;
-    })(),
+    edge('e-member', 'sym:ItemType', 'sym:ItemType.GESUCH'),
+    edge('e-field', 'sym:Listing', 'sym:Listing.id'),
   ];
   const result = createKnowledgeGraph(nodes, edges);
   if (!result.ok) {
@@ -217,6 +230,37 @@ describe('runPreflight — every check runs without being asked for', () => {
     expect(
       result.classifications.find((entry) => entry.requirementId === 'R4')?.classification,
     ).toBe('INVALID_ASSUMPTION');
+  });
+
+  // ADR-0020 §4 — the type-comparison check reads the RAW specification text, so fenced SQL that
+  // requirement extraction dropped still gets compared against the indexed column types.
+  it('warns about a type-sensitive SQL comparison found in the raw specification text', () => {
+    const result = runPreflight(
+      input({
+        specificationText: [
+          'Load the affected rows:',
+          '```sql',
+          'SELECT * FROM listings WHERE listing.id = ANY(:listing_ids)',
+          '```',
+        ].join('\n'),
+        analogousLiterals: [{ pattern: '= ANY(', filePath: 'app/queries.py', line: 10 }],
+      }),
+    );
+    const comparison = result.findings.find(
+      (finding) => finding.kind === 'type-sensitive-comparison',
+    );
+    expect(comparison?.severity).toBe('warning');
+    expect(comparison?.statement).toContain("'UUID'");
+    expect(comparison?.recommendation).toContain('app/queries.py:10');
+    expect(result.assessment.counts.typeSensitiveComparisons).toBe(1);
+  });
+
+  it('stays silent about SQL when no specification text was supplied', () => {
+    const result = runPreflight(input());
+    expect(result.findings.some((finding) => finding.kind === 'type-sensitive-comparison')).toBe(
+      false,
+    );
+    expect(result.assessment.counts.typeSensitiveComparisons).toBe(0);
   });
 
   it('orders findings so the deciding ones come first', () => {

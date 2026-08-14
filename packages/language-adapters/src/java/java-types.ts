@@ -95,6 +95,17 @@ const declaredTypeName = (declaration: Node): string | undefined => {
   return name === INFERRED_TYPE ? undefined : name;
 };
 
+/**
+ * The declared type of a field declaration as the source states it — `UUID`, `List<Deal>` —
+ * trimmed and otherwise verbatim (ADR-0020 §3). Unlike `declaredTypeName`, which reduces the
+ * type to a resolvable simple name for receiver binding, this keeps generics: it is a recorded
+ * fact, not a lookup key. `var` is excluded for the same reason as above — it names no type.
+ */
+export const declaredFieldTypeText = (declaration: Node): string | undefined => {
+  const text = fieldNode(declaration, 'type')?.text.trim();
+  return text === undefined || text.length === 0 || text === INFERRED_TYPE ? undefined : text;
+};
+
 /** `private final DealService a, b;` binds two names to one type. */
 const declaratorNames = (declaration: Node): readonly string[] =>
   namedChildrenOf(declaration)

@@ -6,7 +6,7 @@ import { unmatchedRequirements } from './reports/impact-summary-facts.js';
 import { buildRequirementSignals, indexedTypes } from './requirement-signals.js';
 import { resolveSuppliedIdentifiers } from './supplied-identifiers.js';
 
-import type { PreflightRequirement } from '@impactgraph/application';
+import type { AnalogousLiteralMatch, PreflightRequirement } from '@impactgraph/application';
 import type {
   EvidenceIndependence,
   ImpactAnalysis,
@@ -42,6 +42,12 @@ export interface PreflightContext {
   readonly missingRepositoryNames: readonly string[];
   /** A caller-supplied readiness score. When absent, computed here unless it must be withheld. */
   readonly score?: number | undefined;
+  /**
+   * Correctly-handled SQL literals from the fragment cache (ADR-0020 §4), computed by
+   * `analogousSqlLiterals` in the coverage-preflight path. Advisory only: absence degrades a
+   * recommendation's pointer, never a finding.
+   */
+  readonly analogousLiterals?: readonly AnalogousLiteralMatch[];
 }
 
 export interface PreflightOutcome {
@@ -153,6 +159,12 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
   const result = runPreflight({
     requirements,
     graph: context.graph,
+    // The RAW text, because the SQL that motivated ADR-0020 §4 lives in fenced blocks the
+    // requirement extractor drops.
+    specificationText: context.specificationText,
+    ...(context.analogousLiterals === undefined
+      ? {}
+      : { analogousLiterals: context.analogousLiterals }),
     constraints: loaded.constraints,
     configRequirements: [],
     configDeclarations: [],

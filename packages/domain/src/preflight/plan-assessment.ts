@@ -31,6 +31,11 @@ export interface PlanAssessmentCounts {
   readonly unresolvedArchitecturalQuestions: number;
   readonly constraintWarnings: number;
   readonly missingConsumers: number;
+  /**
+   * ADR-0020 §4 — SQL in the plan comparing a type-sensitive column against bound parameters.
+   * Optional because the slot is additive: older assessments simply never counted it.
+   */
+  readonly typeSensitiveComparisons?: number;
   readonly expectedChangeSurfaces: number;
 }
 
@@ -87,6 +92,7 @@ const buildCounts = (input: AssessmentInput): PlanAssessmentCounts => ({
   unresolvedArchitecturalQuestions: countOf(input.findings, 'unresolved-architectural-question'),
   constraintWarnings: countOf(input.findings, 'constraint-warning'),
   missingConsumers: countOf(input.findings, 'missing-consumer'),
+  typeSensitiveComparisons: countOf(input.findings, 'type-sensitive-comparison'),
   expectedChangeSurfaces: input.expectedChangeSurfaces,
 });
 
@@ -135,6 +141,7 @@ const decide = (
     counts.invalidAssumptions +
     counts.configSemanticsRisks +
     counts.missingConsumers +
+    (counts.typeSensitiveComparisons ?? 0) +
     counts.coverageGaps;
   if (warnings > 0) {
     return {

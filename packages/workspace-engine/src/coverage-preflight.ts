@@ -1,3 +1,4 @@
+import { analogousSqlLiterals } from './analogous-sql.js';
 import { runPreflightForAnalysis } from './preflight.js';
 import {
   buildWorkspaceCoverage,
@@ -22,21 +23,30 @@ import type { WorkspaceRepositoryContext } from './repository-coverage.js';
 
 export type CoveragePreflightContext = Omit<
   PreflightContext,
-  'coverageInsufficient' | 'missingRepositoryNames'
+  'coverageInsufficient' | 'missingRepositoryNames' | 'analogousLiterals'
 >;
 
-export const runCoveragePreflight = (
+export const runCoveragePreflight = async (
   context: CoveragePreflightContext,
   workspace: WorkspaceRepositoryContext,
-): PreflightOutcome => {
+): Promise<PreflightOutcome> => {
   const coverage = buildWorkspaceCoverage({
     specification: context.specification,
     analysis: context.analysis,
     context: workspace,
     graph: context.graph,
   });
+  // ADR-0020 §4 — computed HERE, once, because the type-comparison analyzer lives in
+  // packages/application, which must not reach into the fragment cache. Loaded only when the
+  // specification's text actually contains SQL comparisons (analogousSqlLiterals short-circuits).
+  const analogousLiterals = await analogousSqlLiterals(
+    context.rootDir,
+    context.snapshotId,
+    context.specificationText,
+  );
   return runPreflightForAnalysis({
     ...context,
+    analogousLiterals,
     coverageInsufficient: coverage.status === 'insufficient-coverage',
     missingRepositoryNames: unindexedRegisteredRepositories(workspace).map((state) => state.name),
   });

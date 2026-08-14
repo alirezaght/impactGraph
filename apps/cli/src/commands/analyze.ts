@@ -115,7 +115,7 @@ const render = async (
   // CLI summary carries planAssessment, preflight findings, and evidence provenance too. Skipped
   // only when no workspace roster could be read — absence then means "did not run", never "clean".
   const preflight = workspace.ok
-    ? runCoveragePreflight(
+    ? await runCoveragePreflight(
         {
           rootDir: context.rootDir,
           specification: submitted.specification,

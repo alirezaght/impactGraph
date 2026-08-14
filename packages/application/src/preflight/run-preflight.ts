@@ -9,10 +9,12 @@ import { checkAssumptions } from './check-assumptions.js';
 import { checkConfigSemantics } from './check-config-semantics.js';
 import { checkConstraints } from './check-constraints.js';
 import { checkRuntime } from './check-runtime.js';
+import { checkTypeComparisons } from './check-type-comparisons.js';
 import { classifyRequirements } from './classify-requirements.js';
 import { deriveProposedEdges } from './proposed-edges.js';
 
 import type { ConfigDeclaration } from './check-config-semantics.js';
+import type { AnalogousLiteralMatch } from './check-type-comparisons.js';
 import type { RequirementSignalInput } from './classify-requirements.js';
 import type { ResolvedConcept } from './proposed-edges.js';
 import type {
@@ -50,6 +52,17 @@ export interface PreflightRequirement {
 export interface RunPreflightInput {
   readonly requirements: readonly PreflightRequirement[];
   readonly graph: KnowledgeGraph;
+  /**
+   * The raw specification text, for the checks that read shapes requirement extraction drops —
+   * fenced SQL above all (ADR-0020 §4). Absent means those checks stay silent, never guessed.
+   */
+  readonly specificationText?: string;
+  /**
+   * Correctly-handled SQL literals found elsewhere in the repository, computed by the CALLER
+   * (workspace-engine owns the fragment cache; application must not reach into it). Purely
+   * advisory: they enrich a type-comparison recommendation and can never create a finding.
+   */
+  readonly analogousLiterals?: readonly AnalogousLiteralMatch[];
   readonly constraints: readonly RepositoryConstraint[];
   /** Configuration the plan requires along the request path. */
   readonly configRequirements: readonly ConfigRequirement[];
@@ -114,6 +127,23 @@ const designFindings = (input: RunPreflightInput): readonly PreflightFinding[] =
         requirementId: requirement.label ?? requirement.id,
         statement: requirement.statement,
         graph: input.graph,
+        nextId: input.nextId,
+      }),
+    );
+  }
+  // ADR-0020 §4 — reads the RAW text, not per-requirement statements, because the SQL that
+  // motivated it lives in fenced blocks the requirement extractor does not carry.
+  if (input.specificationText !== undefined) {
+    findings.push(
+      ...checkTypeComparisons({
+        specificationText: input.specificationText,
+        graph: input.graph,
+        requirementIds: input.requirements.map(
+          (requirement) => requirement.label ?? requirement.id,
+        ),
+        ...(input.analogousLiterals === undefined
+          ? {}
+          : { analogousLiterals: input.analogousLiterals }),
         nextId: input.nextId,
       }),
     );

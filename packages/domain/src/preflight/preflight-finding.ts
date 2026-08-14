@@ -36,6 +36,12 @@ export const PREFLIGHT_FINDING_KINDS = [
   'missing-consumer',
   /** A guard governing the changed area was not itself updated. */
   'guard-not-updated',
+  /**
+   * The plan's SQL compares a column whose indexed declared type is type-sensitive
+   * (uuid/date/numeric/boolean) against bound parameters (ADR-0020 §4). A risk worth a look,
+   * never a proven violation — the ADR-0018 asymmetry — so it can never be blocking.
+   */
+  'type-sensitive-comparison',
 ] as const;
 
 export type PreflightFindingKind = (typeof PREFLIGHT_FINDING_KINDS)[number];

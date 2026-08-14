@@ -91,7 +91,7 @@ describe('evidence provenance is persisted and reported (ADR-0017 §5)', () => {
       throw new Error(context.error.message);
     }
     workspace = context.value;
-    preflight = runCoveragePreflight(
+    preflight = await runCoveragePreflight(
       {
         rootDir: repoDir,
         specification,

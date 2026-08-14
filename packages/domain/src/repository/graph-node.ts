@@ -62,6 +62,13 @@ export interface GraphNode {
   readonly path?: string;
   /** Present on route nodes (`api-endpoint`, page routes). Absent on everything else. */
   readonly route?: RouteContract;
+  /**
+   * The declared type of a member, exactly as the source states it (ADR-0020 §3):
+   * `Mapped[uuid.UUID]`, `UUID`, `string | null`. A fact with a source location, not a type
+   * system — never inferred, never normalized beyond the producer's trimming, and absent
+   * whenever the declaration states none.
+   */
+  readonly declaredType?: string;
   readonly knowledge: KnowledgeEnvelope;
 }
 
@@ -76,6 +83,7 @@ export interface CreateGraphNodeInput {
   readonly name: string;
   readonly path?: string;
   readonly route?: RouteContract;
+  readonly declaredType?: string;
   readonly knowledge: KnowledgeEnvelopeInput;
 }
 
@@ -150,6 +158,15 @@ const nodeFieldIssues = (input: CreateGraphNodeInput): ValidationIssue[] => {
   if (input.path !== undefined && input.path.trim().length === 0) {
     issues.push(validationIssue('blank-field', 'path', 'path, when present, must not be blank'));
   }
+  if (input.declaredType !== undefined && input.declaredType.trim().length === 0) {
+    issues.push(
+      validationIssue(
+        'blank-field',
+        'declaredType',
+        'declaredType, when present, must not be blank — absence is the honest value',
+      ),
+    );
+  }
   return issues;
 };
 
@@ -175,6 +192,7 @@ export const createGraphNode = (
       ...base,
       ...(input.path === undefined ? {} : { path: input.path }),
       ...(input.route === undefined ? {} : { route: copyRoute(input.route) }),
+      ...(input.declaredType === undefined ? {} : { declaredType: input.declaredType }),
     }),
   );
 };

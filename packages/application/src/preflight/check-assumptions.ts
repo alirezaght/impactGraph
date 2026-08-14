@@ -38,8 +38,43 @@ const MEMBER_TYPES = new Set([
   'method',
 ]);
 
-/** `ItemType.ANGEBOT`, `Settings.SENDGRID_KEY` — a qualified member reference in prose. */
-const QUALIFIED_MEMBER = /\b([A-Z][A-Za-z0-9_]{2,})\.([A-Z][A-Z0-9_]{2,}|[a-z][A-Za-z0-9_]{2,})\b/g;
+/**
+ * `ItemType.ANGEBOT`, `Settings.SENDGRID_KEY`, `listing.id` — a qualified member reference in
+ * prose. Widened (ADR-0020) to lowercase qualifiers and two-character members so SQL-style
+ * references like `listing.id` are judgeable; the false-positive pressure stays at zero because
+ * a reference is only ever judged when a container of that name is indexed AND declares members
+ * (`judgeableContainer`), which prose coincidences do not survive.
+ */
+const QUALIFIED_MEMBER = /\b([A-Za-z][A-Za-z0-9_]+)\.([A-Za-z][A-Za-z0-9_]+)\b/g;
+
+/**
+ * `Node.js`, `models.py`, `package.json` — dotted tokens that are file or platform names, not
+ * member references. Denied outright: a container named `Node` with members would otherwise turn
+ * every mention of Node.js into a blocking finding.
+ */
+const FILE_EXTENSION_MEMBERS = new Set([
+  'js',
+  'ts',
+  'tsx',
+  'jsx',
+  'py',
+  'md',
+  'go',
+  'rs',
+  'sh',
+  'css',
+  'yml',
+  'yaml',
+  'json',
+  'toml',
+  'txt',
+  'html',
+  'sql',
+  'xml',
+  'csv',
+  'env',
+  'lock',
+]);
 
 /**
  * Verbs that ASSERT the thing already exists, as opposed to creating it. Only assertions can be
@@ -50,6 +85,18 @@ const ASSERTION_CONTEXT =
 const CREATION_CONTEXT =
   /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|extend|extends)\b/i;
 
+/**
+ * The bare member name a node declares. Field and method nodes are named `Owner.member` (and TS
+ * marks nullability with a trailing `?`), while enum members are named bare — comparing a prose
+ * reference against the qualified form would report a declared member as missing, so the owner
+ * prefix and the nullability marker are stripped before membership is judged.
+ */
+const bareMemberName = (container: GraphNode, target: GraphNode): string => {
+  const name = target.name.endsWith('?') ? target.name.slice(0, -1) : target.name;
+  const prefix = `${container.name}.`;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+};
+
 const declaredMembers = (graph: KnowledgeGraph, container: GraphNode): ReadonlySet<string> => {
   const members = new Set<string>();
   for (const edgeId of graph.outgoing.get(container.id) ?? []) {
@@ -59,17 +106,28 @@ const declaredMembers = (graph: KnowledgeGraph, container: GraphNode): ReadonlyS
     }
     const target = graph.nodes.get(edge.targetId);
     if (target !== undefined && MEMBER_TYPES.has(target.type)) {
-      members.add(target.name);
+      members.add(bareMemberName(container, target));
     }
   }
   return members;
 };
 
-/** Containers indexed under this name, of a type whose members we model. */
-const containersNamed = (graph: KnowledgeGraph, name: string): readonly GraphNode[] =>
-  [...graph.nodes.values()].filter(
-    (node) => node.name === name && MEMBER_CONTAINERS[node.type] !== undefined,
+/**
+ * Containers indexed under this name, of a type whose members we model. An exact match wins; a
+ * lowercase qualifier (`listing.id`, the SQL habit) additionally matches case-insensitively,
+ * because prose and SQL lowercase names the code capitalizes (ADR-0020).
+ */
+const containersNamed = (graph: KnowledgeGraph, name: string): readonly GraphNode[] => {
+  const judgeable = [...graph.nodes.values()].filter(
+    (node) => MEMBER_CONTAINERS[node.type] !== undefined,
   );
+  const exact = judgeable.filter((node) => node.name === name);
+  if (exact.length > 0 || !/^[a-z]/.test(name)) {
+    return exact;
+  }
+  const lower = name.toLowerCase();
+  return judgeable.filter((node) => node.name.toLowerCase() === lower);
+};
 
 export interface AssumptionCheckInput {
   readonly requirementId: string;
@@ -148,7 +206,7 @@ export const checkAssumptions = (input: AssumptionCheckInput): readonly Prefligh
     const qualifier = match[1] ?? '';
     const member = match[2] ?? '';
     const key = `${qualifier}.${member}`;
-    if (seen.has(key)) {
+    if (seen.has(key) || FILE_EXTENSION_MEMBERS.has(member)) {
       continue;
     }
     seen.add(key);

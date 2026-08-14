@@ -7,6 +7,7 @@ import {
   createGraphNode,
   createRepositorySnapshot,
   knowledgeCategoryOf,
+  PREFLIGHT_FINDING_KINDS,
   PROVENANCE_VALUES,
   serializeEvidenceRecord,
   serializeGraphEdge,
@@ -20,6 +21,7 @@ import {
   graphEdgeArtifactSchema,
   graphNodeArtifactSchema,
   knowledgeCategoryForProvenance,
+  PREFLIGHT_FINDING_KIND_VALUES,
   repositorySnapshotArtifactSchema,
 } from '../index.js';
 
@@ -45,6 +47,24 @@ describe('domain serialization satisfies artifact schemas', () => {
         category: 'application',
         type: 'service',
         name: 'DealService',
+        knowledge,
+      }),
+    );
+    const json = serializeGraphNode(node);
+    expect(graphNodeArtifactSchema.parse(JSON.parse(JSON.stringify(json)))).toEqual(json);
+  });
+
+  // ADR-0020 §3 — declaredType is additive on the persisted node artifact: a node carrying it
+  // must satisfy the schema unchanged, at the same schema version.
+  it('graph node with a declared type', () => {
+    const node = unwrap(
+      createGraphNode({
+        id: 'field-1',
+        category: 'data',
+        type: 'field',
+        name: 'Listing.id',
+        path: 'app/models.py',
+        declaredType: 'Mapped[uuid.UUID]',
         knowledge,
       }),
     );
@@ -101,5 +121,11 @@ describe('knowledge-category table mirrors packages/domain (PRD §3, ADR-0002)',
     for (const provenance of PROVENANCE_VALUES) {
       expect(knowledgeCategoryForProvenance(provenance)).toBe(knowledgeCategoryOf(provenance));
     }
+  });
+});
+
+describe('preflight finding vocabulary mirrors packages/domain (ADR-0017/0020)', () => {
+  it('lists exactly the kinds the domain can produce', () => {
+    expect([...PREFLIGHT_FINDING_KIND_VALUES].sort()).toEqual([...PREFLIGHT_FINDING_KINDS].sort());
   });
 });

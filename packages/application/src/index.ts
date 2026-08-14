@@ -191,6 +191,11 @@ export { checkRuntime } from './preflight/check-runtime.js';
 export type { AssumptionCheckInput } from './preflight/check-assumptions.js';
 export { checkAssumptions } from './preflight/check-assumptions.js';
 export type {
+  AnalogousLiteralMatch,
+  TypeComparisonCheckInput,
+} from './preflight/check-type-comparisons.js';
+export { checkTypeComparisons, sqlComparisonPatterns } from './preflight/check-type-comparisons.js';
+export type {
   ConfigSemantic,
   ConfigDeclaration,
   CheckConfigSemanticsInput,

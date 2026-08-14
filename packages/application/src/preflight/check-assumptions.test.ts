@@ -144,6 +144,99 @@ describe('checkAssumptions — the ItemType.ANGEBOT scenario', () => {
   });
 });
 
+/** A `Listing` class declaring qualified field members, the way the adapters actually name them. */
+const fieldGraph = (fields: readonly string[], className = 'Listing'): KnowledgeGraph => {
+  const nodes = [
+    node({
+      id: `sym:${className}`,
+      category: 'application',
+      type: 'class',
+      name: className,
+      path: 'app/listings.py',
+    }),
+    ...fields.map((field) =>
+      node({
+        id: `sym:${className}.${field}`,
+        category: 'data',
+        type: 'field',
+        name: `${className}.${field}`,
+      }),
+    ),
+  ];
+  const edges = fields.map((field, index) =>
+    edge(`f${String(index)}`, 'DECLARES_MEMBER', `sym:${className}`, `sym:${className}.${field}`),
+  );
+  const result = createKnowledgeGraph(nodes, edges);
+  if (!result.ok) {
+    throw new Error(`graph: ${JSON.stringify(result.error.issues)}`);
+  }
+  return result.value;
+};
+
+describe('checkAssumptions — lowercase qualifiers and short members (ADR-0020)', () => {
+  it('judges listing.slug against the indexed Listing class, case-insensitively', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'The query filter uses listing.slug when narrowing results.',
+      graph: fieldGraph(['id', 'title']),
+      nextId,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.subject.assumedSymbol).toBe('listing.slug');
+  });
+
+  it('accepts a two-character member that the container declares — listing.id resolves', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'The query filter uses listing.id when narrowing results.',
+      graph: fieldGraph(['id', 'title']),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('flags a missing two-character member on an uppercase qualifier — Listing.id', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'The query filter uses Listing.id when narrowing results.',
+      graph: fieldGraph(['title']),
+      nextId,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.subject.assumedSymbol).toBe('Listing.id');
+  });
+
+  it('normalizes qualified member node names — Listing.title declared as "Listing.title" resolves', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'The renderer reads Listing.title for the card header.',
+      graph: fieldGraph(['title']),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('stays silent for prose like "listing.id style" when no such container is indexed', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'Use an e.g. listing.id style reference format in the docs.',
+      graph: enumGraph(['GESUCH']),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('never mistakes a file-extension token for a member — Node.js stays silent', () => {
+    const findings = checkAssumptions({
+      requirementId: 'R2',
+      statement: 'The service uses Node.js and reads models.py before starting.',
+      graph: fieldGraph(['walk'], 'Node'),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+});
+
 describe('classifyConfig — the SENDGRID_TEMPLATE_IDS_JSON scenario', () => {
   const declaration = {
     name: 'SENDGRID_TEMPLATE_IDS_JSON',
