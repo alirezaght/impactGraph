@@ -107,27 +107,51 @@ const referencedNodeOf = (node: GraphNode): ReferencedNode => ({
 
 /**
  * Resolve a query to nodes: a direct nodeId hit wins; otherwise the component-search scorer's
- * `exact` grade, falling back to `normalized-name`. Several survivors are returned as-is — the
- * caller reports them as disambiguation candidates instead of guessing (PRD §34).
+ * `exact` grade, falling back to `normalized-name`, falling back to member-suffix matches —
+ * methods and fields are indexed as `Owner.member`, and "who calls remove_item" arrives as the
+ * bare member name. Several survivors are returned as-is — the caller reports them as
+ * disambiguation candidates instead of guessing (PRD §34).
  */
+interface ResolutionQuery {
+  readonly graph: KnowledgeGraph;
+  readonly query: string;
+  readonly tokens: readonly string[];
+  readonly suffix: string;
+}
+
+const gradeOf = (
+  node: GraphNode,
+  context: ResolutionQuery,
+): 'exact' | 'normalized' | 'member-suffix' | undefined => {
+  const scored = scoreNode(node, context.query, context.tokens, context.graph);
+  if (scored?.matchKind === 'exact') {
+    return 'exact';
+  }
+  if (scored?.matchKind === 'normalized-name') {
+    return 'normalized';
+  }
+  return IDENTIFIER.test(context.query) && node.name.endsWith(context.suffix)
+    ? 'member-suffix'
+    : undefined;
+};
+
 const resolveQuery = (graph: KnowledgeGraph, query: string): readonly GraphNode[] => {
   const direct = graph.nodes.get(query as NodeId);
   if (direct !== undefined) {
     return [direct];
   }
-  const tokens = tokensOf(query);
-  const exact: GraphNode[] = [];
-  const normalized: GraphNode[] = [];
+  const context = { graph, query, tokens: tokensOf(query), suffix: `.${query}` };
+  const byGrade = { exact: [], normalized: [], 'member-suffix': [] } as Record<string, GraphNode[]>;
   for (const node of candidatesFor(graph, undefined)) {
-    const scored = scoreNode(node, query, tokens, graph);
-    if (scored?.matchKind === 'exact') {
-      exact.push(node);
-    } else if (scored?.matchKind === 'normalized-name') {
-      normalized.push(node);
+    const grade = gradeOf(node, context);
+    if (grade !== undefined) {
+      byGrade[grade]?.push(node);
     }
   }
-  const matches = exact.length > 0 ? exact : normalized;
-  return [...matches].sort((a, b) => a.id.localeCompare(b.id));
+  const matches = [byGrade['exact'], byGrade['normalized'], byGrade['member-suffix']].find(
+    (nodes) => nodes !== undefined && nodes.length > 0,
+  );
+  return [...(matches ?? [])].sort((a, b) => a.id.localeCompare(b.id));
 };
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;

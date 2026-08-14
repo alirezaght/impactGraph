@@ -93,6 +93,7 @@ const NODES = [
   node('sym:dup-a', 'Duplicate', 'class', 'src/a.ts'),
   node('sym:dup-b', 'Duplicate', 'class', 'src/b.ts'),
   node('sym:deal-repo', 'DealRepository', 'class', 'src/lib/deal-repository.ts'),
+  node('sym:store-load', 'IndexStore.load_graph', 'method', 'src/store.py'),
   node(
     'file:src/lib/deal-repository.ts',
     'deal-repository.ts',
@@ -106,6 +107,7 @@ const EDGES = [
   edge('IMPLEMENTS', 'sym:mem-repo', 'sym:listing-repo'),
   edge('CALLS', 'sym:cleanup', 'sym:remove-item'),
   edge('CALLS', 'sym:archive', 'sym:remove-item'),
+  edge('CALLS', 'sym:cleanup', 'sym:store-load'),
 ];
 
 const CALL_FACT: CallFact = {
@@ -213,6 +215,14 @@ describe('findReferences — structural relations', () => {
     expect(callers?.totalCount).toBe(2);
     expect(result.nameMatchedCallSites).toHaveLength(1);
     expect(result.nameMatchedCallSiteTotal).toBe(2);
+  });
+
+  it('resolves a bare member name to its Owner.member node by suffix', async () => {
+    const result = await unwrap('load_graph', ['callers']);
+    expect(result.resolution).toBe('resolved');
+    expect(result.resolved?.nodeId).toBe('sym:store-load');
+    const callers = result.references.find((group) => group.kind === 'callers');
+    expect(callers?.counterparts.map((c) => c.nodeId)).toEqual(['sym:cleanup']);
   });
 
   it('resolves by nodeId directly', async () => {
