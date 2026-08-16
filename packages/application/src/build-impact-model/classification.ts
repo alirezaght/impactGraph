@@ -126,7 +126,12 @@ export const signalsFor = (
 const CONTAINER_NODE_TYPES = new Set(['package', 'workspace', 'repository']);
 
 /** Mechanisms where the engine GUESSED which component the specification meant. */
-const GUESSED_MECHANISMS = new Set<string>(['name-similarity', 'semantic', 'lexical']);
+const GUESSED_MECHANISMS = new Set<string>([
+  'path-segment',
+  'name-similarity',
+  'semantic',
+  'lexical',
+]);
 
 /**
  * Field finding: a fuzzy anchor walked CONTAINS up to its package and DEPENDS_ON up to every

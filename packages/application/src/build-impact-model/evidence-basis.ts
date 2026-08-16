@@ -80,6 +80,9 @@ const MECHANISM_BASIS: Readonly<Record<MatchMechanism, ImpactEvidenceType>> = {
   // component, the engine guessed it from token alignment. Filed under its own basis so the tier
   // ceiling (`likely`) applies and the guess is auditable (dogfooding item 4).
   'name-similarity': 'name-similarity',
+  // The directory name is exact; the file inside it is inferred by containment. Filed under the
+  // same capped basis as a fuzzy name so the `likely` ceiling and auditability apply.
+  'path-segment': 'name-similarity',
   semantic: 'semantic-match',
   lexical: 'lexical-only',
 };

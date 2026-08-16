@@ -1,5 +1,6 @@
 import { createImpactAnalysis, err, validationError, validationIssue } from '@impactgraph/domain';
 
+import { isSpeculativeConcept } from '../analyze-specification/statement-analysis.js';
 import { buildCoChangeIndex } from '../history/co-change-index.js';
 
 import { traverseCandidates } from './candidate-traversal.js';
@@ -167,6 +168,12 @@ const recordMatchWarnings = (
   requirementId: string,
 ): void => {
   for (const unknown of matched.unknownConcepts) {
+    // A speculative candidate (kebab-case prose, architectural noun phrase) was mined, not
+    // asserted: it either resolves or it silently was never a concept. Warning on every
+    // hyphenated English word would drown the identifiers the user actually wrote.
+    if (isSpeculativeConcept(unknown)) {
+      continue;
+    }
     // Two warnings, deliberately. `unknown-concept` is the historical code consumers already
     // filter on; `unresolved-concept` is the item-2 promise — the specification named something
     // that does not exist in the graph, and ImpactGraph says so instead of inventing a node for it.

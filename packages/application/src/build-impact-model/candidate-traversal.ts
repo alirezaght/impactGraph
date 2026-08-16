@@ -154,6 +154,7 @@ const MECHANISM_STRENGTH: Readonly<Record<MatchMechanism, number>> = {
   exact: 2,
   alias: 2,
   'name-similarity': 1,
+  'path-segment': 1,
   // Conceptual mechanisms rank below identifier matching: when two routes reach the same component
   // and one is anchored by a name the specification wrote, that route explains the component.
   semantic: 1,

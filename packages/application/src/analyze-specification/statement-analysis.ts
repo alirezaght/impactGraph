@@ -69,16 +69,61 @@ export const isViableConcept = (term: string): boolean => term.length > 1 && !is
  * CamelCase-only rule sees nothing at all. Every candidate is still only a candidate: it becomes
  * an impact ONLY if concept matching resolves it to an indexed node (item 2).
  */
+/** SCREAMING_SNAKE names are how specifications assert constants and environment variables. */
+const SCREAMING_SNAKE = /\b([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\b/g;
+
+const KEBAB_CASE = /\b([a-z][a-z0-9]*(?:-[a-z0-9]+)+)\b/g;
+
+/**
+ * Deployable and integration nouns a specification uses to name a component in prose — "the
+ * user-profile service", "the billing api". The head must be lowercase (a capitalized head is a
+ * proper noun mid-phrase, e.g. "Cloud Run service") and must not be a determiner or a generic
+ * qualifier, so "the service" never becomes a candidate.
+ */
+const ARCHITECTURAL_PHRASE =
+  /\b([a-z][a-z0-9]*(?:-[a-z0-9]+)*) (service|api|gateway|frontend|backend|worker|client|app|server|job|queue|topic|database)\b/g;
+
+const PHRASE_STOPWORD_HEADS = new Set([
+  ...['the', 'a', 'an', 'this', 'that', 'these', 'those', 'each', 'every', 'any', 'some', 'no'],
+  ...['one', 'another', 'its', 'their', 'our', 'your', 'new', 'existing', 'same', 'given'],
+  ...['such', 'other', 'which', 'per', 'current', 'proposed', 'requested', 'nominal', 'named'],
+  ...['target', 'legacy', 'production', 'downstream', 'upstream', 'external', 'internal'],
+  ...['remote', 'local', 'peer', 'web', 'nominated', 'affected', 'calling', 'consuming'],
+]);
+
+const matchesOf = (statement: string, pattern: RegExp): string[] =>
+  [...statement.matchAll(pattern)].map((match) => match[1] ?? '');
+
+const architecturalPhrases = (statement: string): string[] =>
+  [...statement.matchAll(ARCHITECTURAL_PHRASE)]
+    .filter((match) => !PHRASE_STOPWORD_HEADS.has(match[1] ?? ''))
+    .map((match) => `${match[1] ?? ''} ${match[2] ?? ''}`);
+
 export const conceptsOf = (statement: string): string[] => {
-  const backticked = [...statement.matchAll(/`([^`]+)`/g)].map((match) => match[1] ?? '');
-  const camelCase = [...statement.matchAll(/\b([A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)+)\b/g)].map(
-    (match) => match[1] ?? '',
-  );
-  const dotted = [...statement.matchAll(/\b([a-z][a-z0-9]*(?:[._][a-z0-9]+){1,4})\b/g)].map(
-    (match) => match[1] ?? '',
-  );
-  return [...new Set([...backticked, ...camelCase, ...dotted].filter(isViableConcept))];
+  const backticked = matchesOf(statement, /`([^`]+)`/g);
+  const camelCase = matchesOf(statement, /\b([A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)+)\b/g);
+  const dotted = matchesOf(statement, /\b([a-z][a-z0-9]*(?:[._][a-z0-9]+){1,4})\b/g);
+  const screaming = matchesOf(statement, SCREAMING_SNAKE);
+  const kebab = matchesOf(statement, KEBAB_CASE);
+  const phrases = architecturalPhrases(statement);
+  return [
+    ...new Set(
+      [...backticked, ...camelCase, ...dotted, ...screaming, ...kebab, ...phrases].filter(
+        isViableConcept,
+      ),
+    ),
+  ];
 };
+
+/**
+ * A speculative concept was MINED from prose (kebab-case words, architectural noun phrases); an
+ * asserted one was WRITTEN as an identifier (backticks, CamelCase, dotted, SCREAMING_SNAKE). The
+ * difference decides what failing to resolve means: an unresolved asserted identifier is a warning
+ * the user should read, an unresolved speculative candidate is silently dropped — hyphenated
+ * English ("long-running") must not fill the report with noise.
+ */
+export const isSpeculativeConcept = (concept: string): boolean =>
+  concept.includes(' ') || /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(concept);
 
 const BULLET = /^([-*+]|\d+[.)])\s+/;
 

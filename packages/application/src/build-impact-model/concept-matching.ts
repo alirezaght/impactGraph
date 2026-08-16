@@ -19,7 +19,13 @@ import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
  * engine can cap what they are allowed to claim: `lexical` never rises above the `lexical-only`
  * tier, whatever else corroborates it.
  */
-export type MatchMechanism = 'exact' | 'alias' | 'name-similarity' | 'semantic' | 'lexical';
+export type MatchMechanism =
+  | 'exact'
+  | 'alias'
+  | 'path-segment'
+  | 'name-similarity'
+  | 'semantic'
+  | 'lexical';
 
 /**
  * An exact name that resolves to several nodes in DIFFERENT top-level containers. Field finding:
@@ -175,6 +181,39 @@ interface Resolution {
   readonly nodes: readonly GraphNode[];
 }
 
+/** Below this many normalized characters, a segment match is a coincidence ("api", "app"). */
+const MIN_SEGMENT_CONCEPT_LENGTH = 6;
+
+/**
+ * A service that exists only as a directory — no manifest, no Terraform resource, no node NAMED
+ * after it — is still a component a specification can name. A concept equal to a directory
+ * segment resolves to the files under that directory, shallowest first, so plans that name such
+ * a service can be checked against the constraints that govern its path. Bounded and marked
+ * ambiguous: the concept names the container, and which file inside changes stays a guess.
+ */
+const findByPathSegment = (graph: KnowledgeGraph, concept: string): GraphNode[] => {
+  const target = normalize(concept);
+  if (target.length < MIN_SEGMENT_CONCEPT_LENGTH) {
+    return [];
+  }
+  const hits: { node: GraphNode; depth: number }[] = [];
+  for (const node of graph.nodes.values()) {
+    if (node.type !== 'file' || node.path === undefined) {
+      continue;
+    }
+    const segments = node.path.split('/');
+    const index = segments
+      .slice(0, -1)
+      .findIndex((segment) => normalize(segment) === target && normalize(segment).length > 0);
+    if (index >= 0) {
+      hits.push({ node, depth: segments.length - index });
+    }
+  }
+  return hits
+    .sort((a, b) => a.depth - b.depth || a.node.id.localeCompare(b.node.id))
+    .map((hit) => hit.node);
+};
+
 const resolve = (
   graph: KnowledgeGraph,
   concept: string,
@@ -205,13 +244,19 @@ const resolve = (
     }
   }
   const similar = usable(direct.similar);
-  if (similar.length === 0) {
-    return direct.similar.length === 0 ? undefined : 'ambiguous';
+  if (similar.length > 0 && similar.length <= MAX_SIMILAR_MATCHES) {
+    return { mechanism: 'name-similarity', nodes: similar };
   }
-  if (similar.length > MAX_SIMILAR_MATCHES) {
+  // Last resort before "unknown": the concept may name a component that exists only as a
+  // directory. Ranked below name matching so it can never change what a named node resolves to.
+  const bySegment = usable(findByPathSegment(graph, concept));
+  if (bySegment.length > 0) {
+    return { mechanism: 'path-segment', nodes: bySegment };
+  }
+  if (similar.length > MAX_SIMILAR_MATCHES || direct.similar.length > 0) {
     return 'ambiguous';
   }
-  return { mechanism: 'name-similarity', nodes: similar };
+  return undefined;
 };
 
 /**

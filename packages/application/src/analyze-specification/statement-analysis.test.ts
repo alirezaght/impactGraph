@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { conceptsOf } from './statement-analysis.js';
+import { conceptsOf, isSpeculativeConcept } from './statement-analysis.js';
 
 describe('conceptsOf', () => {
   it('extracts identifier-shaped candidates', () => {
@@ -41,5 +41,50 @@ describe('conceptsOf', () => {
   it('rejects terms beyond the length bound', () => {
     const long = 'a'.repeat(81);
     expect(conceptsOf(`Handle \`${long}\` gracefully.`)).toHaveLength(0);
+  });
+
+  it('extracts SCREAMING_SNAKE constants and environment variable names', () => {
+    const concepts = conceptsOf(
+      'Set the SENDGRID_TEMPLATE_IDS_JSON environment variable on the newsletter service.',
+    );
+    expect(concepts).toContain('SENDGRID_TEMPLATE_IDS_JSON');
+  });
+
+  it('extracts kebab-case identifiers', () => {
+    const concepts = conceptsOf(
+      'Deploy the change to the newsletter-service Cloud Run service first.',
+    );
+    expect(concepts).toContain('newsletter-service');
+  });
+
+  it('extracts architectural noun phrases with a lowercase head', () => {
+    const concepts = conceptsOf(
+      'The newsletter service fetches subscriber preferences from the user-profile service over HTTP.',
+    );
+    expect(concepts).toContain('newsletter service');
+    expect(concepts).toContain('user-profile service');
+  });
+
+  it('does not build phrases from stopword or capitalized heads', () => {
+    const concepts = conceptsOf(
+      'The service forwards each request to the Cloud Run service unchanged.',
+    );
+    expect(concepts).not.toContain('the service');
+    expect(concepts).not.toContain('Run service');
+  });
+});
+
+describe('isSpeculativeConcept', () => {
+  it('treats kebab-case and architectural phrases as speculative', () => {
+    expect(isSpeculativeConcept('newsletter-service')).toBe(true);
+    expect(isSpeculativeConcept('user-profile service')).toBe(true);
+    expect(isSpeculativeConcept('long-running')).toBe(true);
+  });
+
+  it('treats asserted identifier shapes as non-speculative', () => {
+    expect(isSpeculativeConcept('SENDGRID_TEMPLATE_IDS_JSON')).toBe(false);
+    expect(isSpeculativeConcept('DealRepository')).toBe(false);
+    expect(isSpeculativeConcept('notification.nda_signature_request')).toBe(false);
+    expect(isSpeculativeConcept('issue_routes.py')).toBe(false);
   });
 });
