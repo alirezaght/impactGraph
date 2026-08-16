@@ -56,11 +56,11 @@ describe('MCP stdio server (Story 12.1, PRD §21)', () => {
       name: string;
       inputSchema: unknown;
     }[];
-    // 46 = the §21 roster, plus `list_impacts` (the bounded summary's detail page),
-    // `list_constraints` and `query_runtime_path` (ADR-0017),
+    // 47 = the §21 roster, plus `list_impacts` (the bounded summary's detail page),
+    // `list_constraints`, `query_runtime_path` and `list_preflight_findings` (ADR-0017),
     // `record_actual_impact` (measured outcomes), and the structural reference queries
     // `find_references` and `search_literals`.
-    expect(tools).toHaveLength(46);
+    expect(tools).toHaveLength(47);
     expect(tools.every((tool) => tool.name.startsWith('impactgraph.'))).toBe(true);
     expect(tools.every((tool) => tool.inputSchema !== undefined)).toBe(true);
   });

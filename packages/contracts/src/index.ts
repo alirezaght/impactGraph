@@ -30,6 +30,14 @@ export {
   ACCEPTABLE_DEVIATION_CATEGORIES,
 } from './artifacts/review-artifact.js';
 export type { ReviewArtifactDto, AcceptedDeviationDto } from './artifacts/review-artifact.js';
+export {
+  preflightArtifactSchema,
+  preflightPlanContractSchema,
+} from './artifacts/preflight-artifact.js';
+export type {
+  PreflightArtifactDto,
+  PreflightPlanContractDto,
+} from './artifacts/preflight-artifact.js';
 
 export {
   KNOWLEDGE_CATEGORIES,

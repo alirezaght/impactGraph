@@ -71,6 +71,8 @@ export interface PreflightOutcome {
   /** The analysis with evidence provenance attached to every impact. */
   readonly analysis: ImpactAnalysis;
   readonly constraintCount: number;
+  /** Ids of the constraints that governed this pass — frozen into the preflight artifact (R18). */
+  readonly constraintIds: readonly string[];
   readonly opaqueGuardPaths: readonly string[];
 }
 
@@ -266,6 +268,7 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
     independence: provenance.independence,
     analysis: provenance.analysis,
     constraintCount: loaded.constraints.length,
+    constraintIds: loaded.constraints.map((constraint) => constraint.id),
     opaqueGuardPaths: loaded.opaqueGuardPaths,
   };
 };

@@ -1,0 +1,373 @@
+{
+  "$ref": "#/definitions/PreflightOutcomeArtifactV1",
+  "definitions": {
+    "PreflightOutcomeArtifactV1": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "specificationVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "repositorySnapshotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assessment": {
+          "type": "object",
+          "properties": {
+            "feasibility": {
+              "type": "string",
+              "enum": [
+                "READY",
+                "READY_WITH_WARNINGS",
+                "NEEDS_CLARIFICATION",
+                "INSUFFICIENT_COVERAGE",
+                "BLOCKED"
+              ]
+            },
+            "decision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "blockingViolations": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "invalidAssumptions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "runtimeTopologyGaps": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "configSemanticsRisks": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "newSurfaces": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "coverageGaps": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unresolvedArchitecturalQuestions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "constraintWarnings": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "missingConsumers": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "typeSensitiveComparisons": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "expectedChangeSurfaces": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "blockingViolations",
+                "invalidAssumptions",
+                "runtimeTopologyGaps",
+                "configSemanticsRisks",
+                "newSurfaces",
+                "coverageGaps",
+                "unresolvedArchitecturalQuestions",
+                "constraintWarnings",
+                "missingConsumers",
+                "expectedChangeSurfaces"
+              ],
+              "additionalProperties": false
+            },
+            "decidingFindingIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "scoreWithheldReason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["feasibility", "decision", "counts", "decidingFindingIds"],
+          "additionalProperties": false
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "blocking-constraint-violation",
+                  "constraint-warning",
+                  "runtime-topology-gap",
+                  "invalid-assumption",
+                  "config-semantics-risk",
+                  "new-surface",
+                  "coverage-gap",
+                  "unresolved-architectural-question",
+                  "missing-consumer",
+                  "guard-not-updated",
+                  "type-sensitive-comparison"
+                ]
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["blocking", "warning", "informational"]
+              },
+              "requirementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "recommendation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "analyzer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "constraintId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "proposedRelationship": {
+                "type": "object",
+                "properties": {
+                  "sourceRef": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "relation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "targetRef": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": ["sourceRef", "relation", "targetRef"],
+                "additionalProperties": false
+              },
+              "runtimePathId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "assumedSymbol": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nodeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "filePaths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "severity",
+              "requirementIds",
+              "statement",
+              "recommendation",
+              "confidence",
+              "analyzer"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "classifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "requirementId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "type": "string",
+                "enum": [
+                  "NEW_SURFACE",
+                  "COVERAGE_GAP",
+                  "INVALID_ASSUMPTION",
+                  "AMBIGUOUS",
+                  "NO_EVIDENCE",
+                  "EXTERNAL_DEPENDENCY"
+                ]
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": ["requirementId", "classification", "rationale", "confidence"],
+            "additionalProperties": false
+          }
+        },
+        "evidenceIndependence": {
+          "type": "object",
+          "properties": {
+            "independentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "confirmationCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "weightedIndependence": {
+              "type": "number",
+              "minimum": 0
+            },
+            "totalCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "independentCount",
+            "confirmationCount",
+            "weightedIndependence",
+            "totalCount"
+          ],
+          "additionalProperties": false
+        },
+        "constraintCoverage": {
+          "type": "object",
+          "properties": {
+            "indexedConstraintCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "opaqueGuardPaths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": ["indexedConstraintCount", "opaqueGuardPaths"],
+          "additionalProperties": false
+        },
+        "planContract": {
+          "type": "object",
+          "properties": {
+            "requiredConfigNames": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "runtimeProcessNodeIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "constraintIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": ["requiredConfigNames", "runtimeProcessNodeIds", "constraintIds"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "analysisId",
+        "specificationId",
+        "specificationVersion",
+        "repositorySnapshotId",
+        "createdAt",
+        "assessment",
+        "findings",
+        "classifications",
+        "evidenceIndependence",
+        "constraintCoverage",
+        "planContract"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

@@ -69,14 +69,17 @@ const analyzeImpact: ToolHandler<'analyze_impact'> = async (rootDir, input) => {
     },
     workspace.value,
   );
+  if (!preflight.ok) {
+    return preflight;
+  }
   return {
     ok: true,
     value: buildImpactSummary({
       specification: spec.value,
-      analysis: preflight.analysis,
+      analysis: preflight.value.analysis,
       graph: built.value.graph,
       workspace: workspace.value,
-      preflight,
+      preflight: preflight.value,
       // Freshness is compared at ANSWER time, not index time: the tree can move between the two,
       // and a conclusion drawn from a stale index has to say so (item 10).
       freshness: await assessWorkspaceFreshness({

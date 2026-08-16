@@ -1,0 +1,24 @@
+{
+  "$ref": "#/definitions/Tool_list_preflight_findings_InputV1",
+  "definitions": {
+    "Tool_list_preflight_findings_InputV1": {
+      "type": "object",
+      "properties": {
+        "analysisId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["blocking", "warning", "informational"]
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

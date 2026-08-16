@@ -129,7 +129,7 @@ describe('type-sensitive SQL comparisons against a real index (ADR-0020 §4)', (
 
   const preflightFor = async (rawText: string) => {
     const specification = specificationWith(rawText);
-    return runCoveragePreflight(
+    const run = await runCoveragePreflight(
       {
         rootDir: repoDir,
         specification,
@@ -140,6 +140,10 @@ describe('type-sensitive SQL comparisons against a real index (ADR-0020 §4)', (
       },
       fullyIndexed,
     );
+    if (!run.ok) {
+      throw new Error(run.error.message);
+    }
+    return run.value;
   };
 
   it('warns, quoting the UUID declaration AND the analogous correctly-handled SQL', async () => {

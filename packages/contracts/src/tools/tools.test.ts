@@ -33,6 +33,10 @@ describe('MCP tool contracts (Story 12.1, PRD §21/§29.4/§35)', () => {
         // ADR-0017 — the governance and runtime layers, readable directly because a reviewer told
         // a plan is BLOCKED needs to open the rule that blocked it.
         'list_constraints',
+        // The explicit red-team view: the FULL persisted finding list behind the bounded
+        // analyze_impact summary, with what was checked. Analysis red-teams unconditionally;
+        // this is where the complete case lives.
+        'list_preflight_findings',
         'query_runtime_path',
         // Structural reference queries over existing index data — born from a session where
         // "who implements X / who calls Y / where else is this SQL fragment" needed grep.

@@ -84,6 +84,19 @@ export interface PreflightResult {
   readonly assessment: PlanAssessment;
 }
 
+/**
+ * The analyzers this pass runs, in order. Exported so a consumer reporting "nothing was found"
+ * can state what LOOKED — an empty finding list is only meaningful next to this roster.
+ */
+export const PREFLIGHT_ANALYZERS = [
+  'check-constraints',
+  'check-assumptions',
+  'check-type-comparisons',
+  'check-runtime',
+  'check-config-semantics',
+  'classify-requirements',
+] as const;
+
 /** Strongest first, so a bounded report shows what decides the verdict. */
 const SEVERITY_ORDER = { blocking: 0, warning: 1, informational: 2 } as const;
 

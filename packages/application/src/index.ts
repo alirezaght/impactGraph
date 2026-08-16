@@ -217,7 +217,7 @@ export type {
   RunPreflightInput,
   PreflightResult,
 } from './preflight/run-preflight.js';
-export { runPreflight } from './preflight/run-preflight.js';
+export { PREFLIGHT_ANALYZERS, runPreflight } from './preflight/run-preflight.js';
 export type {
   AssignProvenanceInput,
   ProvenanceAssignment,

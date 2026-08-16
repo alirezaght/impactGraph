@@ -311,6 +311,17 @@ export type { PreflightContext, PreflightOutcome } from './preflight.js';
 export { runPreflightForAnalysis } from './preflight.js';
 export type { CoveragePreflightContext } from './coverage-preflight.js';
 export { runCoveragePreflight } from './coverage-preflight.js';
+export { PREFLIGHT_ANALYZERS } from '@impactgraph/application';
+export type { BuildPreflightArtifactInput } from './preflight-artifacts.js';
+export {
+  buildPreflightArtifact,
+  latestPreflightArtifact,
+  loadPreflightArtifact,
+  preflightArtifactsDir,
+  savePreflightArtifact,
+} from './preflight-artifacts.js';
+export type { ConfigPreflightInputs } from './preflight-config.js';
+export { configPreflightInputs } from './preflight-config.js';
 export type { SuppliedIdentifierResolution } from './supplied-identifiers.js';
 export {
   resolveSuppliedIdentifiers,

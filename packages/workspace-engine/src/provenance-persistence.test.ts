@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadAnalysis } from './analyses.js';
 import { runCoveragePreflight } from './coverage-preflight.js';
 import { performIndexRun } from './indexing.js';
+import { latestPreflightArtifact, loadPreflightArtifact } from './preflight-artifacts.js';
 import { buildImpactPage } from './reports/impact-page.js';
 import { buildImpactSummary } from './reports/impact-summary.js';
 import { collectWorkspaceRepositoryContext } from './repository-coverage.js';
@@ -91,7 +92,7 @@ describe('evidence provenance is persisted and reported (ADR-0017 §5)', () => {
       throw new Error(context.error.message);
     }
     workspace = context.value;
-    preflight = await runCoveragePreflight(
+    const run = await runCoveragePreflight(
       {
         rootDir: repoDir,
         specification,
@@ -102,6 +103,10 @@ describe('evidence provenance is persisted and reported (ADR-0017 §5)', () => {
       },
       workspace,
     );
+    if (!run.ok) {
+      throw new Error(run.error.message);
+    }
+    preflight = run.value;
   }, 120_000);
 
   afterAll(() => {
@@ -185,5 +190,27 @@ describe('evidence provenance is persisted and reported (ADR-0017 §5)', () => {
   it('classifies the unresolved modification claim as an INVALID_ASSUMPTION', () => {
     const classification = preflight.classifications.find((entry) => entry.requirementId === 'R2');
     expect(classification?.classification).toBe('INVALID_ASSUMPTION');
+  });
+
+  // Spec R18: the adversarial outcome is frozen as its own artifact so approval can freeze the
+  // analysis while review and list_preflight_findings still read the approval-time knowledge.
+  it('persists the preflight outcome as a frozen artifact keyed by analysis id', () => {
+    const artifact = loadPreflightArtifact(repoDir, stored.id);
+    if (!artifact.ok) {
+      throw new Error(artifact.error.message);
+    }
+    expect(artifact.value).toBeDefined();
+    expect(artifact.value?.analysisId).toBe(stored.id);
+    expect(artifact.value?.assessment.feasibility).toBe(preflight.assessment.feasibility);
+    expect(artifact.value?.findings.length).toBe(preflight.findings.length);
+    expect(artifact.value?.planContract.constraintIds).toEqual([...preflight.constraintIds].sort());
+  });
+
+  it('serves the persisted outcome as the latest artifact', () => {
+    const latest = latestPreflightArtifact(repoDir);
+    if (!latest.ok) {
+      throw new Error(latest.error.message);
+    }
+    expect(latest.value?.analysisId).toBe(stored.id);
   });
 });

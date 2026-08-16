@@ -33,6 +33,7 @@ import { hostMessageSchema, webviewMessageSchema } from '../webview/messages.js'
 
 import { evidenceRecordArtifactSchema } from './evidence.js';
 import { graphEdgeArtifactSchema, graphNodeArtifactSchema } from './graph.js';
+import { preflightArtifactSchema } from './preflight-artifact.js';
 import { reviewArtifactSchema } from './review-artifact.js';
 import { repositorySnapshotArtifactSchema } from './snapshot.js';
 
@@ -88,6 +89,10 @@ export const generateArtifactJsonSchemas = (): Record<string, unknown> => ({
   'artifacts/implementation-review.v1': zodToJsonSchema(
     reviewArtifactSchema,
     'ImplementationReviewArtifactV1',
+  ),
+  'artifacts/preflight-outcome.v1': zodToJsonSchema(
+    preflightArtifactSchema,
+    'PreflightOutcomeArtifactV1',
   ),
   'config/workspace-config.v1': zodToJsonSchema(workspaceConfigSchema, 'WorkspaceConfigV1'),
   'config/architecture-config.v1': zodToJsonSchema(

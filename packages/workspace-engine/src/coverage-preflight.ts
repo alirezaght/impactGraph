@@ -1,4 +1,5 @@
 import { analogousSqlLiterals } from './analogous-sql.js';
+import { buildPreflightArtifact, savePreflightArtifact } from './preflight-artifacts.js';
 import { configPreflightInputs } from './preflight-config.js';
 import { runPreflightForAnalysis } from './preflight.js';
 import {
@@ -6,6 +7,7 @@ import {
   unindexedRegisteredRepositories,
 } from './reports/workspace-coverage-block.js';
 
+import type { Failable } from './failure.js';
 import type { PreflightContext, PreflightOutcome } from './preflight.js';
 import type { WorkspaceRepositoryContext } from './repository-coverage.js';
 
@@ -34,7 +36,7 @@ export type CoveragePreflightContext = Omit<
 export const runCoveragePreflight = async (
   context: CoveragePreflightContext,
   workspace: WorkspaceRepositoryContext,
-): Promise<PreflightOutcome> => {
+): Promise<Failable<PreflightOutcome>> => {
   const coverage = buildWorkspaceCoverage({
     specification: context.specification,
     analysis: context.analysis,
@@ -53,7 +55,7 @@ export const runCoveragePreflight = async (
   // matches) and how the repository declares it — computed here because it reads files and the
   // fragment cache, which the sync engine pass must not.
   const config = await configPreflightInputs(context.rootDir, context.graph, context.analysis);
-  return runPreflightForAnalysis({
+  const outcome = runPreflightForAnalysis({
     ...context,
     analogousLiterals,
     configRequirements: config.requirements,
@@ -61,4 +63,18 @@ export const runCoveragePreflight = async (
     coverageInsufficient: coverage.status === 'insufficient-coverage',
     missingRepositoryNames: unindexedRegisteredRepositories(workspace).map((state) => state.name),
   });
+  // Frozen alongside the draft analysis (spec R18): approval later freezes the analysis, and this
+  // artifact is what lets review and `list_preflight_findings` read the approval-time adversarial
+  // knowledge instead of re-deriving a weaker version.
+  const persisted = savePreflightArtifact(
+    context.rootDir,
+    buildPreflightArtifact({
+      outcome,
+      analysis: context.analysis,
+      specification: context.specification,
+      graph: context.graph,
+      requiredConfigNames: config.requirements.map((requirement) => requirement.name),
+    }),
+  );
+  return persisted.ok ? { ok: true, value: outcome } : persisted;
 };

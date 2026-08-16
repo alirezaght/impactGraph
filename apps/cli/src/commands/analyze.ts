@@ -114,7 +114,7 @@ const render = async (
   // The same coverage-first adversarial pass the MCP `analyze_impact` tool runs (ADR-0017): the
   // CLI summary carries planAssessment, preflight findings, and evidence provenance too. Skipped
   // only when no workspace roster could be read — absence then means "did not run", never "clean".
-  const preflight = workspace.ok
+  const preflightRun = workspace.ok
     ? await runCoveragePreflight(
         {
           rootDir: context.rootDir,
@@ -127,6 +127,7 @@ const render = async (
         workspace.value,
       )
     : undefined;
+  const preflight = preflightRun?.ok === true ? preflightRun.value : undefined;
   renderImpactSummary(
     context,
     buildImpactSummary({

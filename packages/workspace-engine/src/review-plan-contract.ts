@@ -1,6 +1,7 @@
 import { checkPlanContract } from '@impactgraph/application';
 import { stableContentId } from '@impactgraph/domain';
 
+import { loadPreflightArtifact } from './preflight-artifacts.js';
 import { loadConstraints } from './preflight-guards.js';
 
 import type { PlanContractResult } from '@impactgraph/application';
@@ -108,13 +109,26 @@ export const reviewAgainstPlan = (input: PlanContractInput): PlanContractResult 
     input.review.reviewSnapshotId,
     input.review.createdAt,
   ).constraints;
+  // The persisted preflight outcome carries what the PLAN committed to at analysis time — the
+  // configuration it said must propagate and the processes it said were on the path (spec R18).
+  // Merged with (never replacing) the impact-derived view, so a pre-artifact analysis still works.
+  const preflight = loadPreflightArtifact(input.rootDir, input.analysis.id);
+  const planContract = preflight.ok ? preflight.value?.planContract : undefined;
   return checkPlanContract({
     plan: {
       expectedNodeIds,
       expectedPaths: pathsOf(input.approvedGraph, expectedNodeIds),
       constraints,
-      runtimeProcessNodeIds: runtimeProcesses(input.analysis, input.approvedGraph),
-      requiredConfigNames: requiredConfigNames(input.analysis, input.approvedGraph),
+      runtimeProcessNodeIds: new Set([
+        ...runtimeProcesses(input.analysis, input.approvedGraph),
+        ...(planContract?.runtimeProcessNodeIds ?? []),
+      ]),
+      requiredConfigNames: [
+        ...new Set([
+          ...requiredConfigNames(input.analysis, input.approvedGraph),
+          ...(planContract?.requiredConfigNames ?? []),
+        ]),
+      ].sort(),
     },
     actual: {
       changedPaths: [...input.review.changedFiles],

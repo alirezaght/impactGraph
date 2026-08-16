@@ -15,7 +15,13 @@ import {
   cliReviewOutputSchema,
   cliStatusOutputSchema,
 } from '../cli/outputs.js';
-import { constraintSummarySchema } from '../cli/plan-assessment.js';
+import {
+  constraintSummarySchema,
+  evidenceIndependenceSchema,
+  planAssessmentSchema,
+  preflightFindingSchema,
+  requirementClassificationSchema,
+} from '../cli/plan-assessment.js';
 
 import { CONFIG_INSPECTION_TOOL_CONTRACTS } from './config-inspection-tools.js';
 import { CONFIG_MAINTENANCE_TOOL_CONTRACTS } from './config-maintenance-tools.js';
@@ -351,6 +357,39 @@ export const MCP_TOOL_CONTRACTS = {
         /** Guards seen whose rule was not extracted — the honest limit of this layer. */
         opaqueGuardPaths: z.array(z.string().min(1)),
         guardFilesRead: z.number().int().min(0),
+      })
+      .strict(),
+  },
+  list_preflight_findings: {
+    description:
+      'The explicit red-team view of one analysis: the FULL adversarial finding list the bounded analyze_impact summary sliced to its strongest entries, plus the plan assessment, requirement classifications, evidence independence and what was checked (indexed rule count, unreadable guards). Use it after analyze_impact when the verdict needs its complete justification, or as the "attack the design" deep dive — analysis always red-teams; this tool is where the whole case lives. Defaults to the most recent analysis.',
+    input: z
+      .object({
+        analysisId: z.string().min(1).optional(),
+        severity: z.enum(['blocking', 'warning', 'informational']).optional(),
+        kind: z.string().min(1).optional(),
+      })
+      .strict(),
+    output: z
+      .object({
+        analysisId: z.string().min(1),
+        specificationId: z.string().min(1),
+        specificationVersion: z.number().int().min(1),
+        repositorySnapshotId: z.string().min(1),
+        createdAt: z.string().min(1),
+        assessment: planAssessmentSchema,
+        findings: z.array(preflightFindingSchema),
+        totalCount: z.number().int().min(0),
+        classifications: z.array(requirementClassificationSchema),
+        evidenceIndependence: evidenceIndependenceSchema,
+        /** What the adversarial pass actually checked — so "no findings" is auditable. */
+        checked: z
+          .object({
+            analyzers: z.array(z.string().min(1)),
+            indexedConstraintCount: z.number().int().min(0),
+            opaqueGuardPaths: z.array(z.string().min(1)),
+          })
+          .strict(),
       })
       .strict(),
   },
