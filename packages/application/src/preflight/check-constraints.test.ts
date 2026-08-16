@@ -166,6 +166,99 @@ describe('checkConstraints — exemption precision', () => {
   });
 });
 
+describe('checkConstraints — layering rules (boundaries/element-types)', () => {
+  const CONFIG = `export default [{
+    settings: { 'boundaries/elements': [
+      { type: 'domain', pattern: 'packages/domain' },
+      { type: 'application', pattern: 'packages/application' },
+      { type: 'adapter', pattern: 'packages/persistence' },
+    ] },
+    rules: { 'boundaries/element-types': ['error', { default: 'disallow', rules: [
+      { from: 'application', allow: ['domain'] },
+    ] }] },
+  }];`;
+
+  const layering = (): readonly RepositoryConstraint[] =>
+    extractConstraints({
+      files: [{ path: 'eslint.config.mjs', content: CONFIG }],
+      repositorySnapshotId: 'snap-1',
+      createdAt: '2026-08-12T00:00:00.000Z',
+      nextId: (seed) => `constraint-${seed.replace(/[^a-z0-9]/gi, '-').slice(0, 50)}`,
+      nextEvidenceId: (seed) => `ev-${seed.replace(/[^a-z0-9]/gi, '-').slice(0, 50)}`,
+    }).constraints.filter((entry) => entry.kind === 'boundary-restriction');
+
+  const edge = (
+    source: { ref: string; path?: string },
+    target: { ref: string; path?: string },
+  ) => ({
+    requirementId: 'R1',
+    source: { nodeId: `n:${source.ref}`, ...source },
+    target: { nodeId: `n:${target.ref}`, ...target },
+    mechanism: 'import' as const,
+    relation: 'IMPORTS',
+    quote: 'imports',
+    confidence: 0.85,
+  });
+
+  it('blocks a proposal for the default-disallow layer to import an internal package', () => {
+    const findings = checkConstraints({
+      proposedEdges: [
+        edge(
+          { ref: 'packages/domain', path: 'packages/domain/package.json' },
+          { ref: '@impactgraph/persistence', path: 'packages/persistence/package.json' },
+        ),
+      ],
+      constraints: layering(),
+      nextId,
+    });
+    expect(findings.some((finding) => finding.severity === 'blocking')).toBe(true);
+    expect(findings[0]?.statement).toContain("'domain' layer");
+  });
+
+  it('permits the allowed direction', () => {
+    const findings = checkConstraints({
+      proposedEdges: [
+        edge(
+          { ref: 'packages/application', path: 'packages/application/package.json' },
+          { ref: '@impactgraph/domain', path: 'packages/domain/package.json' },
+        ),
+      ],
+      constraints: layering(),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('does not govern an external library with an internal layering rule', () => {
+    // "application may only depend on domain" is about internal elements; `lodash` is not one.
+    const findings = checkConstraints({
+      proposedEdges: [
+        edge(
+          { ref: 'packages/application', path: 'packages/application/package.json' },
+          { ref: 'lodash' },
+        ),
+      ],
+      constraints: layering(),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+
+  it('does not apply one layer rule to a source in a different layer', () => {
+    const findings = checkConstraints({
+      proposedEdges: [
+        edge(
+          { ref: 'packages/persistence', path: 'packages/persistence/src/store.ts' },
+          { ref: '@impactgraph/application', path: 'packages/application/package.json' },
+        ),
+      ],
+      constraints: layering().filter((entry) => entry.scope.roles?.includes('domain') === true),
+      nextId,
+    });
+    expect(findings).toEqual([]);
+  });
+});
+
 describe('deriveProposedEdges', () => {
   it('yields nothing when the requirement names fewer than two components', () => {
     expect(

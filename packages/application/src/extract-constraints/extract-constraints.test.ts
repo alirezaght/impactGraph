@@ -126,6 +126,34 @@ describe('extractConstraints — lint boundaries', () => {
     expect(forbidden?.scope.pathGlobs).toEqual(['packages/domain/**']);
     expect(forbidden?.rule.subjectPattern).toContain('node:fs');
   });
+
+  it('scopes each rule by the element PATTERNS and synthesizes default-disallow rules', () => {
+    // The real config declares elements with patterns and `default: 'disallow'` — an element with
+    // no `from` rule (domain) is the strictest rule of all, and dropping it made the one layering
+    // rule the architecture is named after invisible to the constraint checker.
+    const config = `export default [{
+      settings: { 'boundaries/elements': [
+        { type: 'domain', pattern: 'packages/domain' },
+        { type: 'application', pattern: 'packages/application' },
+      ] },
+      rules: { 'boundaries/element-types': ['error', { default: 'disallow', rules: [
+        { from: 'application', allow: ['domain'] },
+      ] }] },
+    }];`;
+    const result = extractConstraints(request([{ path: 'eslint.config.mjs', content: config }]));
+    const application = result.constraints.find(
+      (entry) => entry.scope.roles?.includes('application') === true,
+    );
+    expect(application?.scope.pathGlobs).toEqual(['packages/application/**']);
+    expect(application?.rule.targetScope?.pathGlobs).toEqual(['packages/domain/**']);
+    const domain = result.constraints.find(
+      (entry) => entry.scope.roles?.includes('domain') === true,
+    );
+    expect(domain?.kind).toBe('boundary-restriction');
+    expect(domain?.scope.pathGlobs).toEqual(['packages/domain/**']);
+    expect(domain?.rule.targetScope?.roles).toEqual([]);
+    expect(domain?.rule.statement).toContain('nothing');
+  });
 });
 
 describe('extractConstraints — CI enforcement', () => {

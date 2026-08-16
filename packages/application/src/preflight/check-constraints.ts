@@ -102,10 +102,21 @@ const recommendationFor = (constraint: RepositoryConstraint): string =>
         .join(', ')}), or revise the design.`
     : `Revise the design, or change ${constraint.source.filePath} deliberately and record why.`;
 
+/** Whether an endpoint sits in one of the named element roles, by path or by its written name. */
+const matchesRole = (endpoint: ProposedEdge['source'], roles: readonly string[]): boolean =>
+  roles.some((role) => {
+    const needle = role.toLowerCase();
+    return (
+      endpoint.path?.toLowerCase().includes(needle) === true ||
+      endpoint.ref.toLowerCase().includes(needle)
+    );
+  });
+
 /**
- * A boundary restriction states what IS allowed, so it is violated only when the target is not
- * among the permitted scopes. Every other constraint kind states what is forbidden outright, and
- * for those this is always false.
+ * A boundary restriction states what IS allowed among the repository's own elements, so it is
+ * violated only when the target is internal and not among the permitted scopes. An external
+ * library is not an element — "application may only depend on domain" says nothing about lodash.
+ * An empty allow-list permits nothing internal; it must never read as "everything allowed".
  */
 const permittedByBoundary = (constraint: RepositoryConstraint, edge: ProposedEdge): boolean => {
   if (constraint.kind !== 'boundary-restriction') {
@@ -115,10 +126,34 @@ const permittedByBoundary = (constraint: RepositoryConstraint, edge: ProposedEdg
   if (allowed === undefined) {
     return false;
   }
-  return (
-    inScope(edge.target, allowed).matched ||
-    (allowed.roles ?? []).some((role) => edge.target.ref.toLowerCase().includes(role.toLowerCase()))
-  );
+  if (edge.target.path === undefined) {
+    return true;
+  }
+  const byPath =
+    allowed.pathGlobs.length > 0 && matchesAnyGlob(edge.target.path, allowed.pathGlobs);
+  return byPath || matchesRole(edge.target, allowed.roles ?? []);
+};
+
+/**
+ * A role-scoped rule ("from: 'application'") governs exactly that layer. When the config declared
+ * element patterns, scope.pathGlobs already carry them and the path check decides; a config
+ * without patterns falls back to role-name matching. Without this, every layer's rule matched
+ * every source, and the only thing hiding the false positives was a second bug that permitted
+ * every target — two wrongs making the whole layer silently dead.
+ */
+const sourceInScope = (
+  edge: ProposedEdge,
+  constraint: RepositoryConstraint,
+): { readonly matched: boolean; readonly byPath: boolean } => {
+  const roles = constraint.scope.roles ?? [];
+  if (
+    constraint.kind === 'boundary-restriction' &&
+    roles.length > 0 &&
+    (constraint.scope.pathGlobs.length === 0 || constraint.scope.pathGlobs.includes('**'))
+  ) {
+    return { matched: matchesRole(edge.source, roles), byPath: false };
+  }
+  return inScope(edge.source, constraint.scope);
 };
 
 interface Candidate {
@@ -131,19 +166,34 @@ const candidates = (input: CheckConstraintsInput): readonly Candidate[] => {
   const found: Candidate[] = [];
   for (const edge of input.proposedEdges) {
     const applicable = MECHANISM_APPLIES_TO[edge.mechanism];
+    const perEdge: Candidate[] = [];
     for (const constraint of input.constraints) {
       if (!applicable.includes(constraint.kind)) {
         continue;
       }
-      const scoped = inScope(edge.source, constraint.scope);
+      const scoped = sourceInScope(edge, constraint);
       if (!scoped.matched) {
         continue;
       }
       if (permittedByBoundary(constraint, edge)) {
         continue;
       }
-      found.push({ edge, constraint, byPath: scoped.byPath });
+      perEdge.push({ edge, constraint, byPath: scoped.byPath });
     }
+    // Element rosters are order-dependent ("specific packages first, then the catch-all"), which a
+    // flat constraint list cannot express — so when a layer rule matched the source by PATH, a
+    // second layer rule that only matched by name is the catch-all misfiring, not a second rule.
+    const pathConfirmedBoundary = perEdge.some(
+      (candidate) => candidate.constraint.kind === 'boundary-restriction' && candidate.byPath,
+    );
+    found.push(
+      ...perEdge.filter(
+        (candidate) =>
+          candidate.constraint.kind !== 'boundary-restriction' ||
+          !pathConfirmedBoundary ||
+          candidate.byPath,
+      ),
+    );
   }
   return found;
 };

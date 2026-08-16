@@ -145,7 +145,13 @@ const staleGuards = (input: CheckPlanContractInput): readonly PreflightFinding[]
   const changed = new Set(input.actual.changedPaths);
   const findings: PreflightFinding[] = [];
   for (const constraint of input.plan.constraints) {
-    if (constraint.extraction === 'opaque' || constraint.scope.pathGlobs.includes('**')) {
+    // Guidance is prose: an ADR is not obliged to change when the code it mentions changes, so it
+    // never produces a stale-guard line.
+    if (
+      constraint.extraction === 'opaque' ||
+      constraint.kind === 'architecture-guidance' ||
+      constraint.scope.pathGlobs.includes('**')
+    ) {
       continue;
     }
     const governedChanges = input.actual.changedPaths.filter((path) =>

@@ -18,10 +18,13 @@ import type { KnowledgeGraph, RepositoryConstraint } from '@impactgraph/domain';
 
 /** Files worth reading as guards, beyond the conventional guard paths. */
 const EXTRA_GUARD_PATHS =
-  /(^|\/)(eslint\.config\.(m?js|cjs|ts)|\.eslintrc(\.\w+)?|\.gitlab-ci\.yml)$|(^|\/)\.github\/workflows\/[^/]+\.ya?ml$/;
+  /(^|\/)(eslint\.config\.(m?js|cjs|ts)|\.eslintrc(\.\w+)?|\.gitlab-ci\.yml)$|(^|\/)\.github\/workflows\/[^/]+\.ya?ml$|(^|\/)(adrs?|decisions)\/[^/]+\.(md|markdown)$/i;
+
+/** A guard inside a test fixture is the FIXTURE's rule, never this workspace's. */
+const FIXTURE_PATH = /(^|\/)(fixtures?|__fixtures__|testdata)\//i;
 
 const isGuardCandidate = (path: string): boolean =>
-  looksLikeGuardPath(path) || EXTRA_GUARD_PATHS.test(path);
+  !FIXTURE_PATH.test(path) && (looksLikeGuardPath(path) || EXTRA_GUARD_PATHS.test(path));
 
 /** Reading a guard must never break analysis: an unreadable file is simply not a guard we saw. */
 const readGuard = (rootDir: string, path: string): GuardFile | undefined => {

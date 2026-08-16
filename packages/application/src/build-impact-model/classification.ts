@@ -211,6 +211,16 @@ const likelihoodFor = (
       caveat: 'Container reached only through ownership edges from a fuzzy name match.',
     };
   }
+  // A directory-level match anchors the plan (hop 0: the container, the proposed-edge endpoint);
+  // its NEIGHBOURHOOD is not an impact. Without this, one "apps/mcp-server" in prose put every
+  // manifest, tsconfig and neighbour of four packages into the default view — 400 impacts, 396 of
+  // them leads (the signal-over-volume failure this pass exists to avoid).
+  if (candidate.match.mechanism === 'path-segment' && !corroborated) {
+    return {
+      likelihood: 'unlikely',
+      caveat: 'Reached only by expanding a directory-level match.',
+    };
+  }
   if (candidate.distance > 1) {
     return { likelihood: 'possible' };
   }

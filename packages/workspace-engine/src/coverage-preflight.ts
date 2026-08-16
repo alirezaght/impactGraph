@@ -6,6 +6,7 @@ import {
   buildWorkspaceCoverage,
   unindexedRegisteredRepositories,
 } from './reports/workspace-coverage-block.js';
+import { collectTestEnvironments } from './test-environments.js';
 
 import type { Failable } from './failure.js';
 import type { PreflightContext, PreflightOutcome } from './preflight.js';
@@ -31,6 +32,7 @@ export type CoveragePreflightContext = Omit<
   | 'analogousLiterals'
   | 'configRequirements'
   | 'configDeclarations'
+  | 'testEnvironments'
 >;
 
 export const runCoveragePreflight = async (
@@ -58,6 +60,7 @@ export const runCoveragePreflight = async (
   const outcome = runPreflightForAnalysis({
     ...context,
     analogousLiterals,
+    testEnvironments: collectTestEnvironments(context.rootDir, context.graph),
     configRequirements: config.requirements,
     configDeclarations: config.declarations,
     coverageInsufficient: coverage.status === 'insufficient-coverage',

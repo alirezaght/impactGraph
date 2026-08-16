@@ -104,16 +104,30 @@ const scopeIssues = (scope: ConstraintScope, path: string): ValidationIssue[] =>
  * than quietly downgraded: a quiet downgrade hides the producer that fabricated it, and this
  * invariant is the whole promise a BLOCKED assessment makes to a reader.
  */
-const authorityIssues = (input: RepositoryConstraint, path: string): ValidationIssue[] =>
-  input.severity === 'blocking' && !canBlock(input.extraction)
-    ? [
-        validationIssue(
-          'invalid-type',
-          `${path}severity`,
-          `'blocking' is not available on '${input.extraction}' extraction — only ${'recognized'} or ${'declared'} constraints may block`,
-        ),
-      ]
-    : [];
+const authorityIssues = (input: RepositoryConstraint, path: string): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
+  if (input.severity === 'blocking' && !canBlock(input.extraction)) {
+    issues.push(
+      validationIssue(
+        'invalid-type',
+        `${path}severity`,
+        `'blocking' is not available on '${input.extraction}' extraction — only ${'recognized'} or ${'declared'} constraints may block`,
+      ),
+    );
+  }
+  // Prose guidance is validated here, not left to producers: nothing parsed an ADR's rule, so
+  // nothing may present it with the weight of deterministic enforcement.
+  if (input.kind === 'architecture-guidance' && input.severity !== 'advisory') {
+    issues.push(
+      validationIssue(
+        'invalid-type',
+        `${path}severity`,
+        `'architecture-guidance' is prose — it is always 'advisory', never '${input.severity}'`,
+      ),
+    );
+  }
+  return issues;
+};
 
 const vocabularyIssues = (input: RepositoryConstraint): ValidationIssue[] => {
   const issues: ValidationIssue[] = [];

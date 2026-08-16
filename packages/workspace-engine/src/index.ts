@@ -322,6 +322,7 @@ export {
 } from './preflight-artifacts.js';
 export type { ConfigPreflightInputs } from './preflight-config.js';
 export { configPreflightInputs } from './preflight-config.js';
+export { collectTestEnvironments } from './test-environments.js';
 export type { SuppliedIdentifierResolution } from './supplied-identifiers.js';
 export {
   resolveSuppliedIdentifiers,

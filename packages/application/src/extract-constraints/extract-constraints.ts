@@ -1,5 +1,6 @@
 import { cappedSeverity, createRepositoryConstraint } from '@impactgraph/domain';
 
+import { adrGuidanceRecognizer } from './recognizers/adr-guidance.js';
 import { ciWorkflowRecognizer } from './recognizers/ci-workflow.js';
 import { guardScriptRecognizer } from './recognizers/guard-script.js';
 import { lintBoundariesRecognizer } from './recognizers/lint-boundaries.js';
@@ -19,6 +20,7 @@ export const DEFAULT_RECOGNIZERS: readonly ConstraintRecognizer[] = [
   lintBoundariesRecognizer,
   guardScriptRecognizer,
   ciWorkflowRecognizer,
+  adrGuidanceRecognizer,
 ];
 
 export interface ExtractConstraintsRequest {

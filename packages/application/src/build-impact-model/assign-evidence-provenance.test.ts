@@ -151,12 +151,25 @@ describe('assignEvidenceProvenance — the spec-echo scenario', () => {
     );
   });
 
-  it('marks a constraint-derived impact as independent even when the spec named it', () => {
+  it('keeps a spec-named file a confirmation even when a constraint finding cites it', () => {
+    // The finding is the discovery; the file the user typed is not. Letting a constraint citation
+    // relabel an echo as independent would raise the independence count because the user wrote a
+    // filename — the exact inflation ADR-0017 §4.3 exists to prevent.
     const result = assignEvidenceProvenance({
       analysis: analysis([impact('file:send_service', ['direct-structural'])]),
       graph: graph(),
       specificationText: SPEC_TEXT,
       constraintDerivedNodeIds: new Set(['file:send_service']),
+    });
+    expect(result.analysis.requirementImpacts[0]?.evidenceProvenance).toBe('USER_SUPPLIED');
+  });
+
+  it('marks a constraint-derived impact the spec never named as CONSTRAINT_DERIVED', () => {
+    const result = assignEvidenceProvenance({
+      analysis: analysis([impact('file:aggregator', ['direct-structural'])]),
+      graph: graph(),
+      specificationText: SPEC_TEXT,
+      constraintDerivedNodeIds: new Set(['file:aggregator']),
     });
     expect(result.analysis.requirementImpacts[0]?.evidenceProvenance).toBe('CONSTRAINT_DERIVED');
   });

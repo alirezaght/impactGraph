@@ -94,6 +94,27 @@ const PHRASE_STOPWORD_HEADS = new Set([
 const matchesOf = (statement: string, pattern: RegExp): string[] =>
   [...statement.matchAll(pattern)].map((match) => match[1] ?? '');
 
+/**
+ * A repository path written in prose ("packages/domain", "ci/scripts/check.py") names one place
+ * as precisely as a backticked identifier does. URL bodies are excluded by the lookbehind; word
+ * pairs that merely contain a slash ("and/or") are excluded by requiring a path-like shape — an
+ * extension, depth, or a directory-length first segment.
+ */
+const PATH_SHAPED = /(?<![:/\w])((?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+)\b/g;
+
+const looksLikeRepositoryPath = (token: string): boolean => {
+  const segments = token.split('/');
+  const first = segments[0] ?? '';
+  return (
+    /\.[A-Za-z0-9]{1,5}$/.test(token) ||
+    segments.length > 2 ||
+    (first.length >= 4 && !first.includes('.'))
+  );
+};
+
+const pathShapedConcepts = (statement: string): string[] =>
+  matchesOf(statement, PATH_SHAPED).filter(looksLikeRepositoryPath);
+
 const architecturalPhrases = (statement: string): string[] =>
   [...statement.matchAll(ARCHITECTURAL_PHRASE)]
     .filter((match) => !PHRASE_STOPWORD_HEADS.has(match[1] ?? ''))
@@ -106,9 +127,10 @@ export const conceptsOf = (statement: string): string[] => {
   const screaming = matchesOf(statement, SCREAMING_SNAKE);
   const kebab = matchesOf(statement, KEBAB_CASE);
   const phrases = architecturalPhrases(statement);
+  const paths = pathShapedConcepts(statement);
   return [
     ...new Set(
-      [...backticked, ...camelCase, ...dotted, ...screaming, ...kebab, ...phrases].filter(
+      [...backticked, ...camelCase, ...dotted, ...screaming, ...kebab, ...phrases, ...paths].filter(
         isViableConcept,
       ),
     ),

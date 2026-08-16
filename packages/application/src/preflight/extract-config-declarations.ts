@@ -37,9 +37,7 @@ interface ReadShape {
 
 /** `os.environ.get("NAME")`, with an optional default that may point at a same-file attribute. */
 const environGet = (content: string, name: string): ReadShape | undefined => {
-  const pattern = new RegExp(
-    `environ\\.get\\(\\s*["']${escape(name)}["']\\s*(?:,\\s*([^)]+))?\\)`,
-  );
+  const pattern = new RegExp(`environ\\.get\\(\\s*["']${escape(name)}["']\\s*(?:,\\s*([^)]+))?\\)`);
   const match = pattern.exec(content);
   if (match === null) {
     return undefined;

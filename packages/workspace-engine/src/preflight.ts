@@ -10,6 +10,7 @@ import type {
   AnalogousLiteralMatch,
   ConfigDeclaration,
   PreflightRequirement,
+  TestEnvironmentFact,
 } from '@impactgraph/application';
 import type {
   ConfigRequirement,
@@ -61,6 +62,8 @@ export interface PreflightContext {
    */
   readonly configRequirements?: readonly ConfigRequirement[];
   readonly configDeclarations?: readonly ConfigDeclaration[];
+  /** Test-scoped database declarations, computed by the coverage-preflight path (file access). */
+  readonly testEnvironments?: readonly TestEnvironmentFact[];
 }
 
 export interface PreflightOutcome {
@@ -85,9 +88,7 @@ const hopZeroNodes = (
   requirementId: string,
 ): readonly { readonly nodeId: string; readonly name: string; readonly path?: string }[] =>
   analysis.requirementImpacts
-    .filter(
-      (impact) => impact.requirementId === requirementId && impact.dependencyPath.length <= 1,
-    )
+    .filter((impact) => impact.requirementId === requirementId && impact.dependencyPath.length <= 1)
     .flatMap((impact) => {
       const node = graph.nodes.get(impact.nodeId as NodeId);
       return node === undefined
@@ -113,8 +114,15 @@ const resolveConceptRef = (
   nodes: readonly { readonly nodeId: string; readonly name: string; readonly path?: string }[],
 ): { ref: string; nodeId?: string; path?: string } => {
   const target = normalize(ref);
+  const asPrefix = ref.includes('/') ? `${ref.replace(/\/+$/, '')}/` : undefined;
   const hasSegment = (path: string | undefined): boolean =>
-    path !== undefined && path.split('/').slice(0, -1).some((part) => normalize(part) === target);
+    path !== undefined &&
+    (asPrefix !== undefined
+      ? path === ref || path.startsWith(asPrefix)
+      : path
+          .split('/')
+          .slice(0, -1)
+          .some((part) => normalize(part) === target));
   const chosen =
     nodes.find((node) => hasSegment(node.path)) ??
     nodes.find((node) => normalize(node.name) === target) ??
@@ -232,6 +240,9 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
       ? {}
       : { analogousLiterals: context.analogousLiterals }),
     constraints: loaded.constraints,
+    ...(context.testEnvironments === undefined
+      ? {}
+      : { testEnvironments: context.testEnvironments }),
     configRequirements: context.configRequirements ?? [],
     configDeclarations: context.configDeclarations ?? [],
     planConfiguredNodeIds: new Set(

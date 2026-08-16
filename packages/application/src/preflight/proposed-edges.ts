@@ -56,7 +56,8 @@ const MECHANISM_RULES: readonly MechanismRule[] = [
   {
     mechanism: 'import',
     relation: 'IMPORTS',
-    pattern: /\b(imports?|depends? on|uses the [\w-]+ (?:package|module|library)|requires? the)\b/i,
+    pattern:
+      /\b(import(?:s|ing|ed)?|depends? on|uses the [\w-]+ (?:package|module|library)|requires? the)\b/i,
   },
   {
     mechanism: 'configuration',

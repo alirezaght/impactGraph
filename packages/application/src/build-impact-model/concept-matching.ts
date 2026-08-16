@@ -1,3 +1,5 @@
+import { isSpeculativeConcept } from '../analyze-specification/statement-analysis.js';
+
 import { coversArchitecturalStem } from './architectural-stem.js';
 import { assessUbiquity } from './dependency-ubiquity.js';
 import { containerOf, containerRoots } from './top-level-container.js';
@@ -20,12 +22,7 @@ import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
  * tier, whatever else corroborates it.
  */
 export type MatchMechanism =
-  | 'exact'
-  | 'alias'
-  | 'path-segment'
-  | 'name-similarity'
-  | 'semantic'
-  | 'lexical';
+  'exact' | 'alias' | 'path-segment' | 'name-similarity' | 'semantic' | 'lexical';
 
 /**
  * An exact name that resolves to several nodes in DIFFERENT top-level containers. Field finding:
@@ -165,8 +162,13 @@ const findByName = (
   for (const node of graph.nodes.values()) {
     // A declared route path is an identifier the specification can name (§12.1.1): a concept
     // equal to it is exact-grade on EVERY verb served at that path — a path move obliges them
-    // all — never a fuzzy resemblance to the `GET /api/deals` display name.
-    if (normalize(node.name) === target || normalize(node.route?.path ?? '') === target) {
+    // all — never a fuzzy resemblance to the `GET /api/deals` display name. A repository file
+    // path the specification wrote verbatim is exact for the same reason.
+    if (
+      normalize(node.name) === target ||
+      normalize(node.route?.path ?? '') === target ||
+      node.path === name
+    ) {
       exact.push(node);
     } else if (isSimilar(name, node.name)) {
       similar.push(node);
@@ -191,25 +193,69 @@ const MIN_SEGMENT_CONCEPT_LENGTH = 6;
  * a service can be checked against the constraints that govern its path. Bounded and marked
  * ambiguous: the concept names the container, and which file inside changes stays a guess.
  */
-const findByPathSegment = (graph: KnowledgeGraph, concept: string): GraphNode[] => {
-  const target = normalize(concept);
-  if (target.length < MIN_SEGMENT_CONCEPT_LENGTH) {
-    return [];
+/** Node types that stand for a whole directory: the manifest-bearing container. */
+const CONTAINER_TYPES = new Set(['package', 'workspace']);
+
+/** Member-level node types a mined (speculative) concept may never claim by name coincidence. */
+const MEMBER_TYPES = new Set([
+  'union-literal',
+  'enum-member',
+  'config-key',
+  'feature-flag',
+  'translation-key',
+]);
+
+const inDirectory = (path: string, asPrefix: string | undefined, target: string): number => {
+  const segments = path.split('/');
+  if (asPrefix !== undefined) {
+    return path.startsWith(asPrefix) ? asPrefix.split('/').length - 2 : -1;
   }
-  const hits: { node: GraphNode; depth: number }[] = [];
+  return segments
+    .slice(0, -1)
+    .findIndex((segment) => normalize(segment) === target && normalize(segment).length > 0);
+};
+
+interface SegmentHits {
+  readonly containers: GraphNode[];
+  readonly files: { node: GraphNode; depth: number }[];
+}
+
+const collectSegmentHits = (
+  graph: KnowledgeGraph,
+  asPrefix: string | undefined,
+  target: string,
+): SegmentHits => {
+  const hits: SegmentHits = { containers: [], files: [] };
   for (const node of graph.nodes.values()) {
-    if (node.type !== 'file' || node.path === undefined) {
+    if (node.path === undefined) {
       continue;
     }
-    const segments = node.path.split('/');
-    const index = segments
-      .slice(0, -1)
-      .findIndex((segment) => normalize(segment) === target && normalize(segment).length > 0);
-    if (index >= 0) {
-      hits.push({ node, depth: segments.length - index });
+    const index = inDirectory(node.path, asPrefix, target);
+    if (index < 0) {
+      continue;
+    }
+    // The manifest-bearing container IS the directory: "apps/mcp-server" names one package, not
+    // its five shallowest files. Only a directory with no container falls back to files.
+    if (CONTAINER_TYPES.has(node.type) && node.path.split('/').length - index === 2) {
+      hits.containers.push(node);
+    } else if (node.type === 'file') {
+      hits.files.push({ node, depth: node.path.split('/').length - index });
     }
   }
-  return hits
+  return hits;
+};
+
+const findByPathSegment = (graph: KnowledgeGraph, concept: string): GraphNode[] => {
+  const target = normalize(concept);
+  const asPrefix = concept.includes('/') ? `${concept.replace(/\/+$/, '')}/` : undefined;
+  if (asPrefix === undefined && target.length < MIN_SEGMENT_CONCEPT_LENGTH) {
+    return [];
+  }
+  const { containers, files } = collectSegmentHits(graph, asPrefix, target);
+  if (containers.length > 0) {
+    return containers.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  return files
     .sort((a, b) => a.depth - b.depth || a.node.id.localeCompare(b.node.id))
     .map((hit) => hit.node);
 };
@@ -232,8 +278,14 @@ const resolve = (
       return !assessment.ubiquitous;
     });
   const direct = findByName(graph, concept);
-  if (direct.exact.length > 0) {
-    const nodes = usable(direct.exact);
+  // A mined phrase may not claim a symbol MEMBER: 'evidence-backed' coinciding with a status
+  // union literal is a coincidence of vocabulary, not the spec naming a component — and it once
+  // arrived at required-tier because exact matches score highest.
+  const exactPool = isSpeculativeConcept(concept)
+    ? direct.exact.filter((node) => !MEMBER_TYPES.has(node.type))
+    : direct.exact;
+  if (exactPool.length > 0) {
+    const nodes = usable(exactPool);
     return nodes.length === 0 ? 'ambiguous' : { mechanism: 'exact', nodes };
   }
   const aliasTarget = aliases[concept] ?? aliases[concept.toLowerCase()];
@@ -243,20 +295,39 @@ const resolve = (
       return { mechanism: 'alias', nodes: viaAlias };
     }
   }
-  const similar = usable(direct.similar);
+  return fuzzyResolution(graph, concept, usable, direct.similar);
+};
+
+/**
+ * The fallback tiers, tried only after exact and alias matching found nothing: fuzzy name
+ * similarity first, then directory-segment equality. Ranked this way so a segment match can never
+ * change what a named node resolves to.
+ *
+ * A SPECULATIVE concept — mined from prose rather than written as an identifier — skips the
+ * similarity tier entirely: it resolves strongly or not at all. One mined phrase ('mcp-server')
+ * once similarity-matched every server.ts in the repository including test fixtures, turning a
+ * 21-impact analysis into a 214-impact one. Mining candidates is cheap; the license to fuzz is
+ * reserved for names the author actually wrote.
+ */
+const fuzzyResolution = (
+  graph: KnowledgeGraph,
+  concept: string,
+  usable: (nodes: readonly GraphNode[]) => GraphNode[],
+  rawSimilar: readonly GraphNode[],
+): Resolution | 'ambiguous' | undefined => {
+  const speculative = isSpeculativeConcept(concept);
+  const similar = speculative ? [] : usable(rawSimilar);
   if (similar.length > 0 && similar.length <= MAX_SIMILAR_MATCHES) {
     return { mechanism: 'name-similarity', nodes: similar };
   }
-  // Last resort before "unknown": the concept may name a component that exists only as a
-  // directory. Ranked below name matching so it can never change what a named node resolves to.
   const bySegment = usable(findByPathSegment(graph, concept));
   if (bySegment.length > 0) {
     return { mechanism: 'path-segment', nodes: bySegment };
   }
-  if (similar.length > MAX_SIMILAR_MATCHES || direct.similar.length > 0) {
-    return 'ambiguous';
+  if (speculative) {
+    return undefined;
   }
-  return undefined;
+  return similar.length > MAX_SIMILAR_MATCHES || rawSimilar.length > 0 ? 'ambiguous' : undefined;
 };
 
 /**

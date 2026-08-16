@@ -126,6 +126,9 @@ describe('matchConcepts token alignment', () => {
   });
 
   it('reports a weak concept that spreads across many nodes as ambiguous, not as matches', () => {
+    // An ASSERTED identifier (the author wrote it) that fuzzes too widely earns a clarification
+    // question; a mined phrase in the same situation is silently not a concept (see the
+    // speculative-concepts suite below).
     const graph = graphOf([
       node('file:a', 'file', 'index-store.ts', 'a/index-store.ts'),
       node('symbol:b', 'symbol', 'IndexStorePort', 'b/b.ts'),
@@ -134,10 +137,10 @@ describe('matchConcepts token alignment', () => {
       node('symbol:e', 'symbol', 'IndexStoreBase', 'e/e.ts'),
     ]);
 
-    const result = matchConcepts(graph, ['index store']);
+    const result = matchConcepts(graph, ['IndexStore']);
 
     expect(result.matches).toEqual([]);
-    expect(result.ambiguousConcepts).toEqual(['index store']);
+    expect(result.ambiguousConcepts).toEqual(['IndexStore']);
   });
 });
 
@@ -396,64 +399,5 @@ describe('matchConcepts production-before-test ranking', () => {
     const result = matchConcepts(graph, ['IndexStore']);
 
     expect(result.matches.map((match) => match.nodeId)).toEqual(['symbol:prod']);
-  });
-});
-
-describe('matchConcepts path segments', () => {
-  // "How does admin reach the user-profile service?" was unanswerable because nothing was NAMED
-  // user-profile-service — the service existed only as a directory. A concept equal to a path
-  // segment resolves to that directory's files, so a plan naming a service can be checked against
-  // the rules that govern it even in repositories without per-service manifests.
-  const serviceGraph = graphOf([
-    node('file:routes', 'file', 'issue_routes.py', 'services/newsletter-service/api/issue_routes.py'),
-    node('file:profile', 'file', 'app.py', 'services/user-profile-service/app.py'),
-    node('file:profile-deep', 'file', 'models.py', 'services/user-profile-service/db/models.py'),
-    node('file:other', 'file', 'send.py', 'services/newsletter-service/jobs/send.py'),
-  ]);
-
-  it('resolves a concept equal to a directory segment to the files under it', () => {
-    const result = matchConcepts(serviceGraph, ['user-profile service']);
-
-    expect(result.matches.length).toBeGreaterThan(0);
-    expect(result.matches[0]?.mechanism).toBe('path-segment');
-    expect(result.matches.map((match) => match.nodeId)).toContain('file:profile');
-    expect(result.unknownConcepts).toHaveLength(0);
-  });
-
-  it('prefers shallow files and stays bounded', () => {
-    const many = graphOf([
-      node('file:entry', 'file', 'app.py', 'services/billing-service/app.py'),
-      ...Array.from({ length: 9 }, (_, index) =>
-        node(
-          `file:deep-${String(index)}`,
-          'file',
-          `handler${String(index)}.py`,
-          `services/billing-service/handlers/deep/handler${String(index)}.py`,
-        ),
-      ),
-    ]);
-
-    const result = matchConcepts(many, ['billing-service']);
-
-    expect(result.matches.length).toBeLessThanOrEqual(5);
-    expect(result.matches[0]?.nodeId).toBe('file:entry');
-    expect(result.matches.every((match) => match.ambiguous)).toBe(true);
-  });
-
-  it('never segment-matches a short generic word', () => {
-    const result = matchConcepts(serviceGraph, ['api']);
-
-    expect(result.matches).toHaveLength(0);
-  });
-
-  it('prefers a name match over a segment match', () => {
-    const named = graphOf([
-      node('run:newsletter', 'service', 'newsletter-service', 'infra/main.tf'),
-      node('file:routes2', 'file', 'a.py', 'services/newsletter-service/a.py'),
-    ]);
-
-    const result = matchConcepts(named, ['newsletter-service']);
-
-    expect(result.matches.map((match) => match.mechanism)).toEqual(['exact']);
   });
 });

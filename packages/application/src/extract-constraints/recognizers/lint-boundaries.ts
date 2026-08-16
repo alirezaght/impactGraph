@@ -12,32 +12,76 @@ import type { ConstraintRecognizer, ExtractedConstraint, GuardFile } from '../ty
 
 const CONFIG_PATH = /(^|\/)(eslint\.config\.(m?js|cjs|ts)|\.eslintrc(\.\w+)?)$/;
 
-/** `{ from: 'application', allow: ['domain'] }` — an element may only reach the listed elements. */
+/** `{ type: 'domain', pattern: 'packages/domain' }` — where each element role lives on disk. */
+const readElementPatterns = (content: string): ReadonlyMap<string, string> => {
+  const patterns = new Map<string, string>();
+  for (const match of content.matchAll(
+    /\{\s*type:\s*['"]([\w-]+)['"]\s*,\s*pattern:\s*['"]([^'"]+)['"]/g,
+  )) {
+    const role = match[1] ?? '';
+    const pattern = match[2] ?? '';
+    if (role.length > 0 && pattern.length > 0 && !patterns.has(role)) {
+      patterns.set(role, pattern.includes('*') ? pattern : `${pattern}/**`);
+    }
+  }
+  return patterns;
+};
+
+const boundaryRule = (
+  from: string,
+  allowed: readonly string[],
+  patterns: ReadonlyMap<string, string>,
+  sourceLine: number,
+): ExtractedConstraint => ({
+  name: `${from} may only depend on ${allowed.length === 0 ? 'nothing' : allowed.join(', ')}`,
+  kind: 'boundary-restriction' as const,
+  severity: 'blocking' as const,
+  extraction: 'recognized' as const,
+  scope: { pathGlobs: [patterns.get(from) ?? '**'], roles: [from] },
+  rule: {
+    relation: 'ONLY_ALLOWED_TO' as const,
+    targetScope: {
+      pathGlobs: allowed.flatMap((role) => {
+        const pattern = patterns.get(role);
+        return pattern === undefined ? [] : [pattern];
+      }),
+      roles: [...allowed],
+    },
+    statement: `code in the '${from}' layer may only depend on ${allowed.length === 0 ? 'nothing' : allowed.join(', ')}`,
+  },
+  exemptions: [],
+  sourceLine,
+  recognizer: 'lint-boundaries',
+});
+
+/**
+ * `{ from: 'application', allow: ['domain'] }` — an element may only reach the listed elements.
+ * With `default: 'disallow'`, an element that has NO rule is the strictest rule of all — it may
+ * depend on nothing — and dropping it once made "domain depends on nothing" invisible to the
+ * constraint checker while every weaker rule was indexed.
+ */
 const readElementTypeRules = (content: string): readonly ExtractedConstraint[] => {
+  const patterns = readElementPatterns(content);
   const rules = [
     ...content.matchAll(/\{\s*from:\s*['"]([\w-]+)['"]\s*,\s*allow:\s*\[([^\]]*)\]\s*\}/g),
   ];
-  return rules.map((match) => {
+  const covered = new Set<string>();
+  const constraints = rules.map((match) => {
     const from = match[1] ?? '';
+    covered.add(from);
     const allowed = [...(match[2] ?? '').matchAll(/['"]([\w-]+)['"]/g)].map(
       (entry) => entry[1] ?? '',
     );
-    return {
-      name: `${from} may only depend on ${allowed.join(', ')}`,
-      kind: 'boundary-restriction' as const,
-      severity: 'blocking' as const,
-      extraction: 'recognized' as const,
-      scope: { pathGlobs: ['**'], roles: [from] },
-      rule: {
-        relation: 'ONLY_ALLOWED_TO' as const,
-        targetScope: { pathGlobs: [], roles: allowed },
-        statement: `code in the '${from}' layer may only depend on ${allowed.length === 0 ? 'nothing' : allowed.join(', ')}`,
-      },
-      exemptions: [],
-      sourceLine: content.slice(0, match.index).split('\n').length,
-      recognizer: 'lint-boundaries',
-    } satisfies ExtractedConstraint;
+    return boundaryRule(from, allowed, patterns, content.slice(0, match.index).split('\n').length);
   });
+  if (rules.length > 0 && /['"]?default['"]?\s*:\s*['"]disallow['"]/.test(content)) {
+    for (const role of patterns.keys()) {
+      if (!covered.has(role)) {
+        constraints.push(boundaryRule(role, [], patterns, 1));
+      }
+    }
+  }
+  return constraints;
 };
 
 /**

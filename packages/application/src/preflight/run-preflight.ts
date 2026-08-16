@@ -8,12 +8,15 @@ import {
 import { checkAssumptions } from './check-assumptions.js';
 import { checkConfigSemantics } from './check-config-semantics.js';
 import { checkConstraints } from './check-constraints.js';
+import { checkGuidance } from './check-guidance.js';
 import { checkRuntime } from './check-runtime.js';
+import { checkTestEnvironment } from './check-test-environment.js';
 import { checkTypeComparisons } from './check-type-comparisons.js';
 import { classifyRequirements } from './classify-requirements.js';
 import { deriveProposedEdges } from './proposed-edges.js';
 
 import type { ConfigDeclaration } from './check-config-semantics.js';
+import type { TestEnvironmentFact } from './check-test-environment.js';
 import type { AnalogousLiteralMatch } from './check-type-comparisons.js';
 import type { RequirementSignalInput } from './classify-requirements.js';
 import type { ResolvedConcept } from './proposed-edges.js';
@@ -64,6 +67,11 @@ export interface RunPreflightInput {
    */
   readonly analogousLiterals?: readonly AnalogousLiteralMatch[];
   readonly constraints: readonly RepositoryConstraint[];
+  /**
+   * Test-scoped database declarations, read from test config files by the CALLER (file access is
+   * the engine's job). Empty means "no test environment is stated", which produces silence.
+   */
+  readonly testEnvironments?: readonly TestEnvironmentFact[];
   /** Configuration the plan requires along the request path. */
   readonly configRequirements: readonly ConfigRequirement[];
   /** Declarations for those values, where the adapters could read them. */
@@ -90,6 +98,7 @@ export interface PreflightResult {
  */
 export const PREFLIGHT_ANALYZERS = [
   'check-constraints',
+  'check-guidance',
   'check-assumptions',
   'check-type-comparisons',
   'check-runtime',
@@ -134,6 +143,16 @@ const designFindings = (input: RunPreflightInput): readonly PreflightFinding[] =
       nextId: input.nextId,
     }),
   );
+  findings.push(
+    ...checkGuidance({
+      requirements: input.requirements.map((requirement) => ({
+        id: requirement.label ?? requirement.id,
+        concepts: requirement.concepts,
+      })),
+      constraints: input.constraints,
+      nextId: input.nextId,
+    }),
+  );
   for (const requirement of input.requirements) {
     findings.push(
       ...checkAssumptions({
@@ -144,24 +163,39 @@ const designFindings = (input: RunPreflightInput): readonly PreflightFinding[] =
       }),
     );
   }
-  // ADR-0020 §4 — reads the RAW text, not per-requirement statements, because the SQL that
-  // motivated it lives in fenced blocks the requirement extractor does not carry.
-  if (input.specificationText !== undefined) {
-    findings.push(
-      ...checkTypeComparisons({
-        specificationText: input.specificationText,
-        graph: input.graph,
-        requirementIds: input.requirements.map(
-          (requirement) => requirement.label ?? requirement.id,
-        ),
-        ...(input.analogousLiterals === undefined
-          ? {}
-          : { analogousLiterals: input.analogousLiterals }),
-        nextId: input.nextId,
-      }),
-    );
-  }
+  findings.push(...rawTextFindings(input));
   return findings;
+};
+
+/**
+ * The checks that read the RAW specification text, not per-requirement statements — the SQL that
+ * motivated ADR-0020 §4 lives in fenced blocks the requirement extractor does not carry. Absent
+ * text means these checks stay silent, never guessed.
+ */
+const rawTextFindings = (input: RunPreflightInput): readonly PreflightFinding[] => {
+  if (input.specificationText === undefined) {
+    return [];
+  }
+  const requirementIds = input.requirements.map(
+    (requirement) => requirement.label ?? requirement.id,
+  );
+  return [
+    ...checkTestEnvironment({
+      specificationText: input.specificationText,
+      testEnvironments: input.testEnvironments ?? [],
+      requirementIds,
+      nextId: input.nextId,
+    }),
+    ...checkTypeComparisons({
+      specificationText: input.specificationText,
+      graph: input.graph,
+      requirementIds,
+      ...(input.analogousLiterals === undefined
+        ? {}
+        : { analogousLiterals: input.analogousLiterals }),
+      nextId: input.nextId,
+    }),
+  ];
 };
 
 /** The checks that read the deployment topology and the configuration it carries. */

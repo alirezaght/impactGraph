@@ -208,6 +208,15 @@ export {
 export type { ExtractConfigDeclarationsInput } from './preflight/extract-config-declarations.js';
 export { extractConfigDeclarations } from './preflight/extract-config-declarations.js';
 export type {
+  CheckTestEnvironmentInput,
+  DatabaseEngine,
+  DialectUse,
+  TestEnvironmentFact,
+} from './preflight/check-test-environment.js';
+export { checkTestEnvironment, detectSqlDialect } from './preflight/check-test-environment.js';
+export type { CheckGuidanceInput, GuidanceRequirement } from './preflight/check-guidance.js';
+export { checkGuidance } from './preflight/check-guidance.js';
+export type {
   RequirementSignalInput,
   ClassifyRequirementsInput,
 } from './preflight/classify-requirements.js';

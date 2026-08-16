@@ -28,6 +28,13 @@ export const CONSTRAINT_KINDS = [
    * "there is a guard here and we cannot read it" is a finding, and silence is not.
    */
   'opaque-check',
+  /**
+   * An accepted architectural decision (an ADR or equivalent) that GOVERNS a scope. Its rule is
+   * prose — nothing here claims to have parsed it — so it can only ever be advisory: "an accepted
+   * decision governs this area, read it", never a violation. Prose guidance is deliberately not
+   * weighted like deterministic CI enforcement.
+   */
+  'architecture-guidance',
 ] as const;
 
 export type ConstraintKind = (typeof CONSTRAINT_KINDS)[number];
@@ -50,6 +57,8 @@ export const CONSTRAINT_RELATIONS = [
   'REQUIRES_RUNTIME',
   'OWNS',
   'EXEMPTS',
+  /** An accepted decision governs a scope without stating a machine-checkable rule. */
+  'GOVERNS',
 ] as const;
 
 export type ConstraintRelation = (typeof CONSTRAINT_RELATIONS)[number];

@@ -88,3 +88,25 @@ describe('isSpeculativeConcept', () => {
     expect(isSpeculativeConcept('issue_routes.py')).toBe(false);
   });
 });
+
+describe('path-shaped concepts', () => {
+  it('extracts repository paths written in prose', () => {
+    const concepts = conceptsOf(
+      'The webview imports Cytoscape directly into packages/domain, and ci/scripts/check.py guards it.',
+    );
+    expect(concepts).toContain('packages/domain');
+    expect(concepts).toContain('ci/scripts/check.py');
+  });
+
+  it('does not extract URL bodies or word pairs with a slash', () => {
+    const concepts = conceptsOf(
+      'Fetch https://api.example.com/v2/deals and/or retry when it fails.',
+    );
+    expect(concepts).not.toContain('api.example.com/v2/deals');
+    expect(concepts).not.toContain('and/or');
+  });
+
+  it('treats a written path as asserted, never speculative', () => {
+    expect(isSpeculativeConcept('packages/domain')).toBe(false);
+  });
+});
