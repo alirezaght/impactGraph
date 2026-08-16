@@ -49,7 +49,11 @@ const edgesFrom = (graph: KnowledgeGraph, id: NodeId): readonly GraphEdge[] =>
     .map((edgeId: EdgeId) => graph.edges.get(edgeId))
     .filter((edge): edge is GraphEdge => edge !== undefined && TRAVERSABLE.has(edge.type));
 
-const hopOf = (node: GraphNode, viaRelation?: string): RuntimeHop | undefined => {
+const hopOf = (
+  node: GraphNode,
+  viaRelation?: string,
+  inferred?: boolean,
+): RuntimeHop | undefined => {
   const kind = HOP_KIND_BY_TYPE[node.type];
   if (kind === undefined) {
     return undefined;
@@ -59,6 +63,9 @@ const hopOf = (node: GraphNode, viaRelation?: string): RuntimeHop | undefined =>
     nodeId: String(node.id),
     name: node.name,
     ...(viaRelation === undefined ? {} : { viaRelation }),
+    // A hop crossed on a framework-convention edge was joined by convention, not read from a
+    // reference the file states — the path may warn but must never block (domain rule).
+    ...(inferred === true ? { inferred: true } : {}),
     evidenceIds: [...node.knowledge.evidenceIds],
   };
 };
@@ -77,12 +84,13 @@ const walk = (
   const seen = new Set<string>();
   let current: GraphNode | undefined = start;
   let via: string | undefined;
+  let viaConvention = false;
   while (current !== undefined && hops.length < MAX_HOPS) {
     if (seen.has(String(current.id))) {
       return { hops, incompleteReason: 'the deployment graph contains a cycle at this point' };
     }
     seen.add(String(current.id));
-    const hop = hopOf(current, via);
+    const hop = hopOf(current, via, viaConvention);
     if (hop === undefined) {
       return {
         hops,
@@ -107,6 +115,7 @@ const walk = (
     }
     const edge = next[0] as GraphEdge;
     via = edge.type;
+    viaConvention = edge.knowledge.provenance === 'framework-convention';
     current = graph.nodes.get(edge.targetId);
   }
   return hops.length >= MAX_HOPS

@@ -205,6 +205,8 @@ export {
   classifyConfig,
   checkConfigSemantics,
 } from './preflight/check-config-semantics.js';
+export type { ExtractConfigDeclarationsInput } from './preflight/extract-config-declarations.js';
+export { extractConfigDeclarations } from './preflight/extract-config-declarations.js';
 export type {
   RequirementSignalInput,
   ClassifyRequirementsInput,

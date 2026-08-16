@@ -131,8 +131,24 @@ describe('checkRuntime — the aggregator scenario', () => {
     expect(gap?.recommendation).toContain('Propagate');
   });
 
-  it('also reports that the plan never mentions the serving process', () => {
+  it('does not restate the gap as an unplanned-process line on the same path', () => {
+    // One path, one finding: the gap already names the process the plan missed. A second line
+    // saying the plan does not mention that process is the same fact twice (signal over volume).
     const graph = aggregatorGraph([]);
+    const findings = checkRuntime({
+      paths: resolveRuntimePaths({ graph }),
+      requirements,
+      configuredByProcess: configuredNamesByProcess(graph),
+      planConfiguredNodeIds: new Set(['run:newsletter-service']),
+      requirementIds: ['R3'],
+      nextId,
+    });
+    expect(findings).toHaveLength(1);
+    expect(findings[0]?.statement).toContain('does not receive');
+  });
+
+  it('reports the unplanned serving process when no configuration gap already names it', () => {
+    const graph = aggregatorGraph(['SENDGRID_TEMPLATE_IDS_JSON']);
     const findings = checkRuntime({
       paths: resolveRuntimePaths({ graph }),
       requirements,
@@ -174,8 +190,10 @@ describe('checkRuntime — the aggregator scenario', () => {
       nextId,
     });
     expect(findings.every((finding) => finding.severity === 'warning')).toBe(true);
+    // The gap still names the process and the missing value; the unresolved line is subsumed.
+    expect(findings.some((finding) => finding.statement.includes('does not receive'))).toBe(true);
     expect(findings.some((finding) => finding.statement.includes('could not be resolved'))).toBe(
-      true,
+      false,
     );
   });
 });

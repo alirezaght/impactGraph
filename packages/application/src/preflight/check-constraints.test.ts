@@ -139,6 +139,33 @@ describe('checkConstraints — the peer-HTTP scenario', () => {
   });
 });
 
+describe('checkConstraints — exemption precision', () => {
+  it('does not exempt an edge whose endpoint ref is merely a substring of an allowlist entry', () => {
+    // 'newsletter-service' is a substring of 'services/newsletter-service/jobs/send.py'; the
+    // allowlist names ONE file, not everything mentioning the service.
+    const findings = checkConstraints({
+      proposedEdges: [
+        {
+          requirementId: 'R6',
+          source: {
+            ref: 'newsletter service',
+            nodeId: 'file:routes',
+            path: 'services/newsletter-service/api/issue_routes.py',
+          },
+          target: { ref: 'newsletter-service', nodeId: 'run:svc', path: 'infra/main.tf' },
+          mechanism: 'http',
+          relation: 'CALLS_ENDPOINT',
+          quote: 'fetches over HTTP',
+          confidence: 0.85,
+        },
+      ],
+      constraints: constraints(),
+      nextId,
+    });
+    expect(findings.some((finding) => finding.severity === 'blocking')).toBe(true);
+  });
+});
+
 describe('deriveProposedEdges', () => {
   it('yields nothing when the requirement names fewer than two components', () => {
     expect(
@@ -158,6 +185,61 @@ describe('deriveProposedEdges', () => {
         concepts: [{ ref: 'newsletter service' }, { ref: 'user-profile service' }],
       }),
     ).toEqual([]);
+  });
+
+  it('pairs the two components in different containers, not the first two mentioned', () => {
+    // The requirement names its own file (issue_routes.py) alongside both services. The
+    // relationship the constraint must see is newsletter → user-profile, and pairing "the first
+    // two concepts" would silently drop the target and check nothing.
+    const edges = deriveProposedEdges({
+      requirementId: 'R1',
+      statement:
+        'The newsletter service fetches subscriber preferences from the user-profile service over HTTP while rendering an issue in issue_routes.py.',
+      concepts: [
+        {
+          ref: 'issue_routes.py',
+          nodeId: 'file:routes',
+          path: 'services/newsletter-service/api/issue_routes.py',
+        },
+        {
+          ref: 'newsletter service',
+          nodeId: 'file:routes',
+          path: 'services/newsletter-service/api/issue_routes.py',
+        },
+        {
+          ref: 'user-profile service',
+          nodeId: 'file:profile',
+          path: 'services/user-profile-service/app.py',
+        },
+      ],
+    });
+    const http = edges.find((edge) => edge.mechanism === 'http');
+    expect(http?.source.ref).toBe('newsletter service');
+    expect(http?.target.ref).toBe('user-profile service');
+  });
+
+  it('drops a concept that is a text fragment of another concept in the same requirement', () => {
+    const edges = deriveProposedEdges({
+      requirementId: 'R1',
+      statement:
+        'The newsletter service fetches subscriber preferences from the user-profile service over HTTP.',
+      concepts: [
+        { ref: 'user-profile' },
+        {
+          ref: 'newsletter service',
+          nodeId: 'file:routes',
+          path: 'services/newsletter-service/api/issue_routes.py',
+        },
+        {
+          ref: 'user-profile service',
+          nodeId: 'file:profile',
+          path: 'services/user-profile-service/app.py',
+        },
+      ],
+    });
+    const http = edges.find((edge) => edge.mechanism === 'http');
+    expect(http?.source.ref).toBe('newsletter service');
+    expect(http?.target.ref).toBe('user-profile service');
   });
 
   it('reads an import relationship as a dependency proposal', () => {

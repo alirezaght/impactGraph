@@ -44,6 +44,7 @@ import type {
   IndexFreshness,
   KnowledgeGraph,
   NodeId,
+  PlanAssessment,
   RawIndexWarning,
   RequirementClassification,
   Specification,
@@ -183,11 +184,34 @@ const specificationBlock = (
               'Repository coverage is insufficient — a readiness score over a graph that is missing the feature’s repositories would be misleading. Follow requiredActions and re-run the analysis.',
           }
         : {
-            readiness: computeReadiness(input.specification, {
-              unmatchedRequirementIds: unmatchedIds,
-            }),
+            readiness: consistentReadiness(
+              computeReadiness(input.specification, {
+                unmatchedRequirementIds: unmatchedIds,
+              }),
+              input.preflight?.assessment,
+            ),
           }),
   };
+};
+
+/**
+ * The §11 readiness score is question-based and can say "Ready for implementation." while the
+ * adversarial pass says BLOCKED — both numbers are honest, but printing the sentence next to the
+ * verdict reads as a contradiction. The score stays; the recommendation defers to the verdict
+ * whenever the verdict is the stronger claim.
+ */
+const consistentReadiness = (
+  readiness: ReturnType<typeof computeReadiness>,
+  assessment: PlanAssessment | undefined,
+): ReturnType<typeof computeReadiness> => {
+  if (
+    assessment === undefined ||
+    assessment.feasibility === 'READY' ||
+    assessment.feasibility === 'READY_WITH_WARNINGS'
+  ) {
+    return readiness;
+  }
+  return { ...readiness, recommendedAction: assessment.decision };
 };
 
 const provisionalReasons = (

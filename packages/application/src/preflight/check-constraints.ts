@@ -54,25 +54,23 @@ const inScope = (
   return { matched, byPath: false };
 };
 
-/** An exemption applies when it names the source endpoint's path or its reference. */
+/**
+ * An exemption applies when it names the SOURCE endpoint — the allowlisted location the call is
+ * made from — by exact path, glob, or exact reference. Substring matching is deliberately absent:
+ * an allowlist entry for one file inside a service must not exempt every relationship that merely
+ * mentions that service's name.
+ */
 const exemptionFor = (
   constraint: RepositoryConstraint,
   edge: ProposedEdge,
 ): RepositoryConstraint['exemptions'][number] | undefined =>
   constraint.exemptions.find((exemption) => {
     const subject = exemption.subject;
-    const candidates = [
-      edge.source.path,
-      edge.source.ref,
-      edge.target.path,
-      edge.target.ref,
-    ].filter((value): value is string => value !== undefined);
+    const candidates = [edge.source.path, edge.source.ref].filter(
+      (value): value is string => value !== undefined,
+    );
     return candidates.some(
-      (candidate) =>
-        candidate === subject ||
-        matchesAnyGlob(candidate, [subject]) ||
-        candidate.includes(subject) ||
-        subject.includes(candidate),
+      (candidate) => candidate === subject || matchesAnyGlob(candidate, [subject]),
     );
   });
 

@@ -98,16 +98,17 @@ const provenanceFor = (
   input: AssignProvenanceInput,
   supplied: ReadonlySet<string>,
 ): EvidenceProvenance => {
+  // A component the specification named is confirmation regardless of anything else — including a
+  // constraint finding citing it. The finding is the discovery; the file the user typed is not,
+  // and relabelling it as derived would let an echo inflate the independence count.
+  if (isUserSupplied(input.graph, impact.nodeId, supplied)) {
+    return 'USER_SUPPLIED';
+  }
   if (input.constraintDerivedNodeIds?.has(impact.nodeId) === true) {
     return 'CONSTRAINT_DERIVED';
   }
   if (input.runtimeDerivedNodeIds?.has(impact.nodeId) === true) {
     return 'RUNTIME_DERIVED';
-  }
-  // A component the specification named is confirmation regardless of how strong its basis looks —
-  // and its basis will look strong, because the engine matched the name it was given.
-  if (isUserSupplied(input.graph, impact.nodeId, supplied)) {
-    return 'USER_SUPPLIED';
   }
   return PROVENANCE_BY_BASIS[primaryEvidenceType(evidenceTypesOf(impact))];
 };

@@ -1,4 +1,5 @@
 import { analogousSqlLiterals } from './analogous-sql.js';
+import { configPreflightInputs } from './preflight-config.js';
 import { runPreflightForAnalysis } from './preflight.js';
 import {
   buildWorkspaceCoverage,
@@ -23,7 +24,11 @@ import type { WorkspaceRepositoryContext } from './repository-coverage.js';
 
 export type CoveragePreflightContext = Omit<
   PreflightContext,
-  'coverageInsufficient' | 'missingRepositoryNames' | 'analogousLiterals'
+  | 'coverageInsufficient'
+  | 'missingRepositoryNames'
+  | 'analogousLiterals'
+  | 'configRequirements'
+  | 'configDeclarations'
 >;
 
 export const runCoveragePreflight = async (
@@ -44,9 +49,15 @@ export const runCoveragePreflight = async (
     context.snapshotId,
     context.specificationText,
   );
+  // The runtime and config-semantics analyzers receive what the PLAN needs (hop-zero config
+  // matches) and how the repository declares it — computed here because it reads files and the
+  // fragment cache, which the sync engine pass must not.
+  const config = await configPreflightInputs(context.rootDir, context.graph, context.analysis);
   return runPreflightForAnalysis({
     ...context,
     analogousLiterals,
+    configRequirements: config.requirements,
+    configDeclarations: config.declarations,
     coverageInsufficient: coverage.status === 'insufficient-coverage',
     missingRepositoryNames: unindexedRegisteredRepositories(workspace).map((state) => state.name),
   });

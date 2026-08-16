@@ -166,16 +166,22 @@ export const resourceNodeType = (resourceType: string): string =>
   (IAM_RESOURCE.test(resourceType) ? 'iam-role' : 'terraform-resource');
 
 /**
- * Node type for a block. `variable`, `output`, `provider` and `data` are `terraform-resource`:
- * PRD §12.1 has no more specific infrastructure type for them, and the alternatives
- * (`environment-variable` for an input variable, `gcp-project` for a provider) would each claim
- * something the configuration does not say. The id and name carry the exact block kind, so
- * nothing is lost — and a §12 vocabulary addition is the domain-provenance agent's call, not this
- * adapter's.
+ * Node type for a block. `variable` and `output` carry the ADR-0017 vocabulary types the runtime
+ * layer distinguishes: a variable is a RESOLUTION hop a value passes through, never a process that
+ * serves traffic — typing it `terraform-resource` once made a runtime walk report an input
+ * variable as the process serving production traffic. `provider` and `data` stay
+ * `terraform-resource`: PRD §12.1 has no more specific type for them, and the id and name carry
+ * the exact block kind, so nothing is lost.
  */
 export const blockNodeType = (block: TerraformBlock): string => {
   if (block.kind === 'module') {
     return 'terraform-module';
+  }
+  if (block.kind === 'variable') {
+    return 'terraform-variable';
+  }
+  if (block.kind === 'output') {
+    return 'terraform-output';
   }
   const resourceType = block.labels[0];
   if (block.kind === 'resource' && resourceType !== undefined) {

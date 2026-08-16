@@ -9,6 +9,7 @@ import {
 import { linkLocaleKeys, linkOpenApiOperations } from './locale-links.js';
 import { linkOutboundHttp } from './outbound-http.js';
 import { linkPageNavigation } from './page-links.js';
+import { linkServiceUrlEnvironment } from './service-url-env.js';
 import { linkTemplateReferences, referenceSourceId } from './template-calls.js';
 
 import type {
@@ -150,6 +151,9 @@ class CrossStackAdapter implements FrameworkAdapter {
     });
     const deployments = linkInfrastructure(builder, graph, context.indexing);
     linkCloudRunEnvironment(builder, graph, context.indexing, deployments);
+    // R7: the frontend's *_SERVICE_URL env read joins the Terraform service-URL map that assembles
+    // it, so a runtime walk can start where the traffic starts and reach the process that serves it.
+    linkServiceUrlEnvironment(builder, graph, context.indexing);
     // Item 8: the two asset correspondences. Both are literal-key joins on ids the asset adapter and
     // the framework adapters independently agree on, so neither side knows about the other.
     linkLocaleKeys(builder, graph, context.indexing);

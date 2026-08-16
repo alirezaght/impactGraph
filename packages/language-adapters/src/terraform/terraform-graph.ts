@@ -176,7 +176,10 @@ const recordCrossFileFacts = (
         receiverName: REFERENCE_RECEIVER,
         calleeName: reference.address,
         stringArguments: [],
-        identifierArguments: [],
+        // The entry selector (`local._agg.NEWSLETTER` → `newsletter`) rides the identifier
+        // channel: the address stays the block that resolves to a node, and only consumers that
+        // need the entry name (service-URL maps) read further.
+        identifierArguments: reference.selector === undefined ? [] : [reference.selector],
         enclosingSymbolNodeId: nodeId,
         evidenceId,
       });
@@ -381,7 +384,7 @@ const emitLocals = (state: TerraformEmitState, block: TerraformBlock): void => {
         receiverName: REFERENCE_RECEIVER,
         calleeName: reference.address,
         stringArguments: [],
-        identifierArguments: [],
+        identifierArguments: reference.selector === undefined ? [] : [reference.selector],
         enclosingSymbolNodeId: nodeId,
         evidenceId,
       });

@@ -84,7 +84,7 @@ describe('the Terraform JSON syntax reader', () => {
       'terraform:infra/google_pubsub_topic.shard[0]|pubsub-topic|google_pubsub_topic.shard[0]',
       'terraform:infra/google_pubsub_topic.shard[1]|pubsub-topic|google_pubsub_topic.shard[1]',
       'terraform:infra/google_secret_manager_secret_iam_member.reader|iam-role|google_secret_manager_secret_iam_member.reader',
-      'terraform:infra/var.region|terraform-resource|var.region',
+      'terraform:infra/var.region|terraform-variable|var.region',
       // Secret nodes are keyed by the secret's own name, not by directory — the same id the HCL
       // path produces, so a `.tf.json` binding and a `.tf` binding land on one node.
       'terraform:secret:db-password|secret|db-password',

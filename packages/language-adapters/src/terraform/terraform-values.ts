@@ -17,6 +17,8 @@ import type { Node } from 'web-tree-sitter';
 export interface TerraformReference {
   readonly kind: 'variable' | 'module' | 'resource' | 'data' | 'local';
   readonly address: string;
+  /** Segments after the block address — see TerraformAddress.selector. */
+  readonly selector?: string;
   readonly range: SourceRange;
 }
 
@@ -113,6 +115,13 @@ const KINDS = new Map<string, TerraformReference['kind']>([
 export interface TerraformAddress {
   readonly kind: TerraformReference['kind'];
   readonly address: string;
+  /**
+   * The segments AFTER the block address — `local._agg.newsletter` names entry `newsletter` inside
+   * `local._agg`. The address stays the block (that is what resolves to a node); the selector
+   * travels separately so a consumer that needs the entry name (service-URL maps) can read it
+   * without every other consumer having to re-trim.
+   */
+  readonly selector?: string;
 }
 
 /**
@@ -130,12 +139,16 @@ export const addressFromSegments = (segments: readonly string[]): TerraformAddre
     return undefined;
   }
   const kind = KINDS.get(head) ?? 'resource';
+  const withSelector = (address: string, consumed: number): TerraformAddress => {
+    const selector = segments.slice(consumed).join('.');
+    return selector.length === 0 ? { kind, address } : { kind, address, selector };
+  };
   if (head === 'data') {
     return first === undefined || second === undefined
       ? undefined
-      : { kind, address: `data.${first}.${second}` };
+      : withSelector(`data.${first}.${second}`, 3);
   }
-  return first === undefined ? undefined : { kind, address: `${head}.${first}` };
+  return first === undefined ? undefined : withSelector(`${head}.${first}`, 2);
 };
 
 /**

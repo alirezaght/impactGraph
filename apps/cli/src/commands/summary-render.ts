@@ -21,6 +21,60 @@ const trustBlock = (output: CliImpactSummary): string[] => {
   return lines;
 };
 
+/**
+ * The verdict is the headline (ADR-0017): what a reader must know FIRST is not which files match,
+ * but whether the plan survives the repository's own rules. Rendered before everything except the
+ * trust block, because a BLOCKED verdict changes how every following line is read.
+ */
+const assessmentBlock = (output: CliImpactSummary): string[] => {
+  const assessment = output.planAssessment;
+  if (assessment === undefined) {
+    return [];
+  }
+  const bySeverity = new Map<string, number>();
+  for (const finding of output.preflightFindings ?? []) {
+    bySeverity.set(finding.severity, (bySeverity.get(finding.severity) ?? 0) + 1);
+  }
+  const countsLine = ['blocking', 'warning', 'informational']
+    .map((severity) => `${severity} ${String(bySeverity.get(severity) ?? 0)}`)
+    .join(', ');
+  return [`Plan assessment: ${assessment.feasibility} — ${assessment.decision}`, `  findings: ${countsLine}`, ''];
+};
+
+/**
+ * Adversarial findings are their own section, never mixed into the impact list: "these are the
+ * surfaces involved" and "these are the reasons the plan may be wrong" must stay tellable apart.
+ */
+const findingsBlock = (output: CliImpactSummary): string[] => {
+  const findings = output.preflightFindings ?? [];
+  const coverage = output.constraintCoverage;
+  if (findings.length === 0 && coverage === undefined) {
+    return [];
+  }
+  const lines: string[] = [];
+  if (findings.length > 0) {
+    lines.push(`Red-team findings (${String(findings.length)}):`);
+    for (const finding of findings) {
+      const requirements =
+        finding.requirementIds.length > 0 ? ` [${finding.requirementIds.join(', ')}]` : '';
+      lines.push(`- ${finding.severity.toUpperCase()} ${finding.kind}${requirements}: ${finding.statement}`);
+      if (finding.severity !== 'informational') {
+        lines.push(`    → ${finding.recommendation}`);
+      }
+    }
+  }
+  if (coverage !== undefined) {
+    const opaque =
+      coverage.opaqueGuardPaths.length > 0
+        ? ` (${String(coverage.opaqueGuardPaths.length)} guard(s) present but not readable — their rules were NOT checked)`
+        : '';
+    lines.push(
+      `Checked against ${String(coverage.indexedConstraintCount)} indexed repository rule(s)${opaque}.`,
+    );
+  }
+  return [...lines, ''];
+};
+
 const specificationBlock = (output: CliImpactSummary): string[] => {
   const { specification } = output;
   const quality = specification.extractionQuality;
@@ -35,7 +89,13 @@ const specificationBlock = (output: CliImpactSummary): string[] => {
   ];
   const readiness = specification.readiness;
   if (readiness !== undefined) {
-    lines.push(`Readiness: ${String(readiness.score)}% — ${readiness.recommendedAction}`);
+    // When the verdict already carries the recommendation (the engine defers the §11 sentence to
+    // the plan assessment), the score prints alone instead of repeating the headline.
+    lines.push(
+      readiness.recommendedAction === output.planAssessment?.decision
+        ? `Readiness: ${String(readiness.score)}% (structural — see plan assessment)`
+        : `Readiness: ${String(readiness.score)}% — ${readiness.recommendedAction}`,
+    );
   } else if (specification.readinessWithheldReason !== undefined) {
     lines.push(`Readiness: withheld — ${specification.readinessWithheldReason}`);
   }
@@ -165,9 +225,11 @@ export const renderImpactSummary = (context: CommandContext, output: CliImpactSu
   }
   writeLines(context, [
     ...trustBlock(output),
+    ...assessmentBlock(output),
     ...specificationBlock(output),
     ...countsBlock(output),
     ...impactBlock(output),
+    ...findingsBlock(output),
     ...gapsBlock(output),
     ...warningBlock(output),
     `Scope: ${output.impactQuery.scope}`,

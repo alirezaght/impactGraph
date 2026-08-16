@@ -6,8 +6,13 @@ import { unmatchedRequirements } from './reports/impact-summary-facts.js';
 import { buildRequirementSignals, indexedTypes } from './requirement-signals.js';
 import { resolveSuppliedIdentifiers } from './supplied-identifiers.js';
 
-import type { AnalogousLiteralMatch, PreflightRequirement } from '@impactgraph/application';
 import type {
+  AnalogousLiteralMatch,
+  ConfigDeclaration,
+  PreflightRequirement,
+} from '@impactgraph/application';
+import type {
+  ConfigRequirement,
   EvidenceIndependence,
   ImpactAnalysis,
   KnowledgeGraph,
@@ -48,6 +53,14 @@ export interface PreflightContext {
    * recommendation's pointer, never a finding.
    */
   readonly analogousLiterals?: readonly AnalogousLiteralMatch[];
+  /**
+   * Configuration the plan needs and how the repository declares it, computed by
+   * `configPreflightInputs` in the coverage-preflight path (it reads files and the fragment
+   * cache, which this module must not). Absent means the runtime and config-semantics checks run
+   * over nothing — degraded, never guessed.
+   */
+  readonly configRequirements?: readonly ConfigRequirement[];
+  readonly configDeclarations?: readonly ConfigDeclaration[];
 }
 
 export interface PreflightOutcome {
@@ -61,33 +74,84 @@ export interface PreflightOutcome {
   readonly opaqueGuardPaths: readonly string[];
 }
 
+const normalize = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Hop-zero impacts are exactly the concept matches — the components the requirement NAMED. */
+const hopZeroNodes = (
+  analysis: ImpactAnalysis,
+  graph: KnowledgeGraph,
+  requirementId: string,
+): readonly { readonly nodeId: string; readonly name: string; readonly path?: string }[] =>
+  analysis.requirementImpacts
+    .filter(
+      (impact) => impact.requirementId === requirementId && impact.dependencyPath.length <= 1,
+    )
+    .flatMap((impact) => {
+      const node = graph.nodes.get(impact.nodeId as NodeId);
+      return node === undefined
+        ? []
+        : [
+            {
+              nodeId: impact.nodeId,
+              name: node.name,
+              ...(node.path === undefined ? {} : { path: node.path }),
+            },
+          ];
+    });
+
 /**
- * The components a requirement NAMED, as opposed to everything it reaches: impacts at hop zero are
- * exactly the concept matches, which is what a proposed relationship must be built from.
+ * Resolve one of the requirement's OWN concept strings to a hop-zero node. The ref must stay the
+ * specification's wording — endpoint ordering reads the sentence, and node names ("app.py") do not
+ * appear in it. A code location beats an infrastructure declaration: when "newsletter service"
+ * matches both the Cloud Run resource and the files under services/newsletter-service/, the
+ * constraint scope that governs the plan is the code path, not infra/main.tf.
+ */
+const resolveConceptRef = (
+  ref: string,
+  nodes: readonly { readonly nodeId: string; readonly name: string; readonly path?: string }[],
+): { ref: string; nodeId?: string; path?: string } => {
+  const target = normalize(ref);
+  const hasSegment = (path: string | undefined): boolean =>
+    path !== undefined && path.split('/').slice(0, -1).some((part) => normalize(part) === target);
+  const chosen =
+    nodes.find((node) => hasSegment(node.path)) ??
+    nodes.find((node) => normalize(node.name) === target) ??
+    nodes.find(
+      (node) => node.path !== undefined && normalize(node.path.split('/').at(-1) ?? '') === target,
+    );
+  return chosen === undefined
+    ? { ref }
+    : { ref, nodeId: chosen.nodeId, ...(chosen.path === undefined ? {} : { path: chosen.path }) };
+};
+
+/**
+ * The components a requirement named, in the specification's own words, resolved against the
+ * hop-zero matches. Requirements extracted before concepts were recorded fall back to node-name
+ * refs, so an old artifact still yields proposed relationships.
  */
 const namedConcepts = (
   analysis: ImpactAnalysis,
   graph: KnowledgeGraph,
-  requirementId: string,
+  requirement: Specification['requirements'][number],
 ): PreflightRequirement['concepts'] => {
+  const nodes = hopZeroNodes(analysis, graph, requirement.id);
+  if (requirement.concepts.length > 0) {
+    return requirement.concepts.map((ref) => resolveConceptRef(ref, nodes));
+  }
   const seen = new Set<string>();
-  const concepts: { ref: string; nodeId?: string; path?: string }[] = [];
-  for (const impact of analysis.requirementImpacts) {
-    if (impact.requirementId !== requirementId || impact.dependencyPath.length > 1) {
-      continue;
-    }
-    const node = graph.nodes.get(impact.nodeId as NodeId);
-    if (node === undefined || seen.has(node.name)) {
+  const fallback: { ref: string; nodeId?: string; path?: string }[] = [];
+  for (const node of nodes) {
+    if (seen.has(node.name)) {
       continue;
     }
     seen.add(node.name);
-    concepts.push({
+    fallback.push({
       ref: node.name,
-      nodeId: impact.nodeId,
+      nodeId: node.nodeId,
       ...(node.path === undefined ? {} : { path: node.path }),
     });
   }
-  return concepts;
+  return fallback;
 };
 
 /** Every requirement, in the shape the analyzers consume, built from state analysis already holds. */
@@ -110,7 +174,7 @@ const preflightRequirements = (context: PreflightContext): readonly PreflightReq
     id: requirement.id,
     ...(requirement.label === undefined ? {} : { label: requirement.label }),
     statement: requirement.statement,
-    concepts: namedConcepts(context.analysis, context.graph, requirement.id),
+    concepts: namedConcepts(context.analysis, context.graph, requirement),
     hasStructuralImpact: withImpact.has(requirement.id),
     signals: buildRequirementSignals(requirement.statement, requirement.id, signalContext),
   }));
@@ -166,8 +230,8 @@ export const runPreflightForAnalysis = (context: PreflightContext): PreflightOut
       ? {}
       : { analogousLiterals: context.analogousLiterals }),
     constraints: loaded.constraints,
-    configRequirements: [],
-    configDeclarations: [],
+    configRequirements: context.configRequirements ?? [],
+    configDeclarations: context.configDeclarations ?? [],
     planConfiguredNodeIds: new Set(
       context.analysis.requirementImpacts.map((impact) => impact.nodeId),
     ),

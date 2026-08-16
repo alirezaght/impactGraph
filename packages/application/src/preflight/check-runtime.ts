@@ -103,15 +103,21 @@ const unplannedProcessFinding = (
 export const checkRuntime = (input: CheckRuntimeInput): readonly PreflightFinding[] => {
   const findings: PreflightFinding[] = [];
   for (const path of input.paths) {
-    const unresolved = unresolvedFinding(path, input);
-    if (unresolved !== undefined) {
-      findings.push(unresolved);
+    const gaps = findConfigGaps(path, input.requirements, input.configuredByProcess);
+    // One path, one story. A gap already names the process the plan missed and the value it
+    // lacks; restating the same path as "unresolved" or "unplanned process" is the same fact in
+    // weaker words, and three findings about one path bury the two that decide the verdict.
+    if (gaps.length === 0) {
+      const unresolved = unresolvedFinding(path, input);
+      if (unresolved !== undefined) {
+        findings.push(unresolved);
+      }
+      const unplanned = unplannedProcessFinding(path, input);
+      if (unplanned !== undefined) {
+        findings.push(unplanned);
+      }
     }
-    const unplanned = unplannedProcessFinding(path, input);
-    if (unplanned !== undefined) {
-      findings.push(unplanned);
-    }
-    for (const gap of findConfigGaps(path, input.requirements, input.configuredByProcess)) {
+    for (const gap of gaps) {
       const result = createPreflightFinding({
         id: input.nextId(`${path.id}:${gap.atNodeId}`),
         kind: 'runtime-topology-gap',

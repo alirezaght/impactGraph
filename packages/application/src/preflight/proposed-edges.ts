@@ -149,6 +149,60 @@ export interface DeriveProposedEdgesInput {
   readonly concepts: readonly ResolvedConcept[];
 }
 
+/** The top-level container of a path — 'services/newsletter-service', 'apps/admin', 'infra'. */
+const containerOfPath = (path: string | undefined): string | undefined => {
+  if (path === undefined) {
+    return undefined;
+  }
+  const segments = path.split('/');
+  return segments.length <= 2 ? segments[0] : segments.slice(0, 2).join('/');
+};
+
+/**
+ * Which two of the requirement's components the sentence relates.
+ *
+ * A requirement routinely names more than two things — both services AND the file the change lands
+ * in — and "the first two" silently drops the real target, so the constraint check reads the wrong
+ * relationship. A relationship a constraint can govern crosses a container boundary, so the first
+ * textual pair whose resolved paths live in different top-level containers wins; a fragment of a
+ * longer concept ("user-profile" inside "user-profile service") is never an endpoint of its own.
+ */
+const selectEndpoints = (
+  statement: string,
+  concepts: readonly ResolvedConcept[],
+): readonly [ResolvedConcept, ResolvedConcept] => {
+  const distinct = concepts.filter(
+    (concept, index) =>
+      !concepts.some(
+        (other, otherIndex) =>
+          otherIndex !== index &&
+          other.ref.length > concept.ref.length &&
+          other.ref.toLowerCase().includes(concept.ref.toLowerCase()),
+      ),
+  );
+  const pool = distinct.length >= 2 ? distinct : concepts;
+  const lower = statement.toLowerCase();
+  const at = (concept: ResolvedConcept): number => {
+    const index = lower.indexOf(concept.ref.toLowerCase());
+    return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  const byPosition = [...pool].sort((a, b) => at(a) - at(b));
+  for (const source of byPosition) {
+    for (const target of byPosition.slice(byPosition.indexOf(source) + 1)) {
+      const sourceContainer = containerOfPath(source.path);
+      const targetContainer = containerOfPath(target.path);
+      if (
+        sourceContainer !== undefined &&
+        targetContainer !== undefined &&
+        sourceContainer !== targetContainer
+      ) {
+        return [source, target];
+      }
+    }
+  }
+  return [byPosition[0] as ResolvedConcept, byPosition[1] as ResolvedConcept];
+};
+
 /**
  * At most one proposed edge per mechanism per requirement. A requirement sentence that mentions
  * three services does not propose six relationships; inflating the count would flood the findings
@@ -158,17 +212,14 @@ export const deriveProposedEdges = (input: DeriveProposedEdgesInput): readonly P
   if (input.concepts.length < 2) {
     return [];
   }
+  const endpoints = selectEndpoints(input.statement, input.concepts);
   const edges: ProposedEdge[] = [];
   for (const rule of MECHANISM_RULES) {
     const match = rule.pattern.exec(input.statement);
     if (match === null) {
       continue;
     }
-    const [first, second] = orderEndpoints(
-      input.statement,
-      input.concepts[0] as ResolvedConcept,
-      input.concepts[1] as ResolvedConcept,
-    );
+    const [first, second] = orderEndpoints(input.statement, endpoints[0], endpoints[1]);
     const source = endpointOf(first);
     const target = endpointOf(second);
     edges.push({
