@@ -153,3 +153,33 @@ sabotage-verified to fail when the two are conflated.
 parameter. That is fixture work with its own golden movement, and it should be done when a rule
 actually reads a parameter, not before: a sample constraining a rule that does not exist would pin
 the absence of behaviour.
+
+## Red-team analysis limits (ADR-0021)
+
+**Configuration declarations cover a fixed set of literal shapes.** `os.environ.get("X"[, default])`,
+`os.environ["X"]`, `process.env.X ?? lit` / `|| lit`, and a same-file `X = <literal>` attribute the
+default points at. A default assembled by code, a config loaded through a framework layer, or a
+Terraform `value` that interpolates is `not-extracted` — the semantics check says nothing about it
+rather than guessing.
+
+**The frontend URL correspondence links one stem to one map.** `<STEM>_SERVICE_URL` / `<STEM>_URL`
+joins the single Terraform service-URL map whose entry addresses contain the stem; two candidate
+maps refuse to link. Multi-entry maps resolve at map level, so a walk through one reports
+"routes to N targets" (an honest incomplete path) instead of following the entry the traffic takes —
+map entries are not nodes yet.
+
+**ADR guidance is a pointer, never a rule.** An accepted ADR-shaped document becomes an `advisory`
+`architecture-guidance` constraint scoped to the repository paths its text literally names. The
+finding it produces says "read this before implementing"; nothing parses the prose, so nothing can
+report it violated. An ADR that names no path is not indexed — an unscoped advisory would attach to
+every plan.
+
+**Test-environment facts are connection-string markers in test-scoped config files.** `jdbc:h2:`,
+`sqlite://`-style URLs, `jdbc:postgresql`, `mysql://` — in paths under `test(s)/`, `src/test/`, or
+conventional names (`conftest.py`, `application-test.yml`, `.env.test`). Engine-specific SQL is a
+short strong-marker list (`ON CONFLICT`, `gen_random_uuid(`, `::uuid`, `ILIKE`, …). A repository
+that states neither side produces silence, not suspicion.
+
+**Speculative concepts resolve silently or drop silently.** Kebab-case words and architectural noun
+phrases mined from prose never appear in `unresolvedConcepts`; only identifier shapes the author
+wrote (backticks, CamelCase, dotted, SCREAMING_SNAKE) can produce an unresolved warning.

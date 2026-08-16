@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 import { preflightArtifactSchema } from '@impactgraph/contracts';
@@ -31,7 +38,12 @@ export const preflightArtifactsDir = (rootDir: string): string =>
 const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 /** Node types that mean "a process serves traffic here" — what the plan says runs. */
-const PROCESS_TYPES = new Set(['container', 'runtime-process', 'cloud-run-service', 'cloud-run-job']);
+const PROCESS_TYPES = new Set([
+  'container',
+  'runtime-process',
+  'cloud-run-service',
+  'cloud-run-job',
+]);
 
 const runtimeProcessNodeIds = (analysis: ImpactAnalysis, graph: KnowledgeGraph): string[] => {
   const ids = new Set<string>();
@@ -142,7 +154,10 @@ export const latestPreflightArtifact = (
     if (!loaded.ok) {
       return loaded;
     }
-    if (loaded.value !== undefined && (latest === undefined || loaded.value.createdAt > latest.createdAt)) {
+    if (
+      loaded.value !== undefined &&
+      (latest === undefined || loaded.value.createdAt > latest.createdAt)
+    ) {
       latest = loaded.value;
     }
   }

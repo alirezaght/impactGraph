@@ -73,6 +73,23 @@ const omittedEdgeLines = (report: CliReviewOutput): string[] => {
   return omitted > 0 ? [`  Edge-change lists truncated: ${String(omitted)} edge ids omitted.`] : [];
 };
 
+/**
+ * ADR-0017/0021: what the approved plan committed to, checked against the diff — forbidden
+ * relationships, missing deployment work, guards not updated. Rendered as its own block so a plan
+ * violation cannot hide among per-file findings.
+ */
+const planContractLines = (report: CliReviewOutput): string[] => {
+  const contract = report.planContract;
+  if (contract === undefined || contract.findings.length === 0) {
+    return [];
+  }
+  const lines = ['Plan contract (approved design vs this diff):'];
+  for (const finding of contract.findings) {
+    lines.push(`  [${finding.severity}] ${finding.kind}: ${finding.statement}`);
+  }
+  return lines;
+};
+
 const textLines = (report: CliReviewOutput): string[] => {
   const lines = [`Review (${report.target}) — ${String(report.changedFiles.length)} changed files`];
   for (const finding of report.findings) {
@@ -82,6 +99,7 @@ const textLines = (report: CliReviewOutput): string[] => {
     lines.push(`  [rule:${violation.ruleId}] ${violation.message}`);
   }
   lines.push(...omittedEdgeLines(report));
+  lines.push(...planContractLines(report));
   lines.push(...driftLines(report));
   lines.push('Requirement coverage (estimate):');
   for (const entry of report.coverage) {
@@ -100,15 +118,15 @@ export interface RenderReviewInput {
   readonly violations: readonly RuleViolation[];
   /** Item 13: present when the caller ran the pipeline and can supply the breakdown inputs. */
   readonly breakdownContext?: ReviewBreakdownContext;
+  /** ADR-0017/0021: the plan-as-contract block, when the pipeline computed one. */
+  readonly planContract?: CliReviewOutput['planContract'];
 }
 
 export const renderReview = (context: CommandContext, input: RenderReviewInput): void => {
-  const report = buildReviewOutput(
-    input.review,
-    input.analysis,
-    input.violations,
-    input.breakdownContext,
-  );
+  const report = buildReviewOutput(input.review, input.analysis, input.violations, {
+    breakdownContext: input.breakdownContext,
+    planContract: input.planContract,
+  });
   if (context.format === 'json') {
     writeJson(context, cliReviewOutputSchema, report);
     return;

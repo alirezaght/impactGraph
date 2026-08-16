@@ -78,7 +78,10 @@ const runJob = async (request: EngineJobRequest): Promise<Failable<unknown>> => 
         bundle.value.review,
         bundle.value.analysis,
         bundle.value.violations,
-        bundle.value.breakdownContext,
+        {
+          breakdownContext: bundle.value.breakdownContext,
+          planContract: bundle.value.planContract,
+        },
       ),
     };
   }

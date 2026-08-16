@@ -74,12 +74,22 @@ const baselineDto = (analysis: ImpactAnalysis): Pick<CliReviewOutput, 'baseline'
         },
       };
 
+export interface ReviewOutputExtras {
+  readonly breakdownContext?: ReviewBreakdownContext | undefined;
+  /**
+   * ADR-0017/0021 — the plan-as-contract block the pipeline computed. Absent means the caller had
+   * no pipeline run to draw on, never "the plan was honoured".
+   */
+  readonly planContract?: CliReviewOutput['planContract'];
+}
+
 export const buildReviewOutput = (
   review: ImplementationReview,
   analysis: ImpactAnalysis,
   violations: readonly RuleViolation[],
-  breakdownContext?: ReviewBreakdownContext,
+  extras: ReviewOutputExtras = {},
 ): CliReviewOutput => ({
+  ...(extras.planContract === undefined ? {} : { planContract: extras.planContract }),
   schemaVersion: 1,
   command: 'review',
   reviewId: review.id,
@@ -115,10 +125,12 @@ export const buildReviewOutput = (
     ...(violation.evidence.edgeId === undefined ? {} : { edgeId: violation.evidence.edgeId }),
   })),
   discrepanciesFound: hasDiscrepancies(review) || violations.length > 0,
-  ...(breakdownContext === undefined
+  ...(extras.breakdownContext === undefined
     ? {}
-    : { breakdown: breakdownDto(review, analysis, breakdownContext) }),
-  ...(breakdownContext?.drift === undefined ? {} : { drift: breakdownContext.drift }),
+    : { breakdown: breakdownDto(review, analysis, extras.breakdownContext) }),
+  ...(extras.breakdownContext?.drift === undefined
+    ? {}
+    : { drift: extras.breakdownContext.drift }),
 });
 
 /**

@@ -56,6 +56,7 @@ export const runReview = async (context: CommandContext): Promise<CommandResult>
     analysis: bundle.value.analysis,
     violations: bundle.value.violations,
     breakdownContext: bundle.value.breakdownContext,
+    ...(bundle.value.planContract === undefined ? {} : { planContract: bundle.value.planContract }),
   });
   return {
     ok: true,

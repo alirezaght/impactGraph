@@ -38,7 +38,11 @@ const assessmentBlock = (output: CliImpactSummary): string[] => {
   const countsLine = ['blocking', 'warning', 'informational']
     .map((severity) => `${severity} ${String(bySeverity.get(severity) ?? 0)}`)
     .join(', ');
-  return [`Plan assessment: ${assessment.feasibility} — ${assessment.decision}`, `  findings: ${countsLine}`, ''];
+  return [
+    `Plan assessment: ${assessment.feasibility} — ${assessment.decision}`,
+    `  findings: ${countsLine}`,
+    '',
+  ];
 };
 
 /**
@@ -57,7 +61,9 @@ const findingsBlock = (output: CliImpactSummary): string[] => {
     for (const finding of findings) {
       const requirements =
         finding.requirementIds.length > 0 ? ` [${finding.requirementIds.join(', ')}]` : '';
-      lines.push(`- ${finding.severity.toUpperCase()} ${finding.kind}${requirements}: ${finding.statement}`);
+      lines.push(
+        `- ${finding.severity.toUpperCase()} ${finding.kind}${requirements}: ${finding.statement}`,
+      );
       if (finding.severity !== 'informational') {
         lines.push(`    → ${finding.recommendation}`);
       }

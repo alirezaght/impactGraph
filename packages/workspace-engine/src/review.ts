@@ -45,6 +45,11 @@ export interface ReviewBundle {
   readonly violations: readonly RuleViolation[];
   /** Item 13: what the review document needs to split its findings by kind and state its scope. */
   readonly breakdownContext: ReviewBreakdownContext;
+  /**
+   * ADR-0017/0021 — the plan-as-contract result, computed ONCE here so the shells return the same
+   * block the persisted artifact records; without this the findings were archived and never shown.
+   */
+  readonly planContract?: CliReviewOutput['planContract'];
 }
 
 const readDiff = async (
@@ -110,21 +115,16 @@ interface CompareInputs {
 }
 
 /**
- * ADR-0017 — attach the plan-contract block: the approved design checked against the diff rather
- * than archived alongside it.
+ * ADR-0017 — the plan-contract block: the approved design checked against the diff rather than
+ * archived alongside it. Computed once per review; the persisted artifact and every shell's
+ * returned document carry the SAME block.
  */
-const withPlanContract = (
-  document: CliReviewOutput,
-  context: PlanContractInput,
-): CliReviewOutput => {
+const planContractDto = (context: PlanContractInput): CliReviewOutput['planContract'] => {
   const contract = reviewAgainstPlan(context);
   return {
-    ...document,
-    planContract: {
-      findings: contract.findings.map(toFindingDto),
-      unplannedPaths: [...contract.unplannedPaths],
-      unchangedExpectedPaths: [...contract.unchangedExpectedPaths],
-    },
+    findings: contract.findings.map(toFindingDto),
+    unplannedPaths: [...contract.unplannedPaths],
+    unchangedExpectedPaths: [...contract.unchangedExpectedPaths],
   };
 };
 
@@ -180,38 +180,52 @@ const compareAgainstBaseline = async (inputs: CompareInputs): Promise<Failable<R
     if (!violations.ok) {
       return violations;
     }
-    // Story 11.2: persist the review so accepted-deviation decisions have an artifact to
-    // append to (§24.1). A later re-run is a NEW artifact — acceptance never carries over.
-    const breakdownContext = await assembleBreakdownContext(inputs, {
+    return finalizeReview(inputs, {
       review: review.value,
       approvedGraph: approvedGraph.value,
       currentGraph: currentGraph.value,
+      violations: violations.value,
     });
-    const persisted = persistWithPlanContract(
-      inputs,
-      {
-        review: review.value,
-        approvedGraph: approvedGraph.value,
-        currentGraph: currentGraph.value,
-      },
-      violations.value,
-      breakdownContext,
-    );
-    if (!persisted.ok) {
-      return persisted;
-    }
-    recordReviewLearning(rootDir, review.value.changedFiles);
-    return {
-      ok: true,
-      value: {
-        review: review.value,
-        analysis,
-        baselineAuthority: inputs.baselineAuthority,
-        violations: violations.value,
-        breakdownContext,
-      },
-    };
   });
+};
+
+interface FinalizeInputs extends ComparedGraphs {
+  readonly violations: readonly RuleViolation[];
+}
+
+/**
+ * Story 11.2 + ADR-0017/0021: assemble the breakdown, check the plan contract, persist the
+ * artifact (so accepted-deviation decisions have something to append to — a re-run is a NEW
+ * artifact, acceptance never carries over), and return the bundle every shell renders from.
+ */
+const finalizeReview = async (
+  inputs: CompareInputs,
+  compared: FinalizeInputs,
+): Promise<Failable<ReviewBundle>> => {
+  const breakdownContext = await assembleBreakdownContext(inputs, compared);
+  const planContract = planContractDto({
+    rootDir: inputs.rootDir,
+    analysis: inputs.analysis,
+    review: compared.review,
+    approvedGraph: compared.approvedGraph,
+    currentGraph: compared.currentGraph,
+  });
+  const persisted = persistWithPlanContract(inputs, compared, breakdownContext, planContract);
+  if (!persisted.ok) {
+    return persisted;
+  }
+  recordReviewLearning(inputs.rootDir, compared.review.changedFiles);
+  return {
+    ok: true,
+    value: {
+      review: compared.review,
+      analysis: inputs.analysis,
+      baselineAuthority: inputs.baselineAuthority,
+      violations: compared.violations,
+      breakdownContext,
+      ...(planContract === undefined ? {} : { planContract }),
+    },
+  };
 };
 
 interface ComparedGraphs {
@@ -223,22 +237,16 @@ interface ComparedGraphs {
 /** Build the §38.2 document (plan contract attached, ADR-0017) and persist it (§24.1). */
 const persistWithPlanContract = (
   inputs: CompareInputs,
-  compared: ComparedGraphs,
-  violations: readonly RuleViolation[],
+  compared: FinalizeInputs,
   breakdownContext: ReviewBreakdownContext,
+  planContract: CliReviewOutput['planContract'],
 ): Failable<void> =>
   persistReviewDocument(
     inputs.rootDir,
-    withPlanContract(
-      buildReviewOutput(compared.review, inputs.analysis, violations, breakdownContext),
-      {
-        rootDir: inputs.rootDir,
-        analysis: inputs.analysis,
-        review: compared.review,
-        approvedGraph: compared.approvedGraph,
-        currentGraph: compared.currentGraph,
-      },
-    ),
+    buildReviewOutput(compared.review, inputs.analysis, compared.violations, {
+      breakdownContext,
+      planContract,
+    }),
   );
 
 /**

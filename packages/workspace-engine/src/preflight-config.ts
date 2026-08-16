@@ -6,7 +6,12 @@ import { extractConfigDeclarations } from '@impactgraph/application';
 import { searchLiterals } from './literal-search.js';
 
 import type { ConfigDeclaration } from '@impactgraph/application';
-import type { ConfigRequirement, ImpactAnalysis, KnowledgeGraph, NodeId } from '@impactgraph/domain';
+import type {
+  ConfigRequirement,
+  ImpactAnalysis,
+  KnowledgeGraph,
+  NodeId,
+} from '@impactgraph/domain';
 
 /**
  * What configuration the PLAN needs, and how the repository declares it — the two inputs the

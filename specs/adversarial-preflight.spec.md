@@ -103,3 +103,38 @@ boundary, and backward compatible where reasonable.
 R23. Add fixture-backed tests proving detection of: constraint violation, exemption without false
 positive, runtime config gap, invalid enum member, new surface, coverage gap, spec echo marked
 user-supplied, intent-aware ranking, and review drift from an unplanned dependency.
+
+## Phase 2 requirements (built-in red-team analysis, ADR-0021)
+
+R24. The analysis path must feed every analyzer end to end: configuration requirements and
+declarations derived deterministically (never wired empty), concept extraction covering
+SCREAMING_SNAKE, kebab-case and lowercase architectural noun phrases, and directory-segment
+resolution for components that exist only as directories.
+
+R25. Speculative (mined) concepts resolve silently or drop silently; only author-written identifier
+shapes may produce an unresolved-concept warning.
+
+R26. A frontend `*_SERVICE_URL` environment read must join the Terraform service-URL map that
+assembles it when exactly one map names its stem; hops crossed on convention edges are inferred and
+may warn, never block.
+
+R27. The preflight outcome is persisted as a frozen artifact per analysis id, carrying the full
+finding list, assessment, classifications, independence, constraint coverage and a plan-contract
+slice (required config names, runtime process node ids, governing constraint ids).
+
+R28. Post-implementation review merges the persisted plan contract into its checks; a
+`list_preflight_findings` tool serves the full finding list with what-was-checked, as the explicit
+red-team surface. There is no separate red-team analysis mode — analysis red-teams unconditionally.
+
+R29. Accepted ADR-shaped documents are indexed as advisory `architecture-guidance` constraints
+scoped to literally named paths; the domain rejects any stronger severity; analysis surfaces them
+as informational pointers when the plan enters their scope.
+
+R30. Engine-specific SQL in a specification is compared against the database engines the test
+configuration declares; a mismatch warns with both files as evidence; an undeclared test
+environment produces silence.
+
+R31. Presentation separates the two jobs: the plan assessment is the headline, red-team findings
+are their own section, the §11 readiness sentence defers to a stronger verdict, and a runtime path
+yields one finding, not three. A spec-named component stays a confirmation even when a constraint
+finding cites it.

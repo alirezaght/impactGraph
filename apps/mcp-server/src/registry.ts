@@ -366,12 +366,10 @@ const reviewDocument = async (
   }
   return {
     ok: true,
-    value: buildReviewOutput(
-      bundle.value.review,
-      bundle.value.analysis,
-      bundle.value.violations,
-      bundle.value.breakdownContext,
-    ),
+    value: buildReviewOutput(bundle.value.review, bundle.value.analysis, bundle.value.violations, {
+      breakdownContext: bundle.value.breakdownContext,
+      planContract: bundle.value.planContract,
+    }),
   };
 };
 
