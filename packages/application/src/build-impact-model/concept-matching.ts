@@ -1,6 +1,7 @@
 import { isSpeculativeConcept } from '../analyze-specification/statement-analysis.js';
 
 import { coversArchitecturalStem } from './architectural-stem.js';
+import { assessBareFilename, resolveWrittenPath } from './concept-anchor-grade.js';
 import { assessUbiquity } from './dependency-ubiquity.js';
 import { containerOf, containerRoots } from './top-level-container.js';
 
@@ -16,13 +17,27 @@ import type { GraphNode, KnowledgeGraph } from '@impactgraph/domain';
  * `exact` / `alias` / `name-similarity` are identifier-grade: the specification named the thing, or
  * named it closely enough that token alignment and character coverage both hold.
  *
+ * `path-suffix` is a scoped path resolution ("required must mean strong"): the specification wrote
+ * a path relative to the package or service it discusses, and it matched exactly ONE indexed path
+ * at a path-segment boundary. Identifier-grade, like `exact`.
+ *
+ * `basename` is a bare filename (extension, no '/') that matched one file by name alone. The
+ * specification did not say WHICH file of that name, so the mechanism is capped like a fuzzy match.
+ *
  * `semantic` and `lexical` are the two weaker mechanisms the conceptual search contributes (item 4).
  * They exist so conceptual queries can find anything at all, and they are labelled so the impact
  * engine can cap what they are allowed to claim: `lexical` never rises above the `lexical-only`
  * tier, whatever else corroborates it.
  */
 export type MatchMechanism =
-  'exact' | 'alias' | 'path-segment' | 'name-similarity' | 'semantic' | 'lexical';
+  | 'exact'
+  | 'alias'
+  | 'path-suffix'
+  | 'basename'
+  | 'path-segment'
+  | 'name-similarity'
+  | 'semantic'
+  | 'lexical';
 
 /**
  * An exact name that resolves to several nodes in DIFFERENT top-level containers. Field finding:
@@ -66,6 +81,11 @@ export interface ConceptMatchResult {
    * dependency was still allowed to anchor.
    */
   readonly eligibilityNotes: readonly string[];
+  /**
+   * For each ambiguous PATH-shaped concept, the distinct indexed paths it could mean — so the
+   * clarification warning can list the candidates instead of just declaring ambiguity.
+   */
+  readonly pathCandidates: ReadonlyMap<string, readonly string[]>;
 }
 
 const normalize = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -260,12 +280,33 @@ const findByPathSegment = (graph: KnowledgeGraph, concept: string): GraphNode[] 
     .map((hit) => hit.node);
 };
 
+/** Mutable diagnostics the resolution pass accumulates alongside the matches. */
+interface MatchDiagnostics {
+  readonly notes: string[];
+  readonly pathCandidates: Map<string, readonly string[]>;
+}
+
 const resolve = (
   graph: KnowledgeGraph,
   concept: string,
   aliases: Readonly<Record<string, string>>,
-  notes: string[],
+  diagnostics: MatchDiagnostics,
 ): Resolution | 'ambiguous' | undefined => {
+  const { notes } = diagnostics;
+  // A concept the specification wrote as a path resolves through the shared domain resolver
+  // first: verbatim or unique-suffix is identifier-grade; a suffix matching several places is a
+  // clarification question with the candidate list. Unresolved falls through — the concept may
+  // still be a route path, a directory segment, or a name.
+  if (concept.includes('/')) {
+    const byPath = resolveWrittenPath(graph, concept);
+    if (byPath.kind === 'resolved') {
+      return { mechanism: byPath.mechanism, nodes: byPath.nodes };
+    }
+    if (byPath.kind === 'ambiguous') {
+      diagnostics.pathCandidates.set(concept, byPath.candidatePaths);
+      return 'ambiguous';
+    }
+  }
   const usable = (nodes: readonly GraphNode[]): GraphNode[] =>
     nodes.filter((node) => {
       if (node.type !== 'third-party-service') {
@@ -331,11 +372,11 @@ const fuzzyResolution = (
 };
 
 /**
- * A concept qualified by a path or a file extension names one specific place; only a bare
- * identifier can coincidentally exist in several containers, so only bare identifiers collide.
+ * Only a concept qualified by a '/' names one specific place. A bare filename does NOT — a field
+ * run matched `specification.ts` to the wrong package's file at required/0.9 because the
+ * extension used to exempt it from collision assessment.
  */
-const isPathQualified = (concept: string): boolean =>
-  concept.includes('/') || /\.[A-Za-z0-9]{1,5}$/.test(concept);
+const isPathQualified = (concept: string): boolean => concept.includes('/');
 
 interface CollisionAssessment {
   /** True when some same-kind group collides beyond MAX_SIMILAR_MATCHES — the concept escalates. */
@@ -413,6 +454,44 @@ const preferProduction = (
     : { nodes: [...nodes], testOnly: true };
 };
 
+interface GradedResolution {
+  readonly mechanism: MatchMechanism;
+  readonly nodes: readonly GraphNode[];
+  readonly testOnly: boolean;
+  readonly collisions: CollisionAssessment;
+}
+
+/**
+ * Anchor-grade pass over a resolution: a bare filename ('specification.ts') is not
+ * identifier-grade — several files sharing the basename make the concept ambiguous, and even a
+ * unique one is demoted to the capped `basename` mechanism. Then the exact-collision guard: past
+ * the same bound the fuzzy overflow uses, a cross-container collision takes the same exit — the
+ * ambiguous-concept warning instead of an impact per coincidence.
+ */
+const gradeResolution = (
+  concept: string,
+  found: Resolution,
+  roots: () => readonly string[],
+): GradedResolution | 'ambiguous' => {
+  let { mechanism } = found;
+  let ranked = preferProduction(found.nodes);
+  if (mechanism === 'exact') {
+    const basename = assessBareFilename(concept, ranked.nodes);
+    if (basename?.kind === 'ambiguous') {
+      return 'ambiguous';
+    }
+    if (basename !== undefined) {
+      mechanism = basename.kind;
+      ranked = { ...ranked, nodes: [...basename.nodes] };
+    }
+  }
+  const collisions = assessCollisions(concept, mechanism, ranked.nodes, roots);
+  if (collisions.escalate) {
+    return 'ambiguous';
+  }
+  return { mechanism, nodes: ranked.nodes, testOnly: ranked.testOnly, collisions };
+};
+
 export const matchConcepts = (
   graph: KnowledgeGraph,
   concepts: readonly string[],
@@ -421,39 +500,31 @@ export const matchConcepts = (
   const matches: ConceptMatch[] = [];
   const unknownConcepts: string[] = [];
   const ambiguousConcepts: string[] = [];
-  const notes: string[] = [];
+  const diagnostics: MatchDiagnostics = { notes: [], pathCandidates: new Map() };
   // Lazy: the roots scan only runs when an exact name actually resolved to several nodes.
   let cachedRoots: readonly string[] | undefined;
   const roots = (): readonly string[] => (cachedRoots ??= containerRoots(graph));
   for (const concept of [...new Set(concepts)].sort()) {
-    const found = resolve(graph, concept, aliases, notes);
+    const found = resolve(graph, concept, aliases, diagnostics);
     if (found === undefined) {
       unknownConcepts.push(concept);
       continue;
     }
-    if (found === 'ambiguous') {
+    const graded = found === 'ambiguous' ? 'ambiguous' : gradeResolution(concept, found, roots);
+    if (graded === 'ambiguous') {
       ambiguousConcepts.push(concept);
       continue;
     }
-    const ranked = preferProduction(found.nodes);
-    const collisions = assessCollisions(concept, found.mechanism, ranked.nodes, roots);
-    // Past the same bound the fuzzy overflow uses, a cross-container collision is the same
-    // situation — too many unrelated places to anchor — and takes the same exit: the existing
-    // ambiguous-concept warning instead of an impact per coincidence.
-    if (collisions.escalate) {
-      ambiguousConcepts.push(concept);
-      continue;
-    }
-    const bounded = ranked.nodes.slice(0, MAX_MATCHES_PER_CONCEPT);
+    const bounded = graded.nodes.slice(0, MAX_MATCHES_PER_CONCEPT);
     for (const node of bounded) {
-      const collision = collisions.byNodeId.get(node.id);
+      const collision = graded.collisions.byNodeId.get(node.id);
       matches.push({
         concept,
         nodeId: node.id,
-        mechanism: found.mechanism,
+        mechanism: graded.mechanism,
         evidenceIds: node.knowledge.evidenceIds,
         ambiguous: bounded.length > 1,
-        testOnly: ranked.testOnly,
+        testOnly: graded.testOnly,
         ...(collision === undefined ? {} : { collision }),
       });
     }
@@ -462,6 +533,7 @@ export const matchConcepts = (
     matches,
     unknownConcepts,
     ambiguousConcepts,
-    eligibilityNotes: [...new Set(notes)].sort(),
+    eligibilityNotes: [...new Set(diagnostics.notes)].sort(),
+    pathCandidates: diagnostics.pathCandidates,
   };
 };

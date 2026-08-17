@@ -153,6 +153,8 @@ const stepsFrom = (graph: KnowledgeGraph, nodeId: NodeId): Step[] => {
 const MECHANISM_STRENGTH: Readonly<Record<MatchMechanism, number>> = {
   exact: 2,
   alias: 2,
+  'path-suffix': 2,
+  basename: 1,
   'name-similarity': 1,
   'path-segment': 1,
   // Conceptual mechanisms rank below identifier matching: when two routes reach the same component

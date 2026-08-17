@@ -189,9 +189,13 @@ const recordMatchWarnings = (
     });
   }
   for (const ambiguous of matched.ambiguousConcepts) {
+    // An ambiguous PATH lists the places it could mean, so the user answers a concrete question
+    // ("which of these?") instead of re-deriving the collision themselves.
+    const candidates = matched.pathCandidates.get(ambiguous);
+    const listing = candidates === undefined ? '' : ` Candidates: ${candidates.join(', ')}.`;
     warnings.push({
       code: 'ambiguous-concept',
-      message: `concept '${ambiguous}' matches too many unrelated components to anchor an impact — name the intended component`,
+      message: `concept '${ambiguous}' matches too many unrelated components to anchor an impact — name the intended component.${listing}`,
       requirementId,
     });
   }

@@ -82,6 +82,30 @@ describe('resolveSuppliedIdentifiers', () => {
     const resolution = resolveSuppliedIdentifiers('Modify send_service.ts for parity.', graph);
     expect(resolution.unresolved).toEqual(['send_service.ts']);
   });
+
+  // "Required must mean strong": specifications write paths relative to the package or service
+  // they discuss. A path-boundary suffix resolution counts as resolved — it must never surface as
+  // an INVALID_ASSUMPTION claiming the file does not exist.
+  it('resolves a service-relative path against workspace-relative node paths', () => {
+    const workspace = graphWith([
+      'packages/application/src/build-impact-model/concept-matching.ts',
+    ]);
+    const resolution = resolveSuppliedIdentifiers(
+      'Modify src/build-impact-model/concept-matching.ts to add suffix matching.',
+      workspace,
+    );
+    expect(resolution.unresolved).toEqual([]);
+    expect(resolution.resolvedCount).toBe(1);
+  });
+
+  it('counts an ambiguous suffix as resolved — a question, never a missing-file claim', () => {
+    const workspace = graphWith([
+      'packages/domain/src/index.ts',
+      'packages/application/src/index.ts',
+    ]);
+    const resolution = resolveSuppliedIdentifiers('Modify src/index.ts as needed.', workspace);
+    expect(resolution.unresolved).toEqual([]);
+  });
 });
 
 describe('toSuppliedIdentifiersDto', () => {

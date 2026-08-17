@@ -52,6 +52,10 @@ export const impactTypeFor = (node: GraphNode): ImpactType =>
 const MECHANISM_SIGNAL: Readonly<Record<string, ConfidenceSignalType>> = {
   exact: 'exact-concept-to-symbol-match',
   alias: 'human-confirmed-mapping', // aliases are human-maintained config (PRD §17)
+  // A unique scoped path resolution is the specification naming the file — identifier-grade.
+  'path-suffix': 'exact-concept-to-symbol-match',
+  // A bare filename names A file of that name, not THIS one — weaker than 0.9 by design.
+  basename: 'basename-file-match',
   'name-similarity': 'semantic-concept-match',
 };
 
@@ -74,12 +78,18 @@ export interface ClassifyContext {
 }
 
 /** Everything the concept match itself says about strength — mechanism plus its two penalties. */
-const matchSignals = (match: ImpactCandidate['match']): ImpactSignalInput[] => {
+const matchSignals = (match: ImpactCandidate['match'], node?: GraphNode): ImpactSignalInput[] => {
+  const containerAnchor = node !== undefined && isContainerNameAnchor(match, node);
   const signals: ImpactSignalInput[] = [
-    {
-      type: MECHANISM_SIGNAL[match.mechanism] ?? 'semantic-concept-match',
-      description: `concept '${match.concept}' matched via ${match.mechanism}`,
-    },
+    containerAnchor
+      ? {
+          type: 'container-name-match',
+          description: `concept '${match.concept}' names the ${node.type} '${node.name}', not a specific change surface`,
+        }
+      : {
+          type: MECHANISM_SIGNAL[match.mechanism] ?? 'semantic-concept-match',
+          description: `concept '${match.concept}' matched via ${match.mechanism}`,
+        },
   ];
   if (match.ambiguous) {
     signals.push({
@@ -99,8 +109,14 @@ const matchSignals = (match: ImpactCandidate['match']): ImpactSignalInput[] => {
 export const signalsFor = (
   candidate: ImpactCandidate,
   context: ClassifyContext = {},
+  node?: GraphNode,
 ): ImpactSignalInput[] => {
-  const signals: ImpactSignalInput[] = matchSignals(candidate.match);
+  // The mechanism signal describes the ANCHOR match; the container swap only applies when the
+  // candidate IS the anchor (distance 0), never to nodes merely reached from one.
+  const signals: ImpactSignalInput[] = matchSignals(
+    candidate.match,
+    candidate.distance === 0 ? node : undefined,
+  );
   // Distinct relationship types across every route that reached this candidate — independent
   // evidence counts once per kind, never once per path.
   for (const edgeType of candidate.corroboratingEdgeTypes) {
@@ -123,15 +139,27 @@ export const signalsFor = (
 };
 
 /** Node kinds that contain other components rather than being one (§12.1 vocabulary). */
-const CONTAINER_NODE_TYPES = new Set(['package', 'workspace', 'repository']);
+const CONTAINER_NODE_TYPES = new Set(['package', 'workspace', 'repository', 'directory']);
 
 /** Mechanisms where the engine GUESSED which component the specification meant. */
 const GUESSED_MECHANISMS = new Set<string>([
   'path-segment',
   'name-similarity',
+  'basename',
   'semantic',
   'lexical',
 ]);
+
+/**
+ * A NAME match to a container-kind node is the specification naming the box, not a change surface
+ * inside it — a product name matching its own package once anchored required/0.9 impacts on the
+ * whole dependency cone. A path-shaped concept resolving to the container's manifest or path
+ * stays strong: writing the path is naming the artifact.
+ */
+const isContainerNameAnchor = (match: ImpactCandidate['match'], node: GraphNode): boolean =>
+  (match.mechanism === 'exact' || match.mechanism === 'alias') &&
+  CONTAINER_NODE_TYPES.has(node.type) &&
+  !match.concept.includes('/');
 
 /**
  * Field finding: a fuzzy anchor walked CONTAINS up to its package and DEPENDS_ON up to every
@@ -172,7 +200,7 @@ interface LikelihoodProposal {
  * EXTENDS or IMPLEMENTS, or recent co-change history. Failing that, the predicted change kind
  * decides: an added method obliges no caller, a changed signature obliges every call site.
  */
-const anchorProposal = (candidate: ImpactCandidate): LikelihoodProposal => {
+const anchorProposal = (candidate: ImpactCandidate, node: GraphNode): LikelihoodProposal => {
   const { collision } = candidate.match;
   // A collided exact match is one of N same-named coincidences until corroborated. Distance 0
   // proves the name exists, not that THIS copy is the component the requirement is about.
@@ -180,6 +208,14 @@ const anchorProposal = (candidate: ImpactCandidate): LikelihoodProposal => {
     return {
       likelihood: 'possible',
       caveat: `The name '${candidate.match.concept}' exists in ${String(collision.count)} places (${collision.containers.join(', ')}); nothing structural ties this one to the requirement.`,
+    };
+  }
+  // "Required must mean strong": naming a container is not naming a change surface. A product
+  // name matching its own package node once produced a required/0.9 impact for the whole repo.
+  if (isContainerNameAnchor(candidate.match, node)) {
+    return {
+      likelihood: 'possible',
+      caveat: `The specification names the container '${node.name}' (${node.type}), not a specific change surface within it.`,
     };
   }
   // An anchor is `required` only when the specification named it by identifier. A `semantic` or
@@ -202,7 +238,7 @@ const likelihoodFor = (
   corroborated: boolean,
 ): LikelihoodProposal => {
   if (candidate.distance === 0) {
-    return anchorProposal(candidate);
+    return anchorProposal(candidate, node);
   }
   if (isContainerFanOut(candidate, node)) {
     // `unlikely` ranks below `possible`, so the default view's minLikelihood filter excludes it.
@@ -258,7 +294,7 @@ export const classifyCandidate = (
   requirementId: string,
   context: ClassifyContext = {},
 ): Result<RequirementImpact, ValidationError> => {
-  const confidence = computeImpactConfidence(signalsFor(candidate, context));
+  const confidence = computeImpactConfidence(signalsFor(candidate, context, node));
   if (!confidence.ok) {
     return confidence;
   }

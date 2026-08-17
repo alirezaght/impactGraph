@@ -8,7 +8,6 @@ matched|list_deals|symbol:api/app/main.py#list_deals|req-d00e8268
 matched|loadDeals|symbol:web/src/lib/api.ts#loadDeals|req-d00e8268
 matched|loadExternal|symbol:web/src/lib/api.ts#loadExternal|req-d00e8268
 matched|main.py|file:api/app/main.py|req-d00e8268
-missing|deals-web|package:deals-web|req-0e24b3d5
 missing|deals-web|terraform:infra/google_cloud_run_v2_service.web|req-0e24b3d5
 unexpected|DealEventBridge.java|file:service/src/main/java/com/example/deals/DealEventBridge.java|-
 unexpected|expiry.tf|file:infra/expiry.tf|-

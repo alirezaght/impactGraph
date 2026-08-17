@@ -1,4 +1,5 @@
 import { suppliedIdentifiers } from '@impactgraph/application';
+import { resolvePathReference } from '@impactgraph/domain';
 
 import type { CliImpactSummary } from '@impactgraph/contracts';
 import type { KnowledgeGraph } from '@impactgraph/domain';
@@ -37,16 +38,20 @@ const isPathShaped = (token: string): boolean => token.includes('/') || EXTENSIO
 const maximalTokens = (tokens: readonly string[]): readonly string[] =>
   tokens.filter((token) => !tokens.some((other) => other !== token && other.endsWith(`/${token}`)));
 
+/**
+ * A token resolves when the shared scope-aware path resolver finds it — verbatim, or by a
+ * path-boundary suffix, including the AMBIGUOUS case: several places sharing the suffix is a
+ * question for clarification, never evidence that the specification asserts a missing file — or
+ * when it matches a node NAME (identifiers like route names carry no path).
+ */
 const resolvesInGraph = (graph: KnowledgeGraph, token: string): boolean => {
+  if (resolvePathReference(token, graph.nodes.values()).kind !== 'unresolved') {
+    return true;
+  }
   for (const node of graph.nodes.values()) {
-    for (const candidate of [node.path, node.name]) {
-      if (candidate === undefined) {
-        continue;
-      }
-      const lower = candidate.toLowerCase();
-      if (lower === token || lower.endsWith(`/${token}`)) {
-        return true;
-      }
+    const name = node.name.toLowerCase();
+    if (name === token || name.endsWith(`/${token}`)) {
+      return true;
     }
   }
   return false;

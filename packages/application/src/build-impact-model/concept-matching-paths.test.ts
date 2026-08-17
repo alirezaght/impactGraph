@@ -133,6 +133,66 @@ describe('matchConcepts path-shaped concepts', () => {
     expect(result.matches.map((match) => match.mechanism)).toEqual(['exact']);
     expect(result.matches[0]?.nodeId).toBe('file:domain-index');
   });
+
+  // "Required must mean strong": a specification writes paths relative to the package it
+  // discusses. A UNIQUE path-boundary suffix is the same claim as a verbatim path — exact-grade,
+  // never an unresolved concept — while a suffix matching several places is a question.
+  it('resolves a service-relative path by unique path-boundary suffix', () => {
+    const result = matchConcepts(repoGraph, ['src/provenance/evidence.ts']);
+
+    expect(result.matches.map((match) => match.mechanism)).toEqual(['path-suffix']);
+    expect(result.matches[0]?.nodeId).toBe('file:domain-deep');
+    expect(result.matches[0]?.ambiguous).toBe(false);
+    expect(result.unknownConcepts).toEqual([]);
+  });
+
+  it('routes a suffix matching several places to the ambiguous path with the candidates', () => {
+    const result = matchConcepts(repoGraph, ['src/index.ts']);
+
+    expect(result.matches).toEqual([]);
+    expect(result.ambiguousConcepts).toEqual(['src/index.ts']);
+    expect(result.unknownConcepts).toEqual([]);
+    expect(result.pathCandidates.get('src/index.ts')).toEqual([
+      'packages/application/src/index.ts',
+      'packages/domain/src/index.ts',
+    ]);
+  });
+});
+
+describe('matchConcepts bare filenames', () => {
+  // A bare generic filename is not identifier-grade: `specification.ts` exists in many packages,
+  // and the specification did not say which one. Two or more files with the basename make the
+  // concept ambiguous; even a unique basename match stays a name-level guess.
+  it('escalates a bare filename that exists in several places to an ambiguous concept', () => {
+    const graph = graphOf([
+      node('file:spec-a', 'file', 'specification.ts', 'packages/domain/src/specification.ts'),
+      node('file:spec-b', 'file', 'specification.ts', 'packages/contracts/src/specification.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['specification.ts']);
+
+    expect(result.matches).toEqual([]);
+    expect(result.ambiguousConcepts).toEqual(['specification.ts']);
+  });
+
+  it('demotes a unique basename match to the basename mechanism', () => {
+    const graph = graphOf([
+      node('file:spec', 'file', 'specification.ts', 'packages/domain/src/specification.ts'),
+    ]);
+
+    const result = matchConcepts(graph, ['specification.ts']);
+
+    expect(result.matches.map((match) => match.mechanism)).toEqual(['basename']);
+    expect(result.matches[0]?.nodeId).toBe('file:spec');
+  });
+
+  it('keeps a root file the specification named by its full path at exact grade', () => {
+    const graph = graphOf([node('file:root', 'file', 'vitest.config.ts', 'vitest.config.ts')]);
+
+    const result = matchConcepts(graph, ['vitest.config.ts']);
+
+    expect(result.matches.map((match) => match.mechanism)).toEqual(['exact']);
+  });
 });
 
 describe('matchConcepts speculative concepts', () => {
