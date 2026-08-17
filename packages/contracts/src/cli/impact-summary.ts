@@ -272,6 +272,13 @@ const paginationSchema = z
 
 export const cliImpactSummarySchema = z
   .object({
+    /**
+     * ADR-0022: the analysis in one sentence — verdict, risks, strong change surfaces and their
+     * independence, coverage gaps. Optional: absent when no preflight assessment was computed.
+     */
+    headline: z.string().min(1).optional(),
+    /** How many unmatched requirements the summary omitted; the rest page from the preflight list. */
+    omittedUnmatchedRequirementCount: z.number().int().min(1).optional(),
     schemaVersion: z.literal(1),
     command: z.literal('analyze'),
     analysis: z

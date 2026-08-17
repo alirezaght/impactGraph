@@ -39,6 +39,8 @@ const assessmentBlock = (output: CliImpactSummary): string[] => {
     .map((severity) => `${severity} ${String(bySeverity.get(severity) ?? 0)}`)
     .join(', ');
   return [
+    // ADR-0022: the one-sentence reading first, the verdict's own wording under it.
+    ...(output.headline === undefined ? [] : [output.headline]),
     `Plan assessment: ${assessment.feasibility} — ${assessment.decision}`,
     `  findings: ${countsLine}`,
     '',

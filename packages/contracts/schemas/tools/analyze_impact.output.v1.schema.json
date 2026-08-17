@@ -4,6 +4,14 @@
     "Tool_analyze_impact_OutputV1": {
       "type": "object",
       "properties": {
+        "headline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "omittedUnmatchedRequirementCount": {
+          "type": "integer",
+          "minimum": 1
+        },
         "schemaVersion": {
           "type": "number",
           "const": 1

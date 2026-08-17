@@ -28,6 +28,7 @@ import {
   toIndependenceDto,
 } from './preflight-block.js';
 import { buildRequiredActions } from './required-actions.js';
+import { buildHeadline, strongSurfaceCount } from './analysis-headline.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
 import type { GroupedImpact } from './impact-selection.js';
@@ -374,6 +375,13 @@ const unmatchedLine = (
   };
 };
 
+/**
+ * ADR-0022: the summary states each unmatched requirement's id, class and a truncated statement;
+ * the full text with its rationale lives in list_preflight_findings. Uncapped, this block alone
+ * ran to thousands of tokens on a prose specification.
+ */
+const UNMATCHED_SUMMARY_LIMIT = 8;
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -389,7 +397,20 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
   const reasons = provisionalReasons(input, workspaceCoverage, evidenceQuality);
   const warnings = importantWarnings(analysis);
   const includeFullPaths = input.filters?.includeFullPaths ?? true;
+  const topImpacts = grouped.map((entry) => impactLine(entry, graph, includeFullPaths));
+  const preflight = preflightBlock(input);
+  const unresolved = unresolvedConcepts(analysis);
+  const headline = buildHeadline({
+    assessment: preflight.planAssessment,
+    independence: preflight.evidenceIndependence,
+    strongSurfaceCount: strongSurfaceCount(topImpacts),
+    unmatchedRequirementCount: unmatched.length,
+    unresolvedConceptCount: unresolved.length,
+  });
   return {
+    // ADR-0022 — decision first: the verdict and its one-sentence reading precede the evidence.
+    ...preflight,
+    ...(headline === undefined ? {} : { headline }),
     schemaVersion: 1,
     command: 'analyze',
     analysis: {
@@ -408,17 +429,19 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     coverage: coverageBlock(input, unmatched.length),
     counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
-    topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
-    unmatchedRequirements: unmatched.map((requirement) =>
-      unmatchedLine(input, requirement),
-    ),
-    unresolvedConcepts: unresolvedConcepts(analysis),
+    topImpacts,
+    unmatchedRequirements: unmatched
+      .slice(0, UNMATCHED_SUMMARY_LIMIT)
+      .map((requirement) => unmatchedLine(input, requirement)),
+    ...(unmatched.length > UNMATCHED_SUMMARY_LIMIT
+      ? { omittedUnmatchedRequirementCount: unmatched.length - UNMATCHED_SUMMARY_LIMIT }
+      : {}),
+    unresolvedConcepts: unresolved,
     // The specification's path-shaped identifiers, resolved against the graph — always computable,
     // so a reader can see "the spec names files that do not exist" even without the preflight pass.
     suppliedIdentifiers: toSuppliedIdentifiersDto(
       resolveSuppliedIdentifiers(specification.rawText, graph),
     ),
-    ...preflightBlock(input),
     ...blockersBlock(input),
     warnings: warnings.kept,
     omittedWarningCount: warnings.omitted,

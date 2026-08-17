@@ -41,11 +41,16 @@ const PROVENANCE_BY_BASIS: Readonly<Record<ImpactEvidenceType, EvidenceProvenanc
  *
  * Only forms a writer would have had to KNOW are counted: a path, a filename with its extension, or
  * a symbol in a shape that reads as an identifier (`send_service`, `NewsletterListWorkspace`,
- * `ItemType.ANGEBOT`). Ordinary prose words are excluded deliberately — treating "newsletter" as a
- * supplied identifier would mark half the repository as an echo and destroy the distinction.
+ * `buildReviewOutput`, `ItemType.ANGEBOT`). Ordinary prose words are excluded deliberately —
+ * treating "newsletter" as a supplied identifier would mark half the repository as an echo and
+ * destroy the distinction.
+ *
+ * The lowerCamelCase alternative requires an internal capital, which ordinary prose never has, and
+ * without it every TypeScript function a specification named was misreported as an independent
+ * discovery (ADR-0022 — evidence independence).
  */
 const IDENTIFIER =
-  /\b[\w./-]*[\w-]+\.(?:[a-z]{1,5})\b|\b\w*[a-z0-9]_[\w_]+\b|\b[A-Z][a-zA-Z0-9]{3,}\b/g;
+  /\b[\w./-]*[\w-]+\.(?:[a-z]{1,5})\b|\b\w*[a-z0-9]_[\w_]+\b|\b[A-Z][a-zA-Z0-9]{3,}\b|\b[a-z][a-z0-9]*(?:[A-Z][a-zA-Z0-9]*)+\b/g;
 
 export const suppliedIdentifiers = (specificationText: string): ReadonlySet<string> => {
   const found = new Set<string>();

@@ -100,6 +100,19 @@ describe('suppliedIdentifiers', () => {
     expect(supplied.has('service')).toBe(false);
     expect(supplied.has('digest')).toBe(false);
   });
+
+  // ADR-0022: most TypeScript symbols are lowerCamelCase. Missing them let ImpactGraph report a
+  // function the specification named outright as something it had independently discovered.
+  it('reads lowerCamelCase symbols the specification states', () => {
+    const supplied = suppliedIdentifiers('`buildReviewOutput` must cap the findings it emits.');
+    expect(supplied.has('buildreviewoutput')).toBe(true);
+  });
+
+  it('still refuses single lowercase prose words', () => {
+    const supplied = suppliedIdentifiers('The renderer should cap the findings it emits.');
+    expect(supplied.has('renderer')).toBe(false);
+    expect(supplied.has('findings')).toBe(false);
+  });
 });
 
 describe('assignEvidenceProvenance — the spec-echo scenario', () => {
