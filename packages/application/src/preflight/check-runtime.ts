@@ -109,53 +109,55 @@ const unplannedProcessFinding = (
   return result.ok ? result.value : undefined;
 };
 
-export const checkRuntime = (input: CheckRuntimeInput): readonly PreflightFinding[] => {
-  const findings: PreflightFinding[] = [];
-  for (const path of input.paths) {
-    const gaps = findConfigGaps(path, input.requirements, input.configuredByProcess);
-    // One path, one story. A gap already names the process the plan missed and the value it
-    // lacks; restating the same path as "unresolved" or "unplanned process" is the same fact in
-    // weaker words, and three findings about one path bury the two that decide the verdict.
-    if (gaps.length === 0) {
-      const unresolved = unresolvedFinding(path, input);
-      if (unresolved !== undefined) {
-        findings.push(unresolved);
-      }
-      const unplanned = unplannedProcessFinding(path, input);
-      if (unplanned !== undefined) {
-        findings.push(unplanned);
-      }
-    }
-    for (const gap of gaps) {
-      const result = createPreflightFinding({
-        id: input.nextId(`${path.id}:${gap.atNodeId}`),
-        kind: 'runtime-topology-gap',
-        severity: severityFor(path),
-        // A fully-read path that demonstrably lacks the configuration the plan requires is a
-        // contradiction. A path with an inferred or unfinished hop is a question about our own
-        // reading, and severityFor already keeps it at warning.
-        verification:
-          severityFor(path) === 'blocking' ? 'verified-contradiction' : 'unverified-assumption',
-        requirementIds: [...input.requirementIds],
-        statement: gapStatement(path, gap),
-        recommendation: `Propagate ${(gap.missingConfig ?? []).join(', ')} to ${gap.atName}, or route this traffic to a process that already has it.`,
-        subject: {
-          runtimePathId: path.id,
-          nodeIds: [gap.atNodeId],
-          filePaths: [],
-        },
-        evidenceIds:
-          gap.evidenceIds.length > 0
-            ? [...gap.evidenceIds]
-            : path.hops.flatMap((hop) => hop.evidenceIds),
-        confidence: path.incompleteReason === undefined ? 0.85 : 0.55,
-        provenance: 'static-analysis',
-        analyzer: 'check-runtime',
-      });
-      if (result.ok) {
-        findings.push(result.value);
-      }
-    }
-  }
-  return findings;
+/** The configuration a fully-read path demonstrably lacks — the one shape here that may block. */
+const gapFinding = (
+  path: RuntimePath,
+  gap: ReturnType<typeof findConfigGaps>[number],
+  input: CheckRuntimeInput,
+): PreflightFinding | undefined => {
+  const severity = severityFor(path);
+  const result = createPreflightFinding({
+    id: input.nextId(`${path.id}:${gap.atNodeId}`),
+    kind: 'runtime-topology-gap',
+    severity,
+    // A fully-read path that demonstrably lacks the configuration the plan requires is a
+    // contradiction. A path with an inferred or unfinished hop is a question about our own
+    // reading, and severityFor already keeps it at warning.
+    verification: severity === 'blocking' ? 'verified-contradiction' : 'unverified-assumption',
+    requirementIds: [...input.requirementIds],
+    statement: gapStatement(path, gap),
+    recommendation: `Propagate ${(gap.missingConfig ?? []).join(', ')} to ${gap.atName}, or route this traffic to a process that already has it.`,
+    subject: { runtimePathId: path.id, nodeIds: [gap.atNodeId], filePaths: [] },
+    evidenceIds:
+      gap.evidenceIds.length > 0
+        ? [...gap.evidenceIds]
+        : path.hops.flatMap((hop) => hop.evidenceIds),
+    confidence: path.incompleteReason === undefined ? 0.85 : 0.55,
+    provenance: 'static-analysis',
+    analyzer: 'check-runtime',
+  });
+  return result.ok ? result.value : undefined;
 };
+
+/**
+ * One path, one story. A gap already names the process the plan missed and the value it lacks;
+ * restating the same path as "unresolved" or "unplanned process" is the same fact in weaker
+ * words, and three findings about one path bury the two that decide the verdict.
+ */
+const findingsForPath = (
+  path: RuntimePath,
+  input: CheckRuntimeInput,
+): readonly PreflightFinding[] => {
+  const gaps = findConfigGaps(path, input.requirements, input.configuredByProcess);
+  if (gaps.length === 0) {
+    return [unresolvedFinding(path, input), unplannedProcessFinding(path, input)].filter(
+      (finding): finding is PreflightFinding => finding !== undefined,
+    );
+  }
+  return gaps
+    .map((gap) => gapFinding(path, gap, input))
+    .filter((finding): finding is PreflightFinding => finding !== undefined);
+};
+
+export const checkRuntime = (input: CheckRuntimeInput): readonly PreflightFinding[] =>
+  input.paths.flatMap((path) => findingsForPath(path, input));

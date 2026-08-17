@@ -6,7 +6,6 @@ import {
 } from '../build-runtime-topology/resolve-runtime-paths.js';
 
 import { checkAssumptions } from './check-assumptions.js';
-import { collapseAnalysisCaveats, collapseCaveatSpread } from './collapse-caveats.js';
 import { checkConfigSemantics } from './check-config-semantics.js';
 import { checkConstraints } from './check-constraints.js';
 import { checkGuidance } from './check-guidance.js';
@@ -14,6 +13,7 @@ import { checkRuntime } from './check-runtime.js';
 import { checkTestEnvironment } from './check-test-environment.js';
 import { checkTypeComparisons } from './check-type-comparisons.js';
 import { classifyRequirements } from './classify-requirements.js';
+import { collapseAnalysisCaveats, collapseCaveatSpread } from './collapse-caveats.js';
 import { deriveProposedEdges } from './proposed-edges.js';
 
 import type { ConfigDeclaration } from './check-config-semantics.js';

@@ -15,8 +15,8 @@
 import { containerOf, containerRoots } from './top-level-container.js';
 import { isChainEdge } from './traversal-edge-semantics.js';
 
-import type { ConceptMatch } from './concept-matching.js';
 import type { TraversalOptions } from './candidate-traversal.js';
+import type { ConceptMatch } from './concept-matching.js';
 import type { GraphNode, KnowledgeGraph, NodeId } from '@impactgraph/domain';
 
 export const CHANGE_SHAPES = ['contained', 'distributed'] as const;

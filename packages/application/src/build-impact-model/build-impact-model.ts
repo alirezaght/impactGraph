@@ -12,8 +12,8 @@ import { buildCoChangeIndex } from '../history/co-change-index.js';
 
 import { traverseCandidates } from './candidate-traversal.js';
 import { changeExpectationFor } from './change-expectation.js';
-import { assessChangeShape, traversalFor } from './change-shape.js';
 import { inferChange } from './change-kind.js';
+import { assessChangeShape, traversalFor } from './change-shape.js';
 import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
 import { applyNonGoalExclusions, resolveNonGoals } from './non-goal-exclusions.js';

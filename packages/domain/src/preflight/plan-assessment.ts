@@ -160,6 +160,34 @@ const blockingFindings = (findings: readonly PreflightFinding[]): readonly Prefl
  * INSUFFICIENT_COVERAGE next — below a real violation, but above every judgment that depends on
  * having searched the right code, because those judgments are unfounded without it.
  */
+/** The two positive outcomes, split out so the precedence ladder above stays readable. */
+const decideWithoutProblems = (
+  counts: PlanAssessmentCounts,
+): { feasibility: Feasibility; decision: string } => {
+  const warnings =
+    counts.constraintWarnings +
+    counts.runtimeTopologyGaps +
+    counts.invalidAssumptions +
+    counts.configSemanticsRisks +
+    counts.missingConsumers +
+    (counts.typeSensitiveComparisons ?? 0) +
+    counts.coverageGaps -
+    (counts.unverifiedAssumptions ?? 0);
+  if (warnings > 0) {
+    return {
+      feasibility: 'READY_WITH_WARNINGS',
+      decision: `Implementable, with ${String(warnings)} warning(s) to read first — none of them blocks on its own.`,
+    };
+  }
+  return {
+    feasibility: 'READY',
+    decision:
+      counts.newSurfaces > 0
+        ? `Implementable. ${String(counts.newSurfaces)} requirement(s) create new surface, and ${String(counts.expectedChangeSurfaces)} existing surface(s) are expected to change.`
+        : `Implementable. ${String(counts.expectedChangeSurfaces)} expected change surface(s).`,
+  };
+};
+
 const decide = (
   input: AssessmentInput,
   counts: PlanAssessmentCounts,
@@ -193,28 +221,7 @@ const decide = (
       decision: `Resolve ${String(open)} open architectural question(s) before implementing — the answers change what has to be built.`,
     };
   }
-  const warnings =
-    counts.constraintWarnings +
-    counts.runtimeTopologyGaps +
-    counts.invalidAssumptions +
-    counts.configSemanticsRisks +
-    counts.missingConsumers +
-    (counts.typeSensitiveComparisons ?? 0) +
-    counts.coverageGaps -
-    (counts.unverifiedAssumptions ?? 0);
-  if (warnings > 0) {
-    return {
-      feasibility: 'READY_WITH_WARNINGS',
-      decision: `Implementable, with ${String(warnings)} warning(s) to read first — none of them blocks on its own.`,
-    };
-  }
-  return {
-    feasibility: 'READY',
-    decision:
-      counts.newSurfaces > 0
-        ? `Implementable. ${String(counts.newSurfaces)} requirement(s) create new surface, and ${String(counts.expectedChangeSurfaces)} existing surface(s) are expected to change.`
-        : `Implementable. ${String(counts.expectedChangeSurfaces)} expected change surface(s).`,
-  };
+  return decideWithoutProblems(counts);
 };
 
 const decidingIds = (input: AssessmentInput, feasibility: Feasibility): readonly string[] => {

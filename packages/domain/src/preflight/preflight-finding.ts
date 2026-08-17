@@ -171,6 +171,12 @@ const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
       ),
     );
   }
+  return issues;
+};
+
+/** The additive axes carry closed vocabularies of their own. */
+const axisVocabularyIssues = (input: PreflightFinding): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
   if (
     input.verification !== undefined &&
     !(FINDING_VERIFICATIONS as readonly string[]).includes(input.verification)
@@ -183,9 +189,20 @@ const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
   ) {
     issues.push(validationIssue('invalid-type', 'origin', 'unknown origin'));
   }
-  // The whole point of the axis: only a verified contradiction against the PLAN may stop work.
-  // "We could not verify this" and "our own reach ran out" are investigations, not verdicts.
-  if (input.severity === 'blocking' && input.verification !== 'verified-contradiction') {
+  return issues;
+};
+
+/**
+ * What a BLOCKING claim costs to make (ADR-0023): only a verified contradiction against the plan
+ * may stop work. "We could not verify this" and "our own reach ran out" are investigations, not
+ * verdicts, and a gate that confuses them teaches readers to override it.
+ */
+const blockingClaimIssues = (input: PreflightFinding): ValidationIssue[] => {
+  if (input.severity !== 'blocking') {
+    return [];
+  }
+  const issues: ValidationIssue[] = [];
+  if (input.verification !== 'verified-contradiction') {
     issues.push(
       validationIssue(
         'invalid-type',
@@ -194,45 +211,50 @@ const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
       ),
     );
   }
-  if (
-    input.severity === 'blocking' &&
-    input.origin !== undefined &&
-    input.origin !== 'plan-finding'
-  ) {
+  if (input.origin !== undefined && input.origin !== 'plan-finding') {
     issues.push(
       validationIssue('invalid-type', 'severity', `a ${input.origin} may not be blocking`),
-    );
-  }
-  // A claim about the plan must be attributable to SOMETHING a reader can open: the requirement it
-  // is about, or the code it is about. Review-time findings legitimately name only the latter.
-  // A caveat about our own reach may name neither — its subject is our resolution, not the plan.
-  if (
-    findingOriginOf(input) === 'plan-finding' &&
-    input.requirementIds.length === 0 &&
-    !hasSubject(input)
-  ) {
-    issues.push(
-      validationIssue(
-        'blank-field',
-        'requirementIds',
-        'a plan finding must name its requirement or the code it concerns',
-      ),
-    );
-  }
-  /**
-   * A blocking finding with no evidence is exactly the failure mode this system exists to avoid:
-   * it stops work on an assertion nobody can check.
-   */
-  if (input.severity === 'blocking' && input.evidenceIds.length === 0) {
-    issues.push(
-      validationIssue('missing-evidence', 'evidenceIds', 'a blocking finding requires evidence'),
     );
   }
   return issues;
 };
 
+/**
+ * A claim about the plan must be attributable to SOMETHING a reader can open: the requirement it
+ * is about, or the code it is about. Review-time findings legitimately name only the latter. A
+ * caveat about our own reach may name neither — its subject is our resolution, not the plan.
+ */
+const attributionIssues = (input: PreflightFinding): ValidationIssue[] =>
+  findingOriginOf(input) === 'plan-finding' &&
+  input.requirementIds.length === 0 &&
+  !hasSubject(input)
+    ? [
+        validationIssue(
+          'blank-field',
+          'requirementIds',
+          'a plan finding must name its requirement or the code it concerns',
+        ),
+      ]
+    : [];
+
+/**
+ * A blocking finding with no evidence is exactly the failure mode this system exists to avoid:
+ * it stops work on an assertion nobody can check.
+ */
+const blockingEvidenceIssues = (input: PreflightFinding): ValidationIssue[] =>
+  input.severity === 'blocking' && input.evidenceIds.length === 0
+    ? [validationIssue('missing-evidence', 'evidenceIds', 'a blocking finding requires evidence')]
+    : [];
+
 const collectIssues = (input: PreflightFinding): ValidationIssue[] => {
-  const issues: ValidationIssue[] = [...blankIdIssue(input.id, 'id'), ...taxonomyIssues(input)];
+  const issues: ValidationIssue[] = [
+    ...blankIdIssue(input.id, 'id'),
+    ...taxonomyIssues(input),
+    ...axisVocabularyIssues(input),
+    ...blockingClaimIssues(input),
+    ...blockingEvidenceIssues(input),
+    ...attributionIssues(input),
+  ];
   if (input.statement.trim().length === 0) {
     issues.push(validationIssue('blank-field', 'statement', 'statement required'));
   }

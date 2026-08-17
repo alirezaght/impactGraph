@@ -23,12 +23,6 @@ import {
 import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impact-summary-facts.js';
 import { toIndexWarningReportDto } from './index-health-dto.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
-import {
-  analysisCaveats,
-  summaryFindings,
-  toAssessmentDto,
-  toIndependenceDto,
-} from './preflight-block.js';
 import { buildRequiredActions } from './required-actions.js';
 import { buildUnmatchedBlock } from './unmatched-block.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
