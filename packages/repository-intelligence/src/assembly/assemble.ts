@@ -1,4 +1,4 @@
-import { createGraphEdge } from '@impactgraph/domain';
+import { createGraphEdge, createGraphNode } from '@impactgraph/domain';
 import {
   deterministicEnvelope,
   isTestFilePath,
@@ -223,6 +223,44 @@ const EDGE_TYPE_BY_REFERENCE_KIND: Readonly<Record<string, string>> = {
   injects: 'INJECTS',
 };
 
+/** The reference kinds that state a type's member set depends on the target. */
+const HERITAGE_KINDS = new Set(['extends', 'implements']);
+
+/**
+ * An unresolved supertype, modelled instead of dropped.
+ *
+ * `class SqlOutboundQueueRepository(OutboundAuditReadsMixin)` with the mixin in site-packages used
+ * to leave only a warning, so the graph stated the class's member set as if it were complete — and
+ * a member check downstream fabricated "list_rows does not exist" from that silence. The fact the
+ * source states is deterministic: this class inherits from a type the index cannot see. It becomes
+ * an `unresolved-external-boundary` node (the §12.1 type for exactly this knowledge) with a real
+ * EXTENDS/IMPLEMENTS edge, so every consumer can tell an OPEN member set from a closed one.
+ * Scoped per file: two files naming the same external base may mean different types.
+ */
+const addOpenHeritageBoundary = (state: AssemblyState, reference: SymbolReference): void => {
+  const boundaryId = `external-type:${reference.filePath}#${reference.targetName}`;
+  if (!state.nodesById.has(boundaryId)) {
+    const node = createGraphNode({
+      id: boundaryId,
+      category: 'integration',
+      type: 'unresolved-external-boundary',
+      name: reference.targetName,
+      knowledge: deterministicEnvelope(state.context, [reference.evidenceId], 'static-analysis'),
+    });
+    if (!node.ok) {
+      return;
+    }
+    state.nodesById.set(boundaryId, node.value);
+  }
+  addEdge(state, {
+    id: `${reference.kind}:${reference.fromSymbolNodeId}->${boundaryId}`,
+    type: EDGE_TYPE_BY_REFERENCE_KIND[reference.kind] ?? 'DEPENDS_ON',
+    sourceId: reference.fromSymbolNodeId,
+    targetId: boundaryId,
+    evidenceId: reference.evidenceId,
+  });
+};
+
 const resolveSymbolEdges = (state: AssemblyState, fragment: GraphFragment): void => {
   for (const reference of fragment.symbolReferences) {
     const targetId = resolveNameInFile(state, reference.filePath, reference.targetName);
@@ -233,6 +271,9 @@ const resolveSymbolEdges = (state: AssemblyState, fragment: GraphFragment): void
         adapterId: 'assembly',
         message: `unresolved ${reference.kind} target '${reference.targetName}'`,
       });
+      if (HERITAGE_KINDS.has(reference.kind)) {
+        addOpenHeritageBoundary(state, reference);
+      }
       continue;
     }
     addEdge(state, {

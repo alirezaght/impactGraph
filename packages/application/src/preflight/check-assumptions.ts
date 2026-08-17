@@ -1,6 +1,11 @@
-import { createPreflightFinding } from '@impactgraph/domain';
+import { createPreflightFinding, resolveMember } from '@impactgraph/domain';
 
-import type { GraphNode, KnowledgeGraph, PreflightFinding } from '@impactgraph/domain';
+import type {
+  GraphNode,
+  KnowledgeGraph,
+  MemberResolution,
+  PreflightFinding,
+} from '@impactgraph/domain';
 
 /**
  * Check that the members a specification asserts actually exist.
@@ -13,6 +18,11 @@ import type { GraphNode, KnowledgeGraph, PreflightFinding } from '@impactgraph/d
  * surface. `ItemType.ANGEBOT` missing from an indexed enum is a defect in the plan. A locale key
  * missing when the specification says "add a key" is not. The difference is whether the CONTAINER
  * is indexed and whether the sentence asserts or creates, and both are read, never guessed.
+ *
+ * Membership itself is judged through the inheritance closure (`resolveMember`), never against one
+ * node's own edges: `SqlOutboundQueueRepository.list_rows` was once declared nonexistent while
+ * `list_rows` sat on a mixin the class extends. And when a base type lives outside the index, the
+ * honest verdict is "could not verify" — a warning — never a blocking claim of nonexistence.
  */
 
 /** Node types whose members are worth validating, and what a member of each is called. */
@@ -86,33 +96,6 @@ const CREATION_CONTEXT =
   /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|extend|extends)\b/i;
 
 /**
- * The bare member name a node declares. Field and method nodes are named `Owner.member` (and TS
- * marks nullability with a trailing `?`), while enum members are named bare — comparing a prose
- * reference against the qualified form would report a declared member as missing, so the owner
- * prefix and the nullability marker are stripped before membership is judged.
- */
-const bareMemberName = (container: GraphNode, target: GraphNode): string => {
-  const name = target.name.endsWith('?') ? target.name.slice(0, -1) : target.name;
-  const prefix = `${container.name}.`;
-  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
-};
-
-const declaredMembers = (graph: KnowledgeGraph, container: GraphNode): ReadonlySet<string> => {
-  const members = new Set<string>();
-  for (const edgeId of graph.outgoing.get(container.id) ?? []) {
-    const edge = graph.edges.get(edgeId);
-    if (edge === undefined || (edge.type !== 'DECLARES_MEMBER' && edge.type !== 'CONTAINS')) {
-      continue;
-    }
-    const target = graph.nodes.get(edge.targetId);
-    if (target !== undefined && MEMBER_TYPES.has(target.type)) {
-      members.add(bareMemberName(container, target));
-    }
-  }
-  return members;
-};
-
-/**
  * Containers indexed under this name, of a type whose members we model. An exact match wins; a
  * lowercase qualifier (`listing.id`, the SQL habit) additionally matches case-insensitively,
  * because prose and SQL lowercase names the code capitalizes (ADR-0020).
@@ -142,24 +125,51 @@ const sentenceAround = (statement: string, index: number): string => {
   return statement.slice(before, after === -1 ? statement.length : after).trim();
 };
 
+/** One container judged against a member it does not have, plus what the search covered. */
+interface JudgedAbsence {
+  readonly container: GraphNode;
+  readonly resolution: Extract<MemberResolution, { outcome: 'not-found' }>;
+}
+
 /**
- * Emitted only when the container is indexed AND declares at least one member. A container with no
- * declared members means the adapter did not extract members for that language — absence there is a
- * gap in the extractor, not a defect in the plan, and reporting it would be the fabricated finding
+ * Rosters that are syntactically complete, so an unresolved base can never hide members.
+ *
+ * `class ItemType(str, Enum)` always extends the stdlib Enum — an unresolved supertype by
+ * construction — yet its member roster IS its class body. Treating that as an open member set
+ * would degrade every enum absence, ANGEBOT included, to "could not verify". Closure is judged
+ * twice, because the signal lives in two places: container types that have no inheritance at all
+ * (a TS `enum` node, a locale bundle, a config file), and member kinds that are declaration-closed
+ * wherever they sit (a Python enum class is a `class` node whose members are `enum-member`s).
+ * `method`/`field` rosters stay open — a mixin outside the index is exactly what extends them.
+ */
+const CLOSED_CONTAINER_TYPES = new Set(['enum', 'locale-bundle', 'configuration-file']);
+const CLOSED_MEMBER_KINDS = new Set([
+  'enum-member',
+  'union-literal',
+  'translation-key',
+  'config-key',
+  'feature-flag',
+]);
+
+const memberSetOpenFor = (judged: JudgedAbsence): boolean =>
+  judged.resolution.memberSetOpen &&
+  !CLOSED_CONTAINER_TYPES.has(judged.container.type) &&
+  !judged.resolution.declaredMemberTypes.some((type) => CLOSED_MEMBER_KINDS.has(type));
+
+/**
+ * The judgement of one prose reference against every same-named indexed container. Silence has
+ * four distinct reasons, all deliberate: the qualifier is not indexed, the sentence CREATES the
+ * member rather than asserting it, some container (or a base type it resolves to) declares the
+ * member, or member extraction produced nothing anywhere in any hierarchy — absence there is a gap
+ * in the extractor, not a defect in the plan, and reporting it would be the fabricated finding
  * this system exists to avoid.
  */
-/**
- * The container a reference should be judged against, or undefined when no judgement is possible.
- *
- * Undefined is returned for three distinct reasons, and all three must stay silent: the qualifier
- * is not indexed, the sentence CREATES the member rather than asserting it, or the container's
- * members were never extracted for that language.
- */
-const judgeableContainer = (
+const judgeReference = (
   input: AssumptionCheckInput,
   qualifier: string,
+  member: string,
   matchIndex: number,
-): GraphNode | undefined => {
+): JudgedAbsence | undefined => {
   const containers = containersNamed(input.graph, qualifier);
   if (containers.length === 0) {
     return undefined;
@@ -168,29 +178,77 @@ const judgeableContainer = (
   if (CREATION_CONTEXT.test(sentence) && !ASSERTION_CONTEXT.test(sentence)) {
     return undefined;
   }
-  return containers.find((container) => declaredMembers(input.graph, container).size > 0);
+  const absences: JudgedAbsence[] = [];
+  for (const container of containers) {
+    const resolution = resolveMember(input.graph, container, member, {
+      memberTypes: MEMBER_TYPES,
+    });
+    if (resolution.outcome === 'found') {
+      return undefined; // declared on the container itself or inherited — the assumption holds
+    }
+    if (resolution.declaredMemberNames.length > 0) {
+      absences.push({ container, resolution });
+    }
+  }
+  // A member set that is open anywhere caps the claim at "could not verify" for the reference.
+  return absences.find(memberSetOpenFor) ?? absences[0];
 };
 
-const invalidAssumption = (
+const findingSubject = (container: GraphNode, key: string): PreflightFinding['subject'] => ({
+  assumedSymbol: key,
+  nodeIds: [String(container.id)],
+  ...(container.path === undefined ? {} : { filePaths: [container.path] }),
+});
+
+/**
+ * Open world: the container inherits from a type the index cannot see, so nonexistence is not a
+ * fact the structural model can state. `coverage-gap` by design — the domain forbids that kind
+ * from ever being blocking, so this can never turn into a BLOCKED verdict by a severity edit.
+ */
+const unverifiableAssumption = (
   input: AssumptionCheckInput,
-  container: GraphNode,
+  judged: JudgedAbsence,
   qualifier: string,
   member: string,
 ): PreflightFinding | undefined => {
   const key = `${qualifier}.${member}`;
-  const available = [...declaredMembers(input.graph, container)].sort();
+  const result = createPreflightFinding({
+    id: input.nextId(`${input.requirementId}:${key}`),
+    kind: 'coverage-gap',
+    severity: 'warning',
+    requirementIds: [input.requirementId],
+    statement: `Requirement ${input.requirementId} references ${key}, but ${member} could not be verified: not found on ${qualifier} or its resolved base types; ${qualifier} inherits from types outside the index.`,
+    recommendation: `Confirm ${member} exists on a base type of ${qualifier} that lives outside the indexed scope, or index the repository that declares it and re-run the analysis.`,
+    subject: findingSubject(judged.container, key),
+    evidenceIds: [...judged.container.knowledge.evidenceIds],
+    confidence: 0.6,
+    provenance: 'static-analysis',
+    analyzer: 'check-assumptions',
+  });
+  return result.ok ? result.value : undefined;
+};
+
+/** Closed world: every reachable base type is indexed, and the statement says what was searched. */
+const invalidAssumption = (
+  input: AssumptionCheckInput,
+  judged: JudgedAbsence,
+  qualifier: string,
+  member: string,
+): PreflightFinding | undefined => {
+  const { container, resolution } = judged;
+  const key = `${qualifier}.${member}`;
+  const searched =
+    resolution.resolvedSupertypeCount === 0
+      ? `${member} is not a ${MEMBER_CONTAINERS[container.type] ?? 'member'} of ${qualifier} at the indexed revision`
+      : `${member} was not found on ${qualifier} or its ${String(resolution.resolvedSupertypeCount)} resolved base type(s) at the indexed revision`;
   const result = createPreflightFinding({
     id: input.nextId(`${input.requirementId}:${key}`),
     kind: 'invalid-assumption',
     severity: 'blocking',
     requirementIds: [input.requirementId],
-    statement: `Requirement ${input.requirementId} references ${key}, but ${member} is not a ${MEMBER_CONTAINERS[container.type] ?? 'member'} of ${qualifier} at the indexed revision.`,
-    recommendation: `Use one of the declared members (${available.slice(0, 8).join(', ')}), or add ${member} to ${qualifier} as part of this change.`,
-    subject: {
-      assumedSymbol: key,
-      nodeIds: [String(container.id)],
-      ...(container.path === undefined ? {} : { filePaths: [container.path] }),
-    },
+    statement: `Requirement ${input.requirementId} references ${key}, but ${searched}.`,
+    recommendation: `Use one of the declared members (${resolution.declaredMemberNames.slice(0, 8).join(', ')}), or add ${member} to ${qualifier} as part of this change.`,
+    subject: findingSubject(container, key),
     evidenceIds: [...container.knowledge.evidenceIds],
     confidence: 0.9,
     provenance: 'static-analysis',
@@ -210,11 +268,13 @@ export const checkAssumptions = (input: AssumptionCheckInput): readonly Prefligh
       continue;
     }
     seen.add(key);
-    const container = judgeableContainer(input, qualifier, match.index);
-    if (container === undefined || declaredMembers(input.graph, container).has(member)) {
+    const judged = judgeReference(input, qualifier, member, match.index);
+    if (judged === undefined) {
       continue;
     }
-    const finding = invalidAssumption(input, container, qualifier, member);
+    const finding = memberSetOpenFor(judged)
+      ? unverifiableAssumption(input, judged, qualifier, member)
+      : invalidAssumption(input, judged, qualifier, member);
     if (finding !== undefined) {
       findings.push(finding);
     }

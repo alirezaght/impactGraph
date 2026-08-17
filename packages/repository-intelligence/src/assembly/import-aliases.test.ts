@@ -138,14 +138,21 @@ describe('aliased cross-file imports resolve to the defining symbol (epic-16 lin
     ]);
   });
 
-  it('an alias of a name the target does not export resolves to nothing and warns', async () => {
+  it('an alias of a name the target does not export never resolves to a defining symbol — it warns and stays an open boundary', async () => {
     const { graph, parseWarnings } = await indexFiles('snap-alias-missing', {
       'package.json': JSON.stringify({ name: 'alias-missing', version: '1.0.0' }),
       'src/base.ts': 'export class BaseRepository {}\n',
       'src/user.ts':
         "import { NotThere as Repo } from './base';\n\nexport class DealRepository extends Repo {}\n",
     });
-    expect(edgeSummaries(graph, 'EXTENDS')).toEqual([]);
+    // The unresolved base is never guessed into a defining symbol: the only EXTENDS edge points at
+    // the explicit `unresolved-external-boundary` node that keeps the class's member set open.
+    expect(edgeSummaries(graph, 'EXTENDS')).toEqual([
+      'symbol:src/user.ts#DealRepository->external-type:src/user.ts#Repo',
+    ]);
+    expect(graph.nodes.find((node) => node.id === 'external-type:src/user.ts#Repo')?.type).toBe(
+      'unresolved-external-boundary',
+    );
     expect(
       parseWarnings.some((warning) => warning.message.includes("unresolved extends target 'Repo'")),
     ).toBe(true);

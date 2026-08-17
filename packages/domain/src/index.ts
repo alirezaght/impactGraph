@@ -128,6 +128,8 @@ export {
   findShortestPath,
   extractSubgraph,
 } from './repository/graph-queries.js';
+export type { MemberResolution, MemberResolutionOptions } from './repository/member-resolution.js';
+export { resolveMember } from './repository/member-resolution.js';
 
 export type {
   KnowledgeEnvelopeJson,

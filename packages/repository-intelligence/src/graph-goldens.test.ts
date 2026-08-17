@@ -239,7 +239,14 @@ const EXPECTED_GRAPH_MOVEMENT: Readonly<Record<string, number>> = {
   //   shape) and Listing → {id, title} (listings.py, the new SQLAlchemy model).
   // * 3 CONTAINS edges for the two new fixture files' symbols (Base, Listing,
   //   load_listings_by_ids) and 1 EXTENDS edge Listing → Base.
-  unchanged: 632,
+  //
+  // 632 → 638: member resolution through inheritance, all in `fastapi-app`:
+  // * 1 EXTENDS edge Deal → external-type BaseModel: an unresolved supertype is now modelled as an
+  //   `unresolved-external-boundary` node instead of being dropped, so a class's member set can be
+  //   told OPEN from closed (the SqlOutboundQueueRepository.list_rows field failure).
+  // * The outbound.py mixin fixture: 2 file-CONTAINS (mixin, repository class), 2 class-CONTAINS
+  //   (list_rows, save) and 1 EXTENDS SqlOutboundQueueRepository → OutboundAuditReadsMixin.
+  unchanged: 638,
 };
 
 /** Expected NODE movement, summed over all fixtures. Steady state is everything unchanged. */
@@ -254,7 +261,12 @@ const EXPECTED_NODE_MOVEMENT: Readonly<Record<string, number>> = {
   // (listings.py, queries.py), 2 file nodes, the Listing class, its 2 `field` nodes
   // (Listing.id — declared UUID — and Listing.title), the Base symbol, and the
   // load_listings_by_ids function that carries the analogous `= ANY(` SQL literal.
-  unchanged: 495,
+  //
+  // 495 → 501: member resolution through inheritance, all in `fastapi-app`: the
+  // `external-type:app/models.py#BaseModel` unresolved-external-boundary node (Deal's Pydantic
+  // base lives outside the index — its member set is OPEN, stated instead of dropped), plus the
+  // outbound.py mixin fixture's file node, 2 classes and 2 methods.
+  unchanged: 501,
 };
 
 describe('graph goldens per fixture (Story 17.3, PRD §42.3)', () => {
