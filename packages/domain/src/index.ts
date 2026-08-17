@@ -137,6 +137,8 @@ export type {
   PathReferenceResolution,
 } from './repository/path-resolution.js';
 export { normalizePathReference, resolvePathReference } from './repository/path-resolution.js';
+export type { MemberResolution, MemberResolutionOptions } from './repository/member-resolution.js';
+export { resolveMember } from './repository/member-resolution.js';
 
 export type {
   KnowledgeEnvelopeJson,

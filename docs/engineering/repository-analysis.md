@@ -34,6 +34,17 @@ scan → hash → parse (adapters) → graph assembly → snapshot binding
    Express routes, Terraform→Cloud Run `DEPLOYED_AS` edges, Pub/Sub `PUBLISHES`/`SUBSCRIBES_TO`
    edges — including the cross-stack edges of PRD §C13. Custom detection rules (§Z8) run here too,
    flagged as custom (`language-adapters.md`).
+
+   Unresolved references stay warnings — with one modelled exception: an `extends`/`implements`
+   reference whose target lives outside the index (a mixin in site-packages, a vendor base class)
+   becomes an `unresolved-external-boundary` node (`external-type:<file>#<name>`, provenance
+   `static-analysis`) with a real `EXTENDS`/`IMPLEMENTS` edge. Dropping it stated the class's
+   member set as complete when it was not, and the assumption check then fabricated
+   "member does not exist" for members inherited from unindexed bases
+   (the `SqlOutboundQueueRepository.list_rows` field failure). The boundary node is what lets
+   `resolveMember` (domain) answer "could not verify" instead: a member set reachable from such a
+   node is OPEN, and only closed-world absence may block a plan.
+
 5. **Snapshot binding**: the finished index generation is bound to a repository snapshot
    descriptor — repo identity, branch, commit, dirty status, index version, timestamp (PRD §23.1,
    §32: "the index must be tied to a repository snapshot"). Every fact carries that
