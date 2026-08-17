@@ -1,4 +1,5 @@
 import { knowledgeCategoryForProvenance } from '@impactgraph/contracts';
+import { evidenceTypesOf } from '@impactgraph/domain';
 
 import { factsFor, groupLabelFor, planImpactCells } from './graph-impact-cells.js';
 import { impactEdges } from './graph-impact-edges.js';
@@ -18,6 +19,7 @@ import type {
   ImpactProposedFacts,
   ImpactRequirementRow,
   ImpactViewFacts,
+  ImpactWarningRow,
 } from './graph-impact-model.js';
 import type { RenderCategory } from './graph-render-category.js';
 import type { GraphGrouping, GraphView } from './graph-view-model.js';
@@ -40,7 +42,27 @@ export interface ImpactViewInput {
   readonly groupOf: ReadonlyMap<string, string>;
   readonly hopEdges: HopEdgeIndex;
   readonly maxVisibleNodes?: number;
+  /**
+   * ADR-0022. `full` draws every predicted surface — the architecture-shaped view. `decision`
+   * draws only what a reader would act on: strong-tier surfaces resting on structural evidence,
+   * within a budget a human can hold in their head. A 176-node diagram of a 54k-node graph
+   * answered no question anyone asked; the tables below it always carried the real answer.
+   */
+  readonly scope?: 'full' | 'decision';
 }
+
+/** The decision view's node budget: small enough to read, large enough to show the neighbourhood. */
+export const DECISION_MAX_NODES = 20;
+
+/** Bases that make a surface worth drawing: a name resemblance is a lead, not a decision. */
+const STRONG_BASES = new Set([
+  'direct-structural',
+  'transitive-structural',
+  'async-event',
+  'external-contract',
+  'field-data-flow',
+  'configuration-asset',
+]);
 
 const categoryOf = (provenance: string): RenderCategory =>
   knowledgeCategoryForProvenance(provenance) ?? 'unknown';
@@ -63,12 +85,35 @@ const drawableAnalysis = (analysis: ImpactAnalysis): ImpactAnalysis => {
     : { ...analysis, requirementImpacts: drawable };
 };
 
+/**
+ * The decision scope: strong-tier surfaces on structural evidence, plus anything the specification
+ * named outright (a confirmation is a decision surface even when its basis is a name match).
+ */
+const decisionAnalysis = (analysis: ImpactAnalysis): ImpactAnalysis => ({
+  ...analysis,
+  requirementImpacts: analysis.requirementImpacts.filter((impact) => {
+    if (impact.likelihood !== 'required' && impact.likelihood !== 'likely') {
+      return false;
+    }
+    return (
+      impact.evidenceProvenance === 'USER_SUPPLIED' ||
+      evidenceTypesOf(impact).some((type) => STRONG_BASES.has(type))
+    );
+  }),
+});
+
+const scopedAnalysis = (input: ImpactViewInput): ImpactAnalysis =>
+  input.scope === 'decision'
+    ? decisionAnalysis(drawableAnalysis(input.analysis))
+    : drawableAnalysis(input.analysis);
+
 const cellInputOf = (input: ImpactViewInput): CellInput => ({
   grouping: input.grouping,
-  analysis: drawableAnalysis(input.analysis),
+  analysis: scopedAnalysis(input),
   components: input.components,
   groupOf: input.groupOf,
-  maxVisibleNodes: input.maxVisibleNodes ?? MAX_VISIBLE_NODES,
+  maxVisibleNodes:
+    input.maxVisibleNodes ?? (input.scope === 'decision' ? DECISION_MAX_NODES : MAX_VISIBLE_NODES),
 });
 
 const proposedFacts = (analysis: ImpactAnalysis): ImpactProposedFacts | undefined => {
@@ -104,6 +149,27 @@ const proposedFacts = (analysis: ImpactAnalysis): ImpactProposedFacts | undefine
   };
 };
 
+/**
+ * What the decision scope left out, stated in the file itself (ADR-0015): a bounded view that does
+ * not say it is bounded reads as "this was everything".
+ */
+const scopeNote = (input: ImpactViewInput): readonly ImpactWarningRow[] => {
+  if (input.scope !== 'decision') {
+    return [];
+  }
+  const all = input.analysis.requirementImpacts.length;
+  const kept = scopedAnalysis(input).requirementImpacts.length;
+  if (all === kept) {
+    return [];
+  }
+  return [
+    {
+      code: 'decision-scope',
+      message: `Decision view: ${String(kept)} of ${String(all)} predicted impacts shown — the strong tier plus what the specification named. ${String(all - kept)} weaker match(es) are excluded here; list_impacts (or \`view: 'impact'\`) has them all.`,
+    },
+  ];
+};
+
 const impactFactsOf = (
   input: ImpactViewInput,
   plan: CellPlan,
@@ -111,7 +177,10 @@ const impactFactsOf = (
   requirements: readonly ImpactRequirementRow[],
 ): ImpactViewFacts => {
   const cellInput = cellInputOf(input);
-  const impacts = input.analysis.requirementImpacts;
+  // ADR-0022: the tables carry the same scope as the diagram. A decision view whose tables list
+  // every weak match is the old artifact with a smaller picture on top of it — the totals below
+  // still state what the scope left out, so nothing is silently hidden.
+  const impacts = scopedAnalysis(input).requirementImpacts;
   const proposed = proposedFacts(input.analysis);
   const spec = input.specification;
   return {
@@ -147,7 +216,7 @@ const impactFactsOf = (
         ]),
       ),
     }),
-    warnings: buildWarningRows(input.analysis.warnings),
+    warnings: [...scopeNote(input), ...buildWarningRows(input.analysis.warnings)],
     ...(proposed === undefined ? {} : { proposed }),
   };
 };
@@ -156,7 +225,7 @@ export const buildImpactView = (input: ImpactViewInput): GraphView => {
   const cellInput = cellInputOf(input);
   const plan = planImpactCells(cellInput);
   const edges = impactEdges({
-    impacts: drawableAnalysis(input.analysis).requirementImpacts,
+    impacts: scopedAnalysis(input).requirementImpacts,
     proposed: input.analysis.proposedStructure,
     hopEdges: input.hopEdges,
     drawnGroups: plan.drawnGroupIds,

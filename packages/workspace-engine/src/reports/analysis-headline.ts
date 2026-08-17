@@ -19,7 +19,7 @@ import type {
 
 const VERDICT_PHRASES: Readonly<Record<string, string>> = {
   READY: 'READY',
-  READY_WITH_WARNINGS: 'READY WITH RISKS',
+  READY_WITH_WARNINGS: 'READY WITH WARNINGS',
   NEEDS_CLARIFICATION: 'NEEDS CLARIFICATION',
   INSUFFICIENT_COVERAGE: 'INSUFFICIENT COVERAGE',
   BLOCKED: 'BLOCKED',
@@ -75,6 +75,8 @@ export const buildHeadline = (input: HeadlineInput): string | undefined => {
   }
   const verdict = VERDICT_PHRASES[assessment.feasibility] ?? assessment.feasibility;
   const risks = riskCount(assessment);
+  // "READY WITH WARNINGS" and no risk count would leave the reader hunting for the warnings, so
+  // the risk count is stated whenever there is one.
   const parts = [risks === 0 ? verdict : `${verdict} — ${plural(risks, 'risk')} to verify`];
   const split = independenceSplit(input);
   const surfaces = `${plural(input.strongSurfaceCount, 'change surface')} on strong evidence`;

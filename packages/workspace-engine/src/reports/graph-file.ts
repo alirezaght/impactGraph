@@ -27,6 +27,12 @@ export interface GraphExportRequest {
    * renders that stored analysis's blast radius instead; an unknown id is a configuration error.
    */
   readonly analysisId?: string | undefined;
+  /**
+   * ADR-0022. With an `analysisId`, `decision` (the default) draws only the surfaces a reader
+   * would act on, within a budget a human can hold in their head; `impact` restores the
+   * every-predicted-surface diagram. Ignored without an analysis — architecture has one view.
+   */
+  readonly view?: 'decision' | 'impact' | undefined;
   /** Destination, relative to `rootDir` unless absolute. Defaults to the workspace root file. */
   readonly outPath?: string | undefined;
   /**
@@ -70,6 +76,9 @@ const loadViewFor = async (request: GraphExportRequest): Promise<Failable<GraphV
         rootDir: request.rootDir,
         analysisId: request.analysisId,
         grouping: request.grouping,
+        // ADR-0022: an analysis export answers "what should I look at", so the decision scope is
+        // the default; `view: 'impact'` restores the every-surface diagram.
+        scope: request.view === 'impact' ? 'full' : 'decision',
       });
 
 /** Load the view, render it, and write exactly one file. No network, no source content. */

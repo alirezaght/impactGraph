@@ -42,6 +42,7 @@ const graphHtml: ToolHandler<'export_graph_html'> = async (rootDir, input) => {
     rootDir,
     grouping: input.group ?? 'context',
     analysisId: input.analysisId,
+    view: input.view,
     outPath: input.path,
     allowOutsideRoot: false,
   });

@@ -13,6 +13,10 @@
           "minLength": 1,
           "maxLength": 200
         },
+        "view": {
+          "type": "string",
+          "enum": ["decision", "impact"]
+        },
         "path": {
           "type": "string",
           "minLength": 1,

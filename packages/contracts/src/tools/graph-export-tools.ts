@@ -24,6 +24,9 @@ export const GRAPH_EXPORT_TOOL_CONTRACTS = {
          * configuration error that names the ids that would have worked — use `list_analyses`.
          */
         analysisId: z.string().min(1).max(200).optional(),
+        /** ADR-0022: with an analysisId, 'decision' (default) draws only the surfaces worth
+         *  acting on; 'impact' restores the every-surface diagram. */
+        view: z.enum(['decision', 'impact']).optional(),
         /** Workspace-relative destination. Absolute paths and `..` escapes are rejected. */
         path: z.string().min(1).max(400).optional(),
       })

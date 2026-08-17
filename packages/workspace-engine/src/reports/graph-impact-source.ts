@@ -102,6 +102,8 @@ export interface ImpactViewRequest {
   readonly rootDir: string;
   readonly analysisId: string;
   readonly grouping: GraphGrouping;
+  /** ADR-0022: `decision` is the default for an analysis; `full` restores the every-surface view. */
+  readonly scope?: 'full' | 'decision';
 }
 
 export const loadImpactView = async (request: ImpactViewRequest): Promise<Failable<GraphView>> => {
@@ -137,6 +139,7 @@ export const loadImpactView = async (request: ImpactViewRequest): Promise<Failab
         components: componentFactsOf(resolved.value.graph),
         groupOf: groupingForGraph(request.rootDir, resolved.value.graph, request.grouping),
         hopEdges: hopEdgesOf(resolved.value.graph),
+        scope: request.scope ?? 'decision',
       }),
     };
   });
