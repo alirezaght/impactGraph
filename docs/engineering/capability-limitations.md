@@ -154,6 +154,40 @@ parameter. That is fixture work with its own golden movement, and it should be d
 actually reads a parameter, not before: a sample constraining a rule that does not exist would pin
 the absence of behaviour.
 
+## What a verdict means, and what it costs to get it wrong (ADR-0023)
+
+A false BLOCKED verdict is far more damaging than an uncertain warning: a developer who watches
+the gate stop a valid specification learns to override it, and every later legitimate block is
+worth less. So blocking is not a severity a producer may assert — every finding states its
+**evidence grade**, and `createPreflightFinding` REFUSES to build a blocking finding that does not
+claim `verification: 'verified-contradiction'`.
+
+| The claim                                                                                                                                                               | Grade                       | Verdict effect                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------ |
+| Evidence the plan contradicts the repository — a member absent from a CLOSED member set, an authoritative path-matched guard, a config gap on a fully-read runtime path | `verified-contradiction`    | may block                                        |
+| The assumption could not be established — a base type outside the index, an unresolved identifier, a chain with an inferred hop                                         | `unverified-assumption`     | `NEEDS_VERIFICATION`, never a block              |
+| ImpactGraph's own model, index or resolver did not reach — an unresolvable Terraform expression                                                                         | `origin: 'analysis-caveat'` | reported beside the findings, counted in neither |
+
+Consequences worth knowing:
+
+- **Absence reads as unverified.** A producer that omits the grade under-claims rather than
+  over-claims. That is the safe direction, and it means a genuine contradiction reported without
+  the field will present as a question.
+- **Caveats carry no requirement attribution.** Their subject is our resolution, not the plan, so
+  they are collapsed by repository subject: one unreadable deployment chain is one caveat however
+  many requirements were in the run.
+- **The score cannot outrank the verdict.** Each feasibility carries a readiness ceiling; a higher
+  question-based score is reported at that ceiling with `scoreCappedReason` naming the original.
+
+## Analysis depth is proportional to the change (ADR-0023)
+
+A change whose anchors sit in one top-level component, touch no queue/contract/deployment surface,
+and take part in no async or deployment chain walks 1 chain hop instead of 8. The judgement reads
+the anchors and their own incident edges — no extra traversal. It is conservative by construction
+(an anchor that merely publishes to a topic counts as distributed), but it **can** under-analyze a
+change whose reach is invisible both at its anchors and one hop out. If a contained analysis misses
+a surface that mattered, that is the case to report — it reopens the heuristic.
+
 ## Red-team analysis limits (ADR-0021)
 
 **Configuration declarations cover a fixed set of literal shapes.** `os.environ.get("X"[, default])`,
