@@ -69,6 +69,14 @@ const newSurfaceCount = (
   ).length;
 };
 
+/**
+ * Unmatched requirements that name no component at all. A behaviour-level statement ("the review
+ * output must lead with the verdict") names nothing the index could have matched, so its absence
+ * says nothing about repository coverage (ADR-0022).
+ */
+const conceptlessUnmatchedCount = (unmatched: ReturnType<typeof unmatchedRequirements>): number =>
+  unmatched.filter((requirement) => requirement.concepts.length === 0).length;
+
 export const buildWorkspaceCoverage = (input: WorkspaceCoverageInput): WorkspaceCoverageDto => {
   const unmatched = unmatchedRequirements(input.specification, input.analysis);
   const concepts = conceptResolution(input.specification, input.analysis);
@@ -83,6 +91,7 @@ export const buildWorkspaceCoverage = (input: WorkspaceCoverageInput): Workspace
     unresolvedConceptCount: concepts.unresolvedConceptCount,
     missingRepositoryCount,
     newSurfaceRequirementCount: newSurfaceCount(input, unmatched, missingRepositoryCount),
+    conceptlessUnmatchedCount: conceptlessUnmatchedCount(unmatched),
   });
   return {
     status: verdict.status,

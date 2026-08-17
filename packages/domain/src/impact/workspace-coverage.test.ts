@@ -120,4 +120,35 @@ describe('assessCoverageSufficiency', () => {
     expect(verdict.status).toBe('insufficient-coverage');
     expect(verdict.reasons).toHaveLength(3);
   });
+
+  // ADR-0022: "the specification speaks in behaviour, not component names" is a different problem
+  // from "the code is not in the index", and only the second is a coverage problem. Conflating
+  // them told a fully indexed workspace to go index the repositories it had already indexed.
+  it('excludes requirements that name no concept at all from the unmatched ratio', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 7,
+      conceptlessUnmatchedCount: 7,
+    });
+    expect(verdict.status).toBe('adequate');
+  });
+
+  it('still reports insufficiency when unmatched requirements DO name unresolved components', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 7,
+      conceptlessUnmatchedCount: 1,
+    });
+    expect(verdict.status).toBe('insufficient-coverage');
+  });
+
+  it('keeps the missing-repository signal even when the unmatched name nothing', () => {
+    const verdict = assessCoverageSufficiency({
+      ...base,
+      unmatchedRequirementCount: 7,
+      conceptlessUnmatchedCount: 7,
+      missingRepositoryCount: 1,
+    });
+    expect(verdict.status).toBe('insufficient-coverage');
+  });
 });

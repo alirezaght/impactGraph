@@ -25,6 +25,14 @@ export interface CoverageSufficiencyInput {
    * a fully indexed workspace of a construction-heavy specification look uncovered.
    */
   readonly newSurfaceRequirementCount?: number;
+  /**
+   * Unmatched requirements that name NO component at all — behaviour-level statements like
+   * "the review output must lead with the verdict". Nothing about the index could have matched
+   * them, so they are excluded from the ratio for the same reason new surface is (ADR-0022).
+   * Counting them made a fully indexed workspace report insufficient coverage and demand that
+   * the user index repositories the roster showed were already there.
+   */
+  readonly conceptlessUnmatchedCount?: number;
 }
 
 export interface WorkspaceCoverageVerdict {
@@ -49,11 +57,11 @@ export const assessCoverageSufficiency = (
   // registered repository IS actually missing. Otherwise the same ratio has two mundane causes —
   // new surface, or vocabulary that does not match the index — and asserting missing repositories
   // would contradict the roster facts reported next to this verdict.
-  const newSurface = Math.min(
-    input.newSurfaceRequirementCount ?? 0,
+  const explainable = Math.min(
+    (input.newSurfaceRequirementCount ?? 0) + (input.conceptlessUnmatchedCount ?? 0),
     input.unmatchedRequirementCount,
   );
-  const unexplained = input.unmatchedRequirementCount - newSurface;
+  const unexplained = input.unmatchedRequirementCount - explainable;
   if (unexplained / input.requirementCount >= UNMATCHED_RATIO_THRESHOLD) {
     reasons.push(
       input.missingRepositoryCount > 0
