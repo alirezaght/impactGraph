@@ -1,7 +1,7 @@
 # ADR-0023 — Evidence grades, one authoritative verdict, and analysis proportional to the change
 
 Date: 2026-08-17
-Status: Accepted
+Status: Proposed — awaiting human ratification
 Extends: ADR-0017 (findings as a first-class output), ADR-0018 (constraint extraction trust model),
 ADR-0021 (built-in red-team analysis), ADR-0022 (decision-first outputs).
 
@@ -68,7 +68,7 @@ score ceiling (BLOCKED 20, INSUFFICIENT_COVERAGE 40, NEEDS_CLARIFICATION 60, NEE
 READY/READY_WITH_WARNINGS 100). A score above its ceiling is reported at the ceiling with
 `scoreCappedReason` naming the original figure. The pair (94, BLOCKED) is now unrepresentable.
 
-**5. "Must remain unchanged" is a first-class requirement kind.** A preservation section role and a
+**5. "Must remain unchanged" is a first-class requirement kind** (detailed in ADR-0024). A preservation section role and a
 requirement `intent` axis keep regression guards distinct from both positive requirements and
 non-goals: a non-goal is out of scope (its impacts are `excluded`; a change there is unexpected),
 while a guard is IN scope, expected to be exercised, and must show no behavioural diff. Guards

@@ -1,4 +1,4 @@
-# ADR-0023: Model "must remain unchanged" as a requirement intent, not an exclusion
+# ADR-0024: Model "must remain unchanged" as a requirement intent, not an exclusion
 
 - **Status:** Proposed
 - **Date:** 2026-08-17
