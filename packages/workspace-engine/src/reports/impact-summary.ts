@@ -29,6 +29,7 @@ import {
 } from './preflight-block.js';
 import { buildRequiredActions } from './required-actions.js';
 import { buildHeadline, strongSurfaceCount } from './analysis-headline.js';
+import { buildUnmatchedBlock } from './unmatched-block.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
 import type { GroupedImpact } from './impact-selection.js';
@@ -326,12 +327,6 @@ const repositoryAttributionOf = (
     ? undefined
     : { graph: input.graph, repositories: input.workspace.repositories };
 
-const classificationOf = (
-  input: ImpactSummaryInput,
-  requirementKey: string,
-): RequirementClassification | undefined =>
-  input.preflight?.classifications.find((entry) => entry.requirementId === requirementKey);
-
 /** Present only when the pass ran, so absence never reads as "checked, found nothing". */
 const preflightBlock = (
   input: ImpactSummaryInput,
@@ -353,34 +348,6 @@ const preflightBlock = (
     },
   };
 };
-
-/** One unmatched requirement, carrying WHY nothing matched when the preflight pass classified it. */
-const unmatchedLine = (
-  input: ImpactSummaryInput,
-  requirement: ReturnType<typeof unmatchedRequirements>[number],
-): CliImpactSummary['unmatchedRequirements'][number] => {
-  // Classifications are keyed by the label a reader sees (R9), falling back to the internal id.
-  const classified = classificationOf(input, requirement.label ?? requirement.id);
-  return {
-    id: requirement.id,
-    ...(requirement.label === undefined ? {} : { label: requirement.label }),
-    statement: requirement.statement,
-    origin: originOf(requirement),
-    ...(classified === undefined
-      ? {}
-      : {
-          classification: classified.classification,
-          classificationRationale: classified.rationale,
-        }),
-  };
-};
-
-/**
- * ADR-0022: the summary states each unmatched requirement's id, class and a truncated statement;
- * the full text with its rationale lives in list_preflight_findings. Uncapped, this block alone
- * ran to thousands of tokens on a prose specification.
- */
-const UNMATCHED_SUMMARY_LIMIT = 8;
 
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
@@ -430,12 +397,7 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
     topImpacts,
-    unmatchedRequirements: unmatched
-      .slice(0, UNMATCHED_SUMMARY_LIMIT)
-      .map((requirement) => unmatchedLine(input, requirement)),
-    ...(unmatched.length > UNMATCHED_SUMMARY_LIMIT
-      ? { omittedUnmatchedRequirementCount: unmatched.length - UNMATCHED_SUMMARY_LIMIT }
-      : {}),
+    ...buildUnmatchedBlock(unmatched, input.preflight?.classifications ?? []),
     unresolvedConcepts: unresolved,
     // The specification's path-shaped identifiers, resolved against the graph — always computable,
     // so a reader can see "the spec names files that do not exist" even without the preflight pass.
