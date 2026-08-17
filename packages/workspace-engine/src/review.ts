@@ -246,6 +246,9 @@ const persistWithPlanContract = (
     buildReviewOutput(compared.review, inputs.analysis, compared.violations, {
       breakdownContext,
       planContract,
+      // The stored artifact is the system of record: it keeps every finding, and the wire cap
+      // applies only to what a caller is handed (ADR-0022).
+      boundFindings: false,
     }),
   );
 

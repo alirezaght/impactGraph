@@ -9,6 +9,7 @@ import {
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { callTool, isKnownTool } from './registry.js';
+import { toolResultText } from './summary-text.js';
 import { readOwnVersion, SERVER_NAME } from './version.js';
 
 // MCP over stdio: newline-delimited JSON-RPC 2.0. Hand-rolled on purpose — the protocol
@@ -45,7 +46,7 @@ interface ToolResultBody {
 }
 
 const textContent = (payload: unknown): ToolResultBody => ({
-  content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }],
+  content: [{ type: 'text', text: toolResultText(payload) }],
   structuredContent: payload,
 });
 

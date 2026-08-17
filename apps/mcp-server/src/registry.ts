@@ -2,6 +2,7 @@ import { MCP_TOOL_CONTRACTS } from '@impactgraph/contracts';
 import {
   answerQuestion,
   applyAcceptedDeviations,
+  pageReviewFindings,
   applyConfigOperation,
   applyInstruction,
   approveAnalysis,
@@ -137,7 +138,14 @@ const HANDLERS: ToolHandlerMap = {
     }
     return {
       ok: true,
-      value: applyAcceptedDeviations(stored.value.document, stored.value.acceptedDeviations),
+      value: pageReviewFindings(
+        applyAcceptedDeviations(stored.value.document, stored.value.acceptedDeviations),
+        {
+          category: input.category,
+          topN: input.topN,
+          offset: input.offset,
+        },
+      ),
     };
   },
   query_architecture: async (rootDir) => {

@@ -104,7 +104,31 @@ export interface RequirementImpact {
    * `evidenceProvenanceOf`, which maps absence to `WEAK_LEXICAL`, the weakest reading.
    */
   readonly evidenceProvenance?: EvidenceProvenance;
+  /**
+   * Additive field: what the plan expects to HAPPEN here, as opposed to how strongly the surface
+   * is implicated (ADR-0022). Review previously read an unchanged predicted file as a possible
+   * gap, which punished the correct decision to reuse existing behaviour untouched. Absent on
+   * analyses stored before the axis existed — read through `changeExpectationOf`, which maps
+   * absence to `must-change`, preserving the older reading exactly.
+   */
+  readonly changeExpectation?: ChangeExpectation;
 }
+
+/**
+ * What the plan expects of a predicted surface. `verify-only` and `reuse-unchanged` differ in
+ * intent — one asserts existing behaviour is correct, the other asserts it will be depended on —
+ * but both predict NO diff, which is what review acts on.
+ */
+export const CHANGE_EXPECTATIONS = ['must-change', 'reuse-unchanged', 'verify-only'] as const;
+export type ChangeExpectation = (typeof CHANGE_EXPECTATIONS)[number];
+
+/** Absence means the pre-ADR-0022 reading: the surface was expected to change. */
+export const changeExpectationOf = (impact: RequirementImpact): ChangeExpectation =>
+  impact.changeExpectation ?? 'must-change';
+
+/** True when the plan predicts NO diff at this surface, so an unchanged file is the plan working. */
+export const expectsNoChange = (impact: RequirementImpact): boolean =>
+  changeExpectationOf(impact) !== 'must-change';
 
 /** Absence is read as the weakest provenance, never as "unclassified but fine". */
 export const evidenceProvenanceOf = (impact: RequirementImpact): EvidenceProvenance =>
@@ -288,6 +312,14 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
   if (impact.evidenceProvenance !== undefined && !isEvidenceProvenance(impact.evidenceProvenance)) {
     issues.push(
       validationIssue('invalid-type', `${path}.evidenceProvenance`, 'unknown evidence provenance'),
+    );
+  }
+  if (
+    impact.changeExpectation !== undefined &&
+    !(CHANGE_EXPECTATIONS as readonly string[]).includes(impact.changeExpectation)
+  ) {
+    issues.push(
+      validationIssue('invalid-type', `${path}.changeExpectation`, 'unknown change expectation'),
     );
   }
   if (types.length === 0) {

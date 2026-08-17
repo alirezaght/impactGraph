@@ -90,8 +90,25 @@ const planContractLines = (report: CliReviewOutput): string[] => {
   return lines;
 };
 
+/** ADR-0022: the verdict is the first thing on screen, before any finding. */
+const verdictLines = (report: CliReviewOutput): string[] => {
+  const verdict = report.verdict;
+  if (verdict === undefined) {
+    return [];
+  }
+  const counts = verdict.counts;
+  return [
+    verdict.headline,
+    `  matched ${String(counts.matched)} · reused unchanged ${String(counts.reuseConfirmed)} · missing ${String(counts.missing)} · unexpected ${String(counts.unexpected)} · divergent ${String(counts.divergent)} · rule violations ${String(counts.ruleViolations)}`,
+    '',
+  ];
+};
+
 const textLines = (report: CliReviewOutput): string[] => {
-  const lines = [`Review (${report.target}) — ${String(report.changedFiles.length)} changed files`];
+  const lines = [
+    ...verdictLines(report),
+    `Review (${report.target}) — ${String(report.changedFiles.length)} changed files`,
+  ];
   for (const finding of report.findings) {
     lines.push(`  [${finding.category}] ${finding.nodeName}: ${finding.explanation}`);
   }

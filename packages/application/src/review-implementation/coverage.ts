@@ -41,6 +41,11 @@ export const estimateCoverage = (
         if (finding.category === 'matched') {
           return { marker: 'confirmed', note: `${finding.nodeName} changed as predicted` };
         }
+        // ADR-0022: planned reuse satisfies the requirement. The requirement asked for behaviour,
+        // and behaviour delivered by untouched existing code is delivered.
+        if (finding.category === 'reuse-confirmed') {
+          return { marker: 'confirmed', note: finding.explanation };
+        }
         if (finding.category === 'missing' || finding.category === 'divergent') {
           return { marker: 'missing', note: finding.explanation };
         }
@@ -61,7 +66,7 @@ export const estimateCoverage = (
           related.length === 0
             ? 'unclear'
             : statusFor(
-                count('matched'),
+                count('matched') + count('reuse-confirmed'),
                 count('missing'),
                 count('divergent'),
                 count('unverifiable'),

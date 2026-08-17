@@ -143,7 +143,11 @@ export {
 } from './freshness.js';
 export type { LastRunWarningInputs } from './freshness.js';
 export type { AnalyzeOutputInput } from './reports/analyze-output.js';
-export { buildReviewOutput, applyAcceptedDeviations } from './reports/review-output.js';
+export {
+  buildReviewOutput,
+  applyAcceptedDeviations,
+  pageReviewFindings,
+} from './reports/review-output.js';
 export type { ReviewBreakdownContext } from './reports/review-output.js';
 export { buildReviewBreakdown } from './reports/review-breakdown.js';
 export { deriveReviewConfidence, deriveScopeLimitations } from './reports/review-scope.js';

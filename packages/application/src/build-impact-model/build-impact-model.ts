@@ -1,6 +1,7 @@
 import { createImpactAnalysis, err, validationError, validationIssue } from '@impactgraph/domain';
 
 import { isSpeculativeConcept } from '../analyze-specification/statement-analysis.js';
+import { changeExpectationFor } from './change-expectation.js';
 import { buildCoChangeIndex } from '../history/co-change-index.js';
 
 import { traverseCandidates } from './candidate-traversal.js';
@@ -230,6 +231,10 @@ const scoreCandidates = (
     const classified = classifyCandidate(candidate, node, requirementId, {
       coChangeCount: coChangeCountFor(pipeline, candidate, node),
       change,
+      changeExpectation: changeExpectationFor(requirement.statement, [
+        candidate.match.concept,
+        node.name,
+      ]),
     });
     if (classified.ok) {
       scored.push(classified.value);

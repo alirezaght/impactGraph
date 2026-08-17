@@ -1,4 +1,4 @@
-import { hasDiscrepancies } from '@impactgraph/domain';
+import { reviewVerdict } from '@impactgraph/domain';
 
 import { buildReviewBreakdown } from './review-breakdown.js';
 import { driftOmittedTotal } from './review-drift.js';
@@ -74,6 +74,40 @@ const baselineDto = (analysis: ImpactAnalysis): Pick<CliReviewOutput, 'baseline'
         },
       };
 
+/**
+ * ADR-0022 wire cap per category. The persisted artifact keeps every finding; a 137-file diff
+ * previously put 137 findings on the wire and buried the answer. Mirrors SUMMARY_FINDING_LIMIT.
+ */
+const WIRE_FINDING_LIMIT = 12;
+
+type WireFinding = CliReviewOutput['findings'][number];
+
+interface BoundedFindings {
+  readonly findings: WireFinding[];
+  readonly truncated: Record<string, number>;
+}
+
+/**
+ * Keep the first `WIRE_FINDING_LIMIT` of each category and COUNT the rest. Bounding per category
+ * rather than overall keeps one noisy category from evicting the single missing requirement that
+ * decides the verdict.
+ */
+const boundFindings = (findings: readonly WireFinding[]): BoundedFindings => {
+  const kept: WireFinding[] = [];
+  const seen = new Map<string, number>();
+  const truncated: Record<string, number> = {};
+  for (const finding of findings) {
+    const count = (seen.get(finding.category) ?? 0) + 1;
+    seen.set(finding.category, count);
+    if (count <= WIRE_FINDING_LIMIT) {
+      kept.push(finding);
+    } else {
+      truncated[finding.category] = (truncated[finding.category] ?? 0) + 1;
+    }
+  }
+  return { findings: kept, truncated };
+};
+
 export interface ReviewOutputExtras {
   readonly breakdownContext?: ReviewBreakdownContext | undefined;
   /**
@@ -81,6 +115,13 @@ export interface ReviewOutputExtras {
    * no pipeline run to draw on, never "the plan was honoured".
    */
   readonly planContract?: CliReviewOutput['planContract'];
+  /**
+   * Deviations a human already accepted for this review. They answer a discrepancy, so the verdict
+   * stops counting them as failures — the finding itself is never rewritten (§24.1).
+   */
+  readonly acceptedDeviations?: readonly AcceptedDeviationDto[];
+  /** Set when the caller keeps the full finding list reachable elsewhere (the stored artifact). */
+  readonly boundFindings?: boolean;
 }
 
 export const buildReviewOutput = (
@@ -88,7 +129,38 @@ export const buildReviewOutput = (
   analysis: ImpactAnalysis,
   violations: readonly RuleViolation[],
   extras: ReviewOutputExtras = {},
-): CliReviewOutput => ({
+): CliReviewOutput => {
+  const allFindings: WireFinding[] = review.findings.map((finding) => ({
+    category: finding.category,
+    nodeId: finding.nodeId,
+    nodeName: finding.nodeName,
+    ...(finding.requirementId === undefined ? {} : { requirementId: finding.requirementId }),
+    explanation: finding.explanation,
+    filePaths: [...finding.filePaths],
+  }));
+  const bounded =
+    extras.boundFindings === false
+      ? { findings: allFindings, truncated: {} }
+      : boundFindings(allFindings);
+  const verdict = reviewVerdict({
+    findings: review.findings,
+    ruleViolationCount: violations.length,
+    acceptedNodeIds: (extras.acceptedDeviations ?? []).map((deviation) => deviation.nodeId),
+  });
+  return {
+  verdict: {
+    status: verdict.status,
+    headline: verdict.headline,
+    counts: verdict.counts,
+    decidingFindings: verdict.decidingFindings.map((finding) => ({
+      category: finding.category,
+      nodeId: finding.nodeId,
+      explanation: finding.explanation,
+    })),
+    ...(Object.keys(bounded.truncated).length === 0
+      ? {}
+      : { truncatedFindingCounts: bounded.truncated }),
+  },
   ...(extras.planContract === undefined ? {} : { planContract: extras.planContract }),
   schemaVersion: 1,
   command: 'review',
@@ -103,14 +175,7 @@ export const buildReviewOutput = (
   target: review.target,
   reviewSnapshotId: review.reviewSnapshotId,
   changedFiles: [...review.changedFiles],
-  findings: review.findings.map((finding) => ({
-    category: finding.category,
-    nodeId: finding.nodeId,
-    nodeName: finding.nodeName,
-    ...(finding.requirementId === undefined ? {} : { requirementId: finding.requirementId }),
-    explanation: finding.explanation,
-    filePaths: [...finding.filePaths],
-  })),
+  findings: bounded.findings,
   coverage: review.coverage.map((entry) => ({
     requirementId: entry.requirementId,
     statement: entry.statement,
@@ -124,14 +189,15 @@ export const buildReviewOutput = (
     filePaths: [...violation.evidence.filePaths],
     ...(violation.evidence.edgeId === undefined ? {} : { edgeId: violation.evidence.edgeId }),
   })),
-  discrepanciesFound: hasDiscrepancies(review) || violations.length > 0,
+  discrepanciesFound: verdict.status === 'NEEDS_ATTENTION',
   ...(extras.breakdownContext === undefined
     ? {}
     : { breakdown: breakdownDto(review, analysis, extras.breakdownContext) }),
   ...(extras.breakdownContext?.drift === undefined
     ? {}
     : { drift: extras.breakdownContext.drift }),
-});
+  };
+};
 
 /**
  * §24.1: mark findings that carry an accepted-deviation decision with the recorded reason.
@@ -141,14 +207,80 @@ export const buildReviewOutput = (
 export const applyAcceptedDeviations = (
   document: CliReviewOutput,
   deviations: readonly AcceptedDeviationDto[],
-): CliReviewOutput => ({
-  ...document,
-  findings: document.findings.map((finding) => {
+): CliReviewOutput => {
+  const findings = document.findings.map((finding) => {
     const decision = deviations.find(
       (candidate) => candidate.nodeId === finding.nodeId && candidate.category === finding.category,
     );
     return decision === undefined
       ? finding
       : { ...finding, acceptedDeviation: { reason: decision.reason } };
-  }),
-});
+  });
+  // An accepted deviation is an answered question, so the verdict is recomputed rather than left
+  // saying NEEDS_ATTENTION about a discrepancy a human already settled (ADR-0022).
+  const verdict = reviewVerdict({
+    findings: findings.map((finding) => ({
+      category: finding.category,
+      nodeId: finding.nodeId,
+      nodeName: finding.nodeName,
+      explanation: finding.explanation,
+      filePaths: finding.filePaths,
+    })),
+    ruleViolationCount: document.ruleViolations.length,
+    acceptedNodeIds: deviations.map((deviation) => deviation.nodeId),
+  });
+  return {
+    ...document,
+    verdict: {
+      status: verdict.status,
+      headline: verdict.headline,
+      counts: verdict.counts,
+      decidingFindings: [...verdict.decidingFindings],
+      ...(document.verdict?.truncatedFindingCounts === undefined
+        ? {}
+        : { truncatedFindingCounts: document.verdict.truncatedFindingCounts }),
+    },
+    findings,
+    discrepanciesFound: verdict.status === 'NEEDS_ATTENTION',
+  };
+};
+
+export interface ReviewFindingPage {
+  readonly category?: string | undefined;
+  readonly topN?: number | undefined;
+  readonly offset?: number | undefined;
+}
+
+/**
+ * Page the findings of a stored review. The artifact keeps every finding; this is how a caller
+ * reaches the ones the bounded default omitted, without the default having to carry them all.
+ */
+export const pageReviewFindings = (
+  document: CliReviewOutput,
+  page: ReviewFindingPage,
+): CliReviewOutput => {
+  const matching =
+    page.category === undefined
+      ? document.findings
+      : document.findings.filter((finding) => finding.category === page.category);
+  const offset = Math.max(0, page.offset ?? 0);
+  const limit = page.topN ?? matching.length;
+  const slice = matching.slice(offset, offset + limit);
+  const omitted = matching.length - offset - slice.length;
+  const truncated: Record<string, number> = {};
+  if (omitted > 0) {
+    truncated[page.category ?? 'all'] = omitted;
+  }
+  return {
+    ...document,
+    ...(document.verdict === undefined
+      ? {}
+      : {
+          verdict: {
+            ...document.verdict,
+            ...(omitted > 0 ? { truncatedFindingCounts: truncated } : {}),
+          },
+        }),
+    findings: slice,
+  };
+};

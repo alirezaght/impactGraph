@@ -20,6 +20,7 @@ import type { ImpactEvidenceType } from '../impact/evidence-basis.js';
 import type {
   AnalysisWarning,
   ArchitecturalOption,
+  ChangeExpectation,
   OptionImplications,
   ImpactAnalysis,
   RequirementImpact,
@@ -84,6 +85,12 @@ const readAdditiveImpactFields = (
     `${path}.evidenceProvenance`,
     issues,
   );
+  const changeExpectation = readOptionalString(
+    obj,
+    'changeExpectation',
+    `${path}.changeExpectation`,
+    issues,
+  );
   return {
     ...(obj['evidenceTypes'] === undefined
       ? {}
@@ -99,6 +106,9 @@ const readAdditiveImpactFields = (
     ...(evidenceProvenance === undefined
       ? {}
       : { evidenceProvenance: evidenceProvenance as EvidenceProvenance }),
+    ...(changeExpectation === undefined
+      ? {}
+      : { changeExpectation: changeExpectation as ChangeExpectation }),
   };
 };
 

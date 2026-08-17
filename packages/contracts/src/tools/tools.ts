@@ -264,6 +264,11 @@ export const MCP_TOOL_CONTRACTS = {
         /** Additive v1 field: when re-running, allow a never-approved baseline (see
          *  review_implementation — same semantics, same provisional labeling). */
         allowUnapprovedBaseline: z.literal(true).optional(),
+        /** ADR-0022 paging over a stored review's FULL finding list, which the bounded
+         *  review_implementation response deliberately does not carry. */
+        category: z.string().min(1).optional(),
+        topN: z.number().int().min(1).max(500).optional(),
+        offset: z.number().int().min(0).optional(),
       })
       .strict(),
     output: cliReviewOutputSchema,

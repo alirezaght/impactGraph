@@ -14,6 +14,11 @@ export const REVIEW_CATEGORIES = [
   'missing',
   'unexpected',
   'divergent',
+  /**
+   * A planned surface that stayed unchanged BECAUSE the plan said it would be reused as it is
+   * (ADR-0022). Reuse is a design outcome, so it is reported as satisfaction — never as a gap.
+   */
+  'reuse-confirmed',
   'unverifiable',
   'accepted-deviation',
 ] as const;

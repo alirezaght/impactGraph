@@ -13,6 +13,7 @@ const SECTION_TITLES: Record<ReviewCategory, string> = {
   missing: 'Missing',
   unexpected: 'Unexpected',
   divergent: 'Divergent',
+  'reuse-confirmed': 'Reused Unchanged (by design)',
   unverifiable: 'Unverifiable',
   'accepted-deviation': 'Accepted Deviations',
 };

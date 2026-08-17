@@ -15,6 +15,8 @@ const reviewFindingSchema = z
       'missing',
       'unexpected',
       'divergent',
+      /** Additive v1 value (ADR-0022): planned reuse that stayed unchanged, by design. */
+      'reuse-confirmed',
       'unverifiable',
       'accepted-deviation',
     ]),
@@ -58,9 +60,53 @@ const ruleViolationSchema = z
   })
   .strict();
 
+/**
+ * ADR-0022: the answer, before its evidence. A reader who needs only "did this pass?" reads this
+ * block and stops; everything below it is the supporting case. Additive v1 field — absent on
+ * producers that predate it, where `discrepanciesFound` remains the (buried) fallback.
+ */
+const reviewVerdictSchema = z
+  .object({
+    status: z.enum(['PASS', 'NEEDS_ATTENTION']),
+    headline: z.string().min(1),
+    counts: z
+      .object({
+        matched: z.number().int().min(0),
+        missing: z.number().int().min(0),
+        unexpected: z.number().int().min(0),
+        divergent: z.number().int().min(0),
+        reuseConfirmed: z.number().int().min(0),
+        unverifiable: z.number().int().min(0),
+        acceptedDeviations: z.number().int().min(0),
+        ruleViolations: z.number().int().min(0),
+      })
+      .strict(),
+    /** The findings that decided a NEEDS_ATTENTION verdict — bounded, never the whole list. */
+    decidingFindings: z.array(
+      z
+        .object({
+          category: z.string().min(1),
+          nodeId: z.string().min(1),
+          explanation: z.string().min(1),
+        })
+        .strict(),
+    ),
+    /**
+     * How many findings of each category the wire document omitted. The persisted artifact keeps
+     * every finding; `get_review_report` pages them. Silence about truncation would read as
+     * "that was all of them", which is the failure this block exists to prevent (ADR-0015).
+     */
+    truncatedFindingCounts: z.record(z.string(), z.number().int().min(1)).optional(),
+  })
+  .strict();
+
+export type CliReviewVerdict = z.infer<typeof reviewVerdictSchema>;
+
 /** PRD §38.2 review report as JSON. Coverage is an ESTIMATE, never proof (§25). */
 export const cliReviewOutputSchema = z
   .object({
+    /** FIRST by construction (ADR-0022): the decision precedes the evidence. */
+    verdict: reviewVerdictSchema.optional(),
     schemaVersion: z.literal(1),
     command: z.literal('review'),
     /** Additive v1 field (Story 11.2): id of the persisted review artifact this document

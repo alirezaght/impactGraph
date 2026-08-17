@@ -19,6 +19,98 @@
         "document": {
           "type": "object",
           "properties": {
+            "verdict": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["PASS", "NEEDS_ATTENTION"]
+                },
+                "headline": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "counts": {
+                  "type": "object",
+                  "properties": {
+                    "matched": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "missing": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unexpected": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "divergent": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "reuseConfirmed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "unverifiable": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "acceptedDeviations": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ruleViolations": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "matched",
+                    "missing",
+                    "unexpected",
+                    "divergent",
+                    "reuseConfirmed",
+                    "unverifiable",
+                    "acceptedDeviations",
+                    "ruleViolations"
+                  ],
+                  "additionalProperties": false
+                },
+                "decidingFindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "category": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "nodeId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "explanation": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": ["category", "nodeId", "explanation"],
+                    "additionalProperties": false
+                  }
+                },
+                "truncatedFindingCounts": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              },
+              "required": ["status", "headline", "counts", "decidingFindings"],
+              "additionalProperties": false
+            },
             "schemaVersion": {
               "type": "number",
               "const": 1
@@ -103,6 +195,7 @@
                       "missing",
                       "unexpected",
                       "divergent",
+                      "reuse-confirmed",
                       "unverifiable",
                       "accepted-deviation"
                     ]

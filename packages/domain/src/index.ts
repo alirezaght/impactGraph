@@ -239,6 +239,7 @@ export type {
   AnalysisStatus,
   ImpactAnalysis,
   ImpactAnalysisContext,
+  ChangeExpectation,
 } from './impact/impact-analysis.js';
 export type {
   ProposedEndpointKind,
@@ -275,6 +276,9 @@ export {
   supersedeImpactAnalysis,
   addUserDecision,
   evidenceProvenanceOf,
+  CHANGE_EXPECTATIONS,
+  changeExpectationOf,
+  expectsNoChange,
 } from './impact/impact-analysis.js';
 
 // ADR-0017 — repository constraints, preflight findings, plan assessment, runtime topology.
@@ -395,6 +399,14 @@ export {
   createImplementationReview,
   hasDiscrepancies,
 } from './review/implementation-review.js';
+export type {
+  ReviewVerdict,
+  ReviewVerdictCounts,
+  ReviewVerdictInput,
+  ReviewVerdictStatus,
+  DecidingFinding,
+} from './review/review-verdict.js';
+export { REVIEW_VERDICT_STATUSES, reviewVerdict } from './review/review-verdict.js';
 
 export type { RepositoryHeadJson, RepositorySnapshotJson } from './serialization/snapshot-json.js';
 export {

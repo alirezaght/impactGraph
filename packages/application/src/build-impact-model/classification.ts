@@ -5,6 +5,7 @@ import { basisFor } from './evidence-basis.js';
 import { isOwnershipFamilyEdge } from './traversal-edge-semantics.js';
 
 import type { ImpactCandidate } from './candidate-traversal.js';
+import type { ChangeExpectationCue } from './change-expectation.js';
 import type { PredictedChange } from './change-kind.js';
 import type {
   ConfidenceSignalType,
@@ -75,6 +76,12 @@ export interface ClassifyContext {
   readonly coChangeCount?: number | undefined;
   /** The change the requirement predicts, which decides what a reverse hop obliges. */
   readonly change?: PredictedChange | undefined;
+  /**
+   * ADR-0022: what the requirement says should HAPPEN at this surface, when it says so explicitly.
+   * Only set for the anchor the reuse clause names, and only at distance 0 — a component reached
+   * by traversal is not the component the sentence spoke about.
+   */
+  readonly changeExpectation?: ChangeExpectationCue | undefined;
 }
 
 /** Everything the concept match itself says about strength — mechanism plus its two penalties. */
@@ -322,12 +329,19 @@ export const classifyCandidate = (
       confidence: confidence.value.value,
       confidenceSignals: confidence.value.signals,
       explanation: `${explanationFor(candidate, node, context)}${caveat} Basis: ${basis.primary}.`,
-      expectedChanges: [`Review ${node.name} against requirement ${requirementId}`],
+      expectedChanges: [
+        context.changeExpectation === undefined || candidate.distance > 0
+          ? `Review ${node.name} against requirement ${requirementId}`
+          : `Plan expects no change here (${context.changeExpectation.expectation}, "${context.changeExpectation.cue}")`,
+      ],
       evidenceIds,
       dependencyPath: candidate.dependencyPath,
       provenance: 'static-analysis',
       evidenceTypes: basis.evidenceTypes,
       ...(likelihood === proposed ? {} : { tierCappedBy: basis.primary }),
+      ...(context.changeExpectation === undefined || candidate.distance > 0
+        ? {}
+        : { changeExpectation: context.changeExpectation.expectation }),
     },
   };
 };
