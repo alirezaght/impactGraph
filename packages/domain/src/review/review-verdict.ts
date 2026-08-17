@@ -50,7 +50,12 @@ export interface ReviewVerdictInput {
 /** Enough to see WHY without reproducing the finding list in the headline block. */
 const DECIDING_LIMIT = 5;
 
-const DISCREPANCY_CATEGORIES: readonly ReviewCategory[] = ['missing', 'unexpected', 'divergent'];
+/**
+ * Ordered by how much a reader must act on them. A diff that touches fifty generated files must
+ * not push the one missing requirement out of the deciding slice — array order is the order
+ * findings happened to be produced in, which carries no meaning for the reader.
+ */
+const DISCREPANCY_CATEGORIES: readonly ReviewCategory[] = ['missing', 'divergent', 'unexpected'];
 
 const countOf = (findings: readonly ReviewFinding[], category: ReviewCategory): number =>
   findings.filter((finding) => finding.category === category).length;
@@ -90,9 +95,16 @@ export const reviewVerdict = (input: ReviewVerdictInput): ReviewVerdict => {
     acceptedDeviations: input.findings.filter((finding) => accepted.has(finding.nodeId)).length,
     ruleViolations: input.ruleViolationCount,
   };
-  const unanswered = input.findings.filter(
-    (finding) => DISCREPANCY_CATEGORIES.includes(finding.category) && !accepted.has(finding.nodeId),
-  );
+  const unanswered = input.findings
+    .filter(
+      (finding) =>
+        DISCREPANCY_CATEGORIES.includes(finding.category) && !accepted.has(finding.nodeId),
+    )
+    .sort(
+      (left, right) =>
+        DISCREPANCY_CATEGORIES.indexOf(left.category) -
+        DISCREPANCY_CATEGORIES.indexOf(right.category),
+    );
   const status: ReviewVerdictStatus =
     unanswered.length > 0 || input.ruleViolationCount > 0 ? 'NEEDS_ATTENTION' : 'PASS';
   return {
