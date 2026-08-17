@@ -694,6 +694,14 @@
                         "type": "string",
                         "minLength": 1
                       },
+                      "verification": {
+                        "type": "string",
+                        "enum": ["verified-contradiction", "unverified-assumption"]
+                      },
+                      "origin": {
+                        "type": "string",
+                        "enum": ["plan-finding", "analysis-caveat", "background-condition"]
+                      },
                       "constraintId": {
                         "type": "string",
                         "minLength": 1

@@ -6,6 +6,7 @@ import {
 } from '../build-runtime-topology/resolve-runtime-paths.js';
 
 import { checkAssumptions } from './check-assumptions.js';
+import { collapseAnalysisCaveats, collapseCaveatSpread } from './collapse-caveats.js';
 import { checkConfigSemantics } from './check-config-semantics.js';
 import { checkConstraints } from './check-constraints.js';
 import { checkGuidance } from './check-guidance.js';
@@ -255,7 +256,9 @@ export const runPreflight = (input: RunPreflightInput): PreflightResult => {
     }),
   );
 
-  const sorted = [...findings].sort(byImportance);
+  // ADR-0023: collapse before assessing, so one unreadable deployment chain counts once and the
+  // plan's own findings are never crowded out by the analysis talking about itself.
+  const sorted = [...collapseCaveatSpread(collapseAnalysisCaveats(findings))].sort(byImportance);
   return {
     findings: sorted,
     classifications,

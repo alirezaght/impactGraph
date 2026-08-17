@@ -53,6 +53,30 @@ export const FINDING_SEVERITIES = ['blocking', 'warning', 'informational'] as co
 export type FindingSeverity = (typeof FINDING_SEVERITIES)[number];
 
 /**
+ * How well the finding is established — the axis that decides whether it may block.
+ *
+ * A false BLOCKED verdict is far more damaging than an uncertain warning: developers who watch the
+ * gate stop a valid specification learn to override it, and every later legitimate block is worth
+ * less. So "blocking" is not a severity a producer may simply assert; it is a claim that
+ * ImpactGraph has evidence the plan CONTRADICTS the repository, not merely that it could not
+ * confirm the plan is right. Those two are not equivalent and must never collapse.
+ */
+export const FINDING_VERIFICATIONS = ['verified-contradiction', 'unverified-assumption'] as const;
+export type FindingVerification = (typeof FINDING_VERIFICATIONS)[number];
+
+/**
+ * WHOSE problem the finding is about — orthogonal to kind and severity.
+ *
+ * `plan-finding` — evidence about the proposed specification. Only these are red-team findings.
+ * `analysis-caveat` — ImpactGraph's own model, index or resolver could not establish something.
+ *   A limit on what can be said, never evidence that the plan is bad.
+ * `background-condition` — a pre-existing property of the repository the plan neither caused nor
+ *   specifically touches. Worth knowing, not a risk this change introduced.
+ */
+export const FINDING_ORIGINS = ['plan-finding', 'analysis-caveat', 'background-condition'] as const;
+export type FindingOrigin = (typeof FINDING_ORIGINS)[number];
+
+/**
  * Kinds that may ever be `blocking`. `new-surface` and `coverage-gap` are planning facts, not
  * defects: a plan that creates new surface is normal, and missing coverage is a limit on what can
  * be said, not a verdict on the design.
@@ -98,7 +122,36 @@ export interface PreflightFinding {
   readonly provenance: Provenance;
   /** The analyzer that produced it, so a false positive can be traced to one place. */
   readonly analyzer: string;
+  /**
+   * Additive field: how well established the finding is. Absent reads as `verified-contradiction`
+   * ONLY for non-blocking findings, because producers that predate the axis could not block
+   * without also passing the kind gate below; a blocking finding must state it outright.
+   */
+  readonly verification?: FindingVerification;
+  /** Additive field: whose problem this is. Absent reads as `plan-finding`, the old meaning. */
+  readonly origin?: FindingOrigin;
 }
+
+/** Absence reads as the old meaning: a statement about the plan. */
+export const findingOriginOf = (finding: PreflightFinding): FindingOrigin =>
+  finding.origin ?? 'plan-finding';
+
+/** Absence reads as unverified — the weaker, safer claim. */
+export const verificationOf = (finding: PreflightFinding): FindingVerification =>
+  finding.verification ?? 'unverified-assumption';
+
+/** True when this finding is evidence about the specification, rather than about our own reach. */
+export const isPlanFinding = (finding: PreflightFinding): boolean =>
+  findingOriginOf(finding) === 'plan-finding';
+
+/** True when the finding points at something concrete a reader can open. */
+const hasSubject = (input: PreflightFinding): boolean =>
+  (input.subject.nodeIds?.length ?? 0) > 0 ||
+  (input.subject.filePaths?.length ?? 0) > 0 ||
+  input.subject.constraintId !== undefined ||
+  input.subject.runtimePathId !== undefined ||
+  input.subject.assumedSymbol !== undefined ||
+  input.subject.proposedRelationship !== undefined;
 
 /** The vocabulary half: kind, severity, and what a severity is allowed to be claimed for. */
 const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
@@ -115,6 +168,54 @@ const taxonomyIssues = (input: PreflightFinding): ValidationIssue[] => {
         'invalid-type',
         'severity',
         `'${input.kind}' is a planning fact and may not be blocking`,
+      ),
+    );
+  }
+  if (
+    input.verification !== undefined &&
+    !(FINDING_VERIFICATIONS as readonly string[]).includes(input.verification)
+  ) {
+    issues.push(validationIssue('invalid-type', 'verification', 'unknown verification'));
+  }
+  if (
+    input.origin !== undefined &&
+    !(FINDING_ORIGINS as readonly string[]).includes(input.origin)
+  ) {
+    issues.push(validationIssue('invalid-type', 'origin', 'unknown origin'));
+  }
+  // The whole point of the axis: only a verified contradiction against the PLAN may stop work.
+  // "We could not verify this" and "our own reach ran out" are investigations, not verdicts.
+  if (input.severity === 'blocking' && input.verification !== 'verified-contradiction') {
+    issues.push(
+      validationIssue(
+        'invalid-type',
+        'severity',
+        'a blocking finding must state verification: verified-contradiction',
+      ),
+    );
+  }
+  if (
+    input.severity === 'blocking' &&
+    input.origin !== undefined &&
+    input.origin !== 'plan-finding'
+  ) {
+    issues.push(
+      validationIssue('invalid-type', 'severity', `a ${input.origin} may not be blocking`),
+    );
+  }
+  // A claim about the plan must be attributable to SOMETHING a reader can open: the requirement it
+  // is about, or the code it is about. Review-time findings legitimately name only the latter.
+  // A caveat about our own reach may name neither — its subject is our resolution, not the plan.
+  if (
+    findingOriginOf(input) === 'plan-finding' &&
+    input.requirementIds.length === 0 &&
+    !hasSubject(input)
+  ) {
+    issues.push(
+      validationIssue(
+        'blank-field',
+        'requirementIds',
+        'a plan finding must name its requirement or the code it concerns',
       ),
     );
   }
@@ -157,4 +258,11 @@ export const createPreflightFinding = (
   return issues.length > 0 ? err(validationError(issues)) : ok(deepFreeze({ ...input }));
 };
 
-export const isBlocking = (finding: PreflightFinding): boolean => finding.severity === 'blocking';
+/**
+ * Blocking is a conjunction, not a flag: the severity, the evidence grade and the target must all
+ * agree. Reading all three here means no producer can create a blocking verdict by accident.
+ */
+export const isBlocking = (finding: PreflightFinding): boolean =>
+  finding.severity === 'blocking' &&
+  verificationOf(finding) === 'verified-contradiction' &&
+  isPlanFinding(finding);

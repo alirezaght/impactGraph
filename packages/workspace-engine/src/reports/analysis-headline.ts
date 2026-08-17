@@ -36,11 +36,42 @@ const riskCount = (assessment: PlanAssessmentDto): number =>
   assessment.counts.configSemanticsRisks +
   assessment.counts.constraintWarnings;
 
+/**
+ * ADR-0023: whether the analysis found reason to look further than the code that changes.
+ *
+ * Derived from the surfaces the summary already shows, so it states what the reader can verify in
+ * the same document. Saying so matters: a small, well-contained change deserves "this looks local"
+ * rather than an implied promise that a large analysis was necessary.
+ */
+const FAR_REACHING_BASES = new Set(['async-event', 'external-contract', 'configuration-asset']);
+
+const topLevelOf = (path: string): string => path.split('/').slice(0, 2).join('/');
+
+const containmentNote = (topImpacts: CliImpactSummary['topImpacts']): string | undefined => {
+  const strong = topImpacts.filter(
+    (impact) => impact.likelihood === 'required' || impact.likelihood === 'likely',
+  );
+  if (strong.length === 0) {
+    return undefined;
+  }
+  if (strong.some((impact) => FAR_REACHING_BASES.has(impact.evidenceType))) {
+    return undefined;
+  }
+  const components = new Set(
+    strong.map((impact) => topLevelOf(impact.path ?? impact.nodeId)).filter((part) => part !== ''),
+  );
+  return components.size === 1
+    ? 'the change looks local and well contained'
+    : undefined;
+};
+
 export interface HeadlineInput {
   readonly assessment?: PlanAssessmentDto | undefined;
   readonly independence?: EvidenceIndependenceDto | undefined;
   /** Surfaces shown by the default view — the strong tier, not the raw impact total. */
   readonly strongSurfaceCount: number;
+  /** The shown surfaces themselves, so the headline can say whether the change looks contained. */
+  readonly topImpacts: CliImpactSummary['topImpacts'];
   readonly unmatchedRequirementCount: number;
   readonly unresolvedConceptCount: number;
 }
@@ -93,6 +124,10 @@ export const buildHeadline = (input: HeadlineInput): string | undefined => {
     gaps.push(`${plural(input.unresolvedConceptCount, 'named component')} did not resolve`);
   }
   parts.push(gaps.length === 0 ? 'no known coverage gaps' : gaps.join(', '));
+  const containment = containmentNote(input.topImpacts);
+  if (containment !== undefined) {
+    parts.push(containment);
+  }
   return `${parts.join('. ')}.`;
 };
 

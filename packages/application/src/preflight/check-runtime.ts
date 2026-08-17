@@ -56,8 +56,14 @@ const unresolvedFinding = (
     id: input.nextId(`unresolved:${path.id}`),
     kind: 'runtime-topology-gap',
     severity: 'warning',
-    requirementIds: [...input.requirementIds],
-    statement: `The runtime path from ${path.hops[0]?.name ?? 'the caller'} could not be resolved to a serving process: ${path.incompleteReason}.`,
+    // A chain ImpactGraph could not finish reading is a limit of ITS reach, not a risk this
+    // specification introduced — and it is a property of the repository, so it belongs to no
+    // requirement. Attributing it to every requirement in the run made one pre-existing
+    // unresolved Terraform expression read as a new risk in each of them (ADR-0023).
+    origin: 'analysis-caveat',
+    verification: 'unverified-assumption',
+    requirementIds: [],
+    statement: `ImpactGraph could not resolve the runtime path from ${path.hops[0]?.name ?? 'the caller'} to a serving process: ${path.incompleteReason}. This is a limit of the analysis, not a finding against the plan.`,
     recommendation:
       'Confirm by hand which process serves this traffic before relying on the deployment plan.',
     subject: { runtimePathId: path.id, nodeIds: path.hops.map((hop) => hop.nodeId) },
@@ -88,6 +94,9 @@ const unplannedProcessFinding = (
     id: input.nextId(`unplanned:${path.id}`),
     kind: 'runtime-topology-gap',
     severity: 'warning',
+    // A real serving process the plan never mentions IS about the plan — but the plan being
+    // silent is not proof it is wrong, so it asks rather than blocks.
+    verification: 'unverified-assumption',
     requirementIds: [...input.requirementIds],
     statement: `Production traffic on this path is served by ${serving.name}, which the plan does not mention.`,
     recommendation: `Include ${serving.name} in the plan, or state why it needs no change.`,
@@ -122,6 +131,11 @@ export const checkRuntime = (input: CheckRuntimeInput): readonly PreflightFindin
         id: input.nextId(`${path.id}:${gap.atNodeId}`),
         kind: 'runtime-topology-gap',
         severity: severityFor(path),
+        // A fully-read path that demonstrably lacks the configuration the plan requires is a
+        // contradiction. A path with an inferred or unfinished hop is a question about our own
+        // reading, and severityFor already keeps it at warning.
+        verification:
+          severityFor(path) === 'blocking' ? 'verified-contradiction' : 'unverified-assumption',
         requirementIds: [...input.requirementIds],
         statement: gapStatement(path, gap),
         recommendation: `Propagate ${(gap.missingConfig ?? []).join(', ')} to ${gap.atName}, or route this traffic to a process that already has it.`,

@@ -92,6 +92,8 @@ export const checkConfigSemantics = (
       id: input.nextId(`config:${declaration.name}`),
       kind: 'config-semantics-risk',
       severity: 'warning',
+      // A risk in configuration the plan needs, never a proven defect (ADR-0018 asymmetry).
+      verification: 'unverified-assumption',
       requirementIds: [...input.requirementIds],
       statement: statementFor(declaration, semantic),
       recommendation: `Fail closed when ${declaration.name} is unset, or state explicitly that the empty default is the intended behaviour.`,

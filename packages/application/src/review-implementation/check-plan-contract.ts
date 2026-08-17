@@ -95,6 +95,9 @@ const forbiddenFinding = (
     id: input.nextId(`drift:${edge.sourceId}:${edge.targetId}:${constraint.id}`),
     kind: 'blocking-constraint-violation',
     severity: constraint.severity === 'blocking' ? 'blocking' : 'warning',
+    // Review-time: the relationship is in the diff, so the contradiction is observed rather than
+    // predicted — the strongest evidence grade there is (ADR-0023).
+    verification: 'verified-contradiction',
     requirementIds: [],
     statement: `The implementation added ${edge.type} from ${sourcePath} to ${targetName}, which ${constraint.source.filePath} forbids: ${constraint.rule.statement}.`,
     recommendation: `Remove the relationship, or add an explicit exemption to ${constraint.source.filePath} and say why.`,

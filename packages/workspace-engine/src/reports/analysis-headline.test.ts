@@ -42,6 +42,7 @@ describe('buildHeadline (ADR-0022)', () => {
         statement: 'irrelevant here',
       },
       strongSurfaceCount: 14,
+      topImpacts: [],
       unmatchedRequirementCount: 0,
       unresolvedConceptCount: 0,
     });
@@ -56,6 +57,7 @@ describe('buildHeadline (ADR-0022)', () => {
     const headline = buildHeadline({
       assessment: assessment('READY'),
       strongSurfaceCount: 2,
+      topImpacts: [],
       unmatchedRequirementCount: 3,
       unresolvedConceptCount: 1,
     });
@@ -68,6 +70,7 @@ describe('buildHeadline (ADR-0022)', () => {
     const headline = buildHeadline({
       assessment: assessment('BLOCKED', { blockingViolations: 1 }),
       strongSurfaceCount: 0,
+      topImpacts: [],
       unmatchedRequirementCount: 0,
       unresolvedConceptCount: 0,
     });
@@ -79,6 +82,7 @@ describe('buildHeadline (ADR-0022)', () => {
     expect(
       buildHeadline({
         strongSurfaceCount: 1,
+        topImpacts: [],
         unmatchedRequirementCount: 0,
         unresolvedConceptCount: 0,
       }),

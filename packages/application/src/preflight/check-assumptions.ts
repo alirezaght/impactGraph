@@ -216,6 +216,7 @@ const unverifiableAssumption = (
     id: input.nextId(`${input.requirementId}:${key}`),
     kind: 'coverage-gap',
     severity: 'warning',
+    verification: 'unverified-assumption',
     requirementIds: [input.requirementId],
     statement: `Requirement ${input.requirementId} references ${key}, but ${member} could not be verified: not found on ${qualifier} or its resolved base types; ${qualifier} inherits from types outside the index.`,
     recommendation: `Confirm ${member} exists on a base type of ${qualifier} that lives outside the indexed scope, or index the repository that declares it and re-run the analysis.`,
@@ -245,6 +246,9 @@ const invalidAssumption = (
     id: input.nextId(`${input.requirementId}:${key}`),
     kind: 'invalid-assumption',
     severity: 'blocking',
+    // Reached only through the closed-world guard: the member set is complete, so its absence is
+    // a contradiction rather than a failure to look far enough (ADR-0022 §3, ADR-0023).
+    verification: 'verified-contradiction',
     requirementIds: [input.requirementId],
     statement: `Requirement ${input.requirementId} references ${key}, but ${searched}.`,
     recommendation: `Use one of the declared members (${resolution.declaredMemberNames.slice(0, 8).join(', ')}), or add ${member} to ${qualifier} as part of this change.`,

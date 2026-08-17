@@ -327,6 +327,12 @@ export const cliImpactSummarySchema = z
     planAssessment: planAssessmentSchema.optional(),
     /** The strongest findings, bounded. Full detail via `list_preflight_findings`. */
     preflightFindings: z.array(preflightFindingSchema).optional(),
+    /**
+     * ADR-0023: limits of ImpactGraph's own model, index or resolution — reported so a reader
+     * knows what could not be established, and kept OUT of `preflightFindings` so they are never
+     * mistaken for evidence against the specification.
+     */
+    analysisCaveats: z.array(preflightFindingSchema).optional(),
     /** How much of the evidence was discovered rather than supplied by the specification. */
     evidenceIndependence: evidenceIndependenceSchema.optional(),
     /**

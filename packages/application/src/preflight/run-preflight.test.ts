@@ -207,7 +207,11 @@ describe('runPreflight — every check runs without being asked for', () => {
     expect(result.assessment.feasibility).toBe('BLOCKED');
     expect(result.assessment.decision).toContain('Do not implement yet');
     expect(result.assessment.counts.blockingViolations).toBeGreaterThanOrEqual(1);
-    expect(result.assessment.score).toBe(87);
+    // ADR-0023: the caller's question-based figure was 87. A reader shown "readiness 87" beside
+    // "BLOCKED" cannot tell which half to believe, so the verdict wins and the score is reported
+    // at the ceiling that verdict allows, saying why.
+    expect(result.assessment.score).toBeLessThanOrEqual(20);
+    expect(result.assessment.scoreCappedReason).toContain('87');
   });
 
   it('separates new surface from coverage gap for two requirements that both matched nothing', () => {

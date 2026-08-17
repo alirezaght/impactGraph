@@ -552,6 +552,7 @@
               "enum": [
                 "READY",
                 "READY_WITH_WARNINGS",
+                "NEEDS_VERIFICATION",
                 "NEEDS_CLARIFICATION",
                 "INSUFFICIENT_COVERAGE",
                 "BLOCKED"
@@ -607,6 +608,18 @@
                 "expectedChangeSurfaces": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "unverifiedAssumptions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "analysisCaveats": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "backgroundConditions": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               },
               "required": [
@@ -636,6 +649,10 @@
               "maximum": 100
             },
             "scoreWithheldReason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "scoreCappedReason": {
               "type": "string",
               "minLength": 1
             }
@@ -696,6 +713,14 @@
                 "type": "string",
                 "minLength": 1
               },
+              "verification": {
+                "type": "string",
+                "enum": ["verified-contradiction", "unverified-assumption"]
+              },
+              "origin": {
+                "type": "string",
+                "enum": ["plan-finding", "analysis-caveat", "background-condition"]
+              },
               "constraintId": {
                 "type": "string",
                 "minLength": 1
@@ -753,6 +778,12 @@
               "analyzer"
             ],
             "additionalProperties": false
+          }
+        },
+        "analysisCaveats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/preflightFindings/items"
           }
         },
         "evidenceIndependence": {

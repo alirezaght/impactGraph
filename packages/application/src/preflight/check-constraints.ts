@@ -231,6 +231,10 @@ export const checkConstraints = (input: CheckConstraintsInput): readonly Preflig
       id: input.nextId(`${edge.requirementId}:${constraint.id}`),
       kind: grade.severity === 'blocking' ? 'blocking-constraint-violation' : 'constraint-warning',
       severity: grade.severity,
+      // A path-matched rule from an authoritative guard is a contradiction a reviewer can check
+      // line by line. Anything weaker is a question, and a question may not block (ADR-0023).
+      verification:
+        grade.severity === 'blocking' ? 'verified-contradiction' : 'unverified-assumption',
       requirementIds: [edge.requirementId],
       statement: statementFor(edge, constraint, candidate.byPath),
       recommendation: recommendationFor(constraint),

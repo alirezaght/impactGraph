@@ -1,6 +1,6 @@
-import { isBlocking } from './preflight-finding.js';
+import { findingOriginOf, isBlocking, isPlanFinding, verificationOf } from './preflight-finding.js';
 
-import type { PreflightFinding, PreflightFindingKind } from './preflight-finding.js';
+import type { FindingOrigin, PreflightFinding, PreflightFindingKind } from './preflight-finding.js';
 import type { RequirementClassification } from './requirement-classification.js';
 
 /**
@@ -14,6 +14,12 @@ import type { RequirementClassification } from './requirement-classification.js'
 export const FEASIBILITIES = [
   'READY',
   'READY_WITH_WARNINGS',
+  /**
+   * Something the specification assumes could not be established from the indexed structure.
+   * Distinct from BLOCKED on purpose: "I could not prove your plan is right" is not "I found
+   * evidence your plan is wrong", and collapsing the two teaches readers to override the gate.
+   */
+  'NEEDS_VERIFICATION',
   'NEEDS_CLARIFICATION',
   'INSUFFICIENT_COVERAGE',
   'BLOCKED',
@@ -37,6 +43,18 @@ export interface PlanAssessmentCounts {
    */
   readonly typeSensitiveComparisons?: number;
   readonly expectedChangeSurfaces: number;
+  /**
+   * Findings that could not be established rather than disproved. They ask for investigation and
+   * never for a stop. Additive: older assessments never separated them.
+   */
+  readonly unverifiedAssumptions?: number;
+  /**
+   * Limits of ImpactGraph's own model, index or resolution. Reported beside the plan's findings,
+   * never counted among them — a caveat about our reach is not evidence about the design.
+   */
+  readonly analysisCaveats?: number;
+  /** Pre-existing repository conditions the change neither caused nor specifically touches. */
+  readonly backgroundConditions?: number;
 }
 
 export interface PlanAssessment {
@@ -56,6 +74,12 @@ export interface PlanAssessment {
    * code would be a confident number about nothing.
    */
   readonly scoreWithheldReason?: string;
+  /**
+   * Set when the verdict forced the score down. The pair (readiness 94, feasibility BLOCKED) was
+   * shipped to a user: both halves were internally defensible and together they were nonsense.
+   * The verdict is authoritative, so the score is reconciled to it and says why.
+   */
+  readonly scoreCappedReason?: string;
 }
 
 export interface AssessmentInput {
@@ -77,8 +101,16 @@ export interface AssessmentInput {
   readonly scoreWithheldReason?: string;
 }
 
+/**
+ * Counts describe the PLAN, so they are taken over plan findings only. Counting a caveat about
+ * our own reach here is what made an unresolved Terraform expression read as a risk the change
+ * introduced — once per requirement.
+ */
 const countOf = (findings: readonly PreflightFinding[], kind: PreflightFindingKind): number =>
-  findings.filter((finding) => finding.kind === kind).length;
+  findings.filter((finding) => finding.kind === kind && isPlanFinding(finding)).length;
+
+const originCount = (findings: readonly PreflightFinding[], origin: FindingOrigin): number =>
+  findings.filter((finding) => findingOriginOf(finding) === origin).length;
 
 const buildCounts = (input: AssessmentInput): PlanAssessmentCounts => ({
   blockingViolations: input.findings.filter(
@@ -94,7 +126,26 @@ const buildCounts = (input: AssessmentInput): PlanAssessmentCounts => ({
   missingConsumers: countOf(input.findings, 'missing-consumer'),
   typeSensitiveComparisons: countOf(input.findings, 'type-sensitive-comparison'),
   expectedChangeSurfaces: input.expectedChangeSurfaces,
+  unverifiedAssumptions: input.findings.filter(
+    (finding) =>
+      isPlanFinding(finding) &&
+      verificationOf(finding) === 'unverified-assumption' &&
+      UNVERIFIABLE_KINDS.includes(finding.kind),
+  ).length,
+  analysisCaveats: originCount(input.findings, 'analysis-caveat'),
+  backgroundConditions: originCount(input.findings, 'background-condition'),
 });
+
+/**
+ * Kinds whose unverified form is a question about the SPECIFICATION — "does this thing exist,
+ * does this path carry that config" — as opposed to a planning fact (new surface, coverage gap)
+ * that no amount of verification would turn into a defect.
+ */
+const UNVERIFIABLE_KINDS: readonly PreflightFindingKind[] = [
+  'invalid-assumption',
+  'runtime-topology-gap',
+  'blocking-constraint-violation',
+];
 
 const blockingFindings = (findings: readonly PreflightFinding[]): readonly PreflightFinding[] =>
   findings.filter(isBlocking);
@@ -128,6 +179,13 @@ const decide = (
         'Coverage is insufficient to assess this plan — index or register the missing repositories, then re-run. Findings below are scoped to what was indexed.',
     };
   }
+  if ((counts.unverifiedAssumptions ?? 0) > 0) {
+    const unverified = counts.unverifiedAssumptions ?? 0;
+    return {
+      feasibility: 'NEEDS_VERIFICATION',
+      decision: `No verified contradiction was found, but ${String(unverified)} specification assumption(s) could not be verified from the indexed structure. Check them before implementing — this is not evidence that they are false.`,
+    };
+  }
   if (input.blockingQuestions > 0 || counts.unresolvedArchitecturalQuestions > 0) {
     const open = input.blockingQuestions + counts.unresolvedArchitecturalQuestions;
     return {
@@ -142,7 +200,8 @@ const decide = (
     counts.configSemanticsRisks +
     counts.missingConsumers +
     (counts.typeSensitiveComparisons ?? 0) +
-    counts.coverageGaps;
+    counts.coverageGaps -
+    (counts.unverifiedAssumptions ?? 0);
   if (warnings > 0) {
     return {
       feasibility: 'READY_WITH_WARNINGS',
@@ -169,6 +228,39 @@ const decidingIds = (input: AssessmentInput, feasibility: Feasibility): readonly
 };
 
 /**
+ * The highest readiness each verdict can honestly carry.
+ *
+ * The score answers "how few open questions are left"; the verdict answers "is this safe to act
+ * on". They are different measurements, which is why they could disagree — and a reader shown
+ * `readiness 94` beside `BLOCKED` cannot tell which one to believe. The verdict is authoritative,
+ * so the score is reconciled DOWN to it rather than the disagreement being explained in prose.
+ * Reconciling rather than zeroing keeps the figure useful for tracking a specification across
+ * revisions, which is the only reason it exists.
+ */
+const SCORE_CEILING: Readonly<Record<Feasibility, number>> = {
+  READY: 100,
+  READY_WITH_WARNINGS: 100,
+  NEEDS_VERIFICATION: 70,
+  NEEDS_CLARIFICATION: 60,
+  INSUFFICIENT_COVERAGE: 40,
+  BLOCKED: 20,
+};
+
+const reconciledScore = (
+  score: number,
+  feasibility: Feasibility,
+): { score: number; scoreCappedReason?: string } => {
+  const ceiling = SCORE_CEILING[feasibility];
+  if (score <= ceiling) {
+    return { score };
+  }
+  return {
+    score: ceiling,
+    scoreCappedReason: `The question-based readiness figure was ${String(score)}, which cannot stand beside a ${feasibility} verdict — the verdict is the authoritative answer and the score is reported at its ceiling.`,
+  };
+};
+
+/**
  * Deterministic: the same inputs always produce the same assessment. Never a model's judgment.
  */
 export const assessPlan = (input: AssessmentInput): PlanAssessment => {
@@ -183,7 +275,7 @@ export const assessPlan = (input: AssessmentInput): PlanAssessment => {
               : (input.scoreWithheldReason ??
                 'No deterministic score was supplied for this analysis.'),
         }
-      : { score: input.score };
+      : reconciledScore(input.score, feasibility);
   return {
     feasibility,
     counts,

@@ -326,14 +326,21 @@ export type {
   PreflightFindingKind,
   FindingSeverity,
   FindingSubject,
+  FindingOrigin,
+  FindingVerification,
   PreflightFinding,
 } from './preflight/preflight-finding.js';
 export {
   PREFLIGHT_FINDING_KINDS,
   FINDING_SEVERITIES,
+  FINDING_ORIGINS,
+  FINDING_VERIFICATIONS,
   isPreflightFindingKind,
   createPreflightFinding,
   isBlocking,
+  isPlanFinding,
+  findingOriginOf,
+  verificationOf,
 } from './preflight/preflight-finding.js';
 export type {
   UnmatchedRequirementClass,

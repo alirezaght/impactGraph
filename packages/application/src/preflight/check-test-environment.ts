@@ -74,6 +74,7 @@ export const checkTestEnvironment = (
     id: input.nextId(`test-env:${dialect.construct}`),
     kind: 'constraint-warning',
     severity: 'warning',
+    verification: 'unverified-assumption',
     requirementIds: [...input.requirementIds],
     statement: `The specification uses ${dialect.engine}-specific SQL ('${dialect.construct}'), but the repository's test environment declares ${engines.join(' and ')} (${declared.filePath}) — the tests will not exercise this SQL as written.`,
     recommendation: `Run the affected tests against ${dialect.engine}, or use a construct both engines execute, or record explicitly that this path is tested elsewhere.`,

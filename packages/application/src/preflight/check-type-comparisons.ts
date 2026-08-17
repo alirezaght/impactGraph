@@ -185,6 +185,7 @@ const comparisonFinding = (
     id: input.nextId(`type-comparison:${site.written}:${String(node.id)}`),
     kind: 'type-sensitive-comparison',
     severity: 'warning',
+    verification: 'unverified-assumption',
     requirementIds: [...input.requirementIds],
     statement: `The plan's SQL compares ${site.written} against bound parameters (${site.operator.trim()}…), but ${node.name} is declared '${declaredType}' at ${where} — a ${family}-sensitive type that string-bound parameters may not match.`,
     recommendation:

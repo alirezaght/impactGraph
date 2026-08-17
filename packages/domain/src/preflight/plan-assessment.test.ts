@@ -11,6 +11,9 @@ const finding = (overrides: Partial<PreflightFinding> = {}): PreflightFinding =>
     id: 'finding-1',
     kind: 'blocking-constraint-violation',
     severity: 'blocking',
+    // An indexed CI guard forbids the proposed relationship outright: a verified contradiction,
+    // which is the only grade of evidence allowed to stop work.
+    verification: 'verified-contradiction',
     requirementIds: ['R6'],
     statement:
       'Requirement R6 introduces peer-service HTTP from newsletter-service to user-profile-service, which check-service-peer-http.py prohibits.',

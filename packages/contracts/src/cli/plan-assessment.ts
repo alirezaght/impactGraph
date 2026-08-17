@@ -14,6 +14,8 @@ import { z } from 'zod';
 export const FEASIBILITY_VALUES = [
   'READY',
   'READY_WITH_WARNINGS',
+  /** ADR-0023: something the specification assumes could not be established. Not a contradiction. */
+  'NEEDS_VERIFICATION',
   'NEEDS_CLARIFICATION',
   'INSUFFICIENT_COVERAGE',
   'BLOCKED',
@@ -64,6 +66,14 @@ export const preflightFindingSchema = z
     confidence: z.number().min(0).max(1),
     /** The analyzer that produced it, so a false positive traces to one place. */
     analyzer: z.string().min(1),
+    /**
+     * ADR-0023 additive fields. `verification` says how well established the finding is — only a
+     * `verified-contradiction` may ever be blocking. `origin` says whose problem it is: a caveat
+     * about ImpactGraph's own reach is not evidence against the plan. Absent on producers that
+     * predate the axes, where absence reads as unverified/plan-finding.
+     */
+    verification: z.enum(['verified-contradiction', 'unverified-assumption']).optional(),
+    origin: z.enum(['plan-finding', 'analysis-caveat', 'background-condition']).optional(),
     constraintId: z.string().min(1).optional(),
     proposedRelationship: z
       .object({
@@ -99,12 +109,20 @@ export const planAssessmentSchema = z
         /** ADR-0020 §4 — additive: absent on assessments produced before the analyzer existed. */
         typeSensitiveComparisons: z.number().int().min(0).optional(),
         expectedChangeSurfaces: z.number().int().min(0),
+        /** ADR-0023 additive: assumptions that could not be established, which never block. */
+        unverifiedAssumptions: z.number().int().min(0).optional(),
+        /** ADR-0023 additive: limits of ImpactGraph's own model — reported, never counted as risk. */
+        analysisCaveats: z.number().int().min(0).optional(),
+        /** ADR-0023 additive: pre-existing repository conditions the change did not introduce. */
+        backgroundConditions: z.number().int().min(0).optional(),
       })
       .strict(),
     decidingFindingIds: z.array(z.string().min(1)),
     /** Secondary on purpose. Withheld, with a reason, when coverage cannot support it. */
     score: z.number().min(0).max(100).optional(),
     scoreWithheldReason: z.string().min(1).optional(),
+    /** ADR-0023 additive: set when the verdict forced the question-based score down to its ceiling. */
+    scoreCappedReason: z.string().min(1).optional(),
   })
   .strict();
 

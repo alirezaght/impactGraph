@@ -11,7 +11,7 @@ import {
   toSuppliedIdentifiersDto,
 } from '../supplied-identifiers.js';
 
-import { buildHeadline, strongSurfaceCount } from './analysis-headline.js';
+import { analysisBlock, decisionBlock } from './decision-block.js';
 import { buildEvidenceQuality, evidenceLimitations } from './evidence-quality-block.js';
 import {
   DEFAULT_TOP_N,
@@ -23,6 +23,7 @@ import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impa
 import { toIndexWarningReportDto } from './index-health-dto.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
 import {
+  analysisCaveats,
   summaryFindings,
   toAssessmentDto,
   toIndependenceDto,
@@ -326,62 +327,6 @@ const repositoryAttributionOf = (
     : { graph: input.graph, repositories: input.workspace.repositories };
 
 /** Present only when the pass ran, so absence never reads as "checked, found nothing". */
-const preflightBlock = (
-  input: ImpactSummaryInput,
-): Pick<
-  CliImpactSummary,
-  'planAssessment' | 'preflightFindings' | 'evidenceIndependence' | 'constraintCoverage'
-> => {
-  const preflight = input.preflight;
-  if (preflight === undefined) {
-    return {};
-  }
-  return {
-    planAssessment: toAssessmentDto(preflight),
-    preflightFindings: [...summaryFindings(preflight)],
-    evidenceIndependence: toIndependenceDto(preflight),
-    constraintCoverage: {
-      indexedConstraintCount: preflight.constraintCount,
-      opaqueGuardPaths: [...preflight.opaqueGuardPaths],
-    },
-  };
-};
-
-/**
- * ADR-0022 — the decision block: the assessment, its evidence-independence split, and the one
- * sentence that reads them together. Assembled apart from the document so the ordering that puts
- * it first is visible in one place.
- */
-const decisionBlock = (
-  input: ImpactSummaryInput,
-  facts: {
-    topImpacts: CliImpactSummary['topImpacts'];
-    unmatchedCount: number;
-    unresolvedCount: number;
-  },
-): Partial<CliImpactSummary> => {
-  const preflight = preflightBlock(input);
-  const headline = buildHeadline({
-    assessment: preflight.planAssessment,
-    independence: preflight.evidenceIndependence,
-    strongSurfaceCount: strongSurfaceCount(facts.topImpacts),
-    unmatchedRequirementCount: facts.unmatchedCount,
-    unresolvedConceptCount: facts.unresolvedCount,
-  });
-  return { ...preflight, ...(headline === undefined ? {} : { headline }) };
-};
-
-const analysisBlock = (
-  analysis: ImpactSummaryInput['analysis'],
-  reasons: readonly string[],
-): CliImpactSummary['analysis'] => ({
-  id: analysis.id,
-  snapshotId: analysis.repositorySnapshotId,
-  status: analysis.status,
-  provisional: reasons.length > 0,
-  provisionalReasons: [...reasons],
-});
-
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);

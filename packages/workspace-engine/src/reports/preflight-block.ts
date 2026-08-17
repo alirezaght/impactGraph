@@ -1,3 +1,5 @@
+import { isPlanFinding } from '@impactgraph/domain';
+
 import type { PreflightOutcome } from '../preflight.js';
 import type {
   ConstraintSummaryDto,
@@ -29,6 +31,8 @@ export const toFindingDto = (finding: PreflightFinding): PreflightFindingDto => 
   recommendation: finding.recommendation,
   confidence: finding.confidence,
   analyzer: finding.analyzer,
+  ...(finding.verification === undefined ? {} : { verification: finding.verification }),
+  ...(finding.origin === undefined ? {} : { origin: finding.origin }),
   ...(finding.subject.constraintId === undefined
     ? {}
     : { constraintId: finding.subject.constraintId }),
@@ -54,6 +58,9 @@ export const toAssessmentDto = (outcome: PreflightOutcome): PlanAssessmentDto =>
   ...(outcome.assessment.scoreWithheldReason === undefined
     ? {}
     : { scoreWithheldReason: outcome.assessment.scoreWithheldReason }),
+  ...(outcome.assessment.scoreCappedReason === undefined
+    ? {}
+    : { scoreCappedReason: outcome.assessment.scoreCappedReason }),
 });
 
 export const toClassificationDtos = (
@@ -84,13 +91,30 @@ const COVERAGE_GAP_SLICE = 3;
  * Findings already arrive strongest-first, so the head of the list is the decisive slice — but
  * one repetitive kind must not evict the distinct ones behind it.
  */
+/**
+ * ADR-0023: the red-team slice carries findings against the PLAN. A caveat about ImpactGraph's own
+ * reach is reported beside them (`analysisCaveats`), never among them — mixing the two is what let
+ * an unresolved Terraform expression read as a risk the specification introduced.
+ */
+export const analysisCaveats = (
+  outcome: PreflightOutcome,
+  limit = CAVEAT_LIMIT,
+): readonly PreflightFindingDto[] =>
+  outcome.findings
+    .filter((finding) => !isPlanFinding(finding))
+    .slice(0, limit)
+    .map(toFindingDto);
+
+/** Caveats are context, not work: a handful is orientation, a page of them is noise. */
+const CAVEAT_LIMIT = 5;
+
 export const summaryFindings = (
   outcome: PreflightOutcome,
   limit = SUMMARY_FINDING_LIMIT,
 ): readonly PreflightFindingDto[] => {
   const kept: PreflightFinding[] = [];
   let coverageGaps = 0;
-  for (const finding of outcome.findings) {
+  for (const finding of outcome.findings.filter(isPlanFinding)) {
     if (kept.length >= limit) {
       break;
     }

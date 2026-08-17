@@ -5,6 +5,7 @@ import { buildCoChangeIndex } from '../history/co-change-index.js';
 
 import { traverseCandidates } from './candidate-traversal.js';
 import { changeExpectationFor } from './change-expectation.js';
+import { assessChangeShape, traversalFor } from './change-shape.js';
 import { inferChange } from './change-kind.js';
 import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
@@ -250,7 +251,14 @@ const classifyRequirementCandidates = (
   const { request, impacts, warnings } = pipeline;
   const matched = matchConcepts(request.graph, requirement.concepts, request.aliases ?? {});
   recordMatchWarnings(warnings, matched, requirement.id);
-  const traversal = traverseCandidates(request.graph, matched.matches, request.traversal);
+  // ADR-0023: the walk a change deserves depends on how far it reaches. Judged from the anchors
+  // concept matching already produced, so the saving costs nothing to find.
+  const shape = assessChangeShape(request.graph, matched.matches);
+  const traversal = traverseCandidates(
+    request.graph,
+    matched.matches,
+    request.traversal ?? traversalFor(shape.shape),
+  );
   if (traversal.exhausted) {
     warnings.push({
       code: 'traversal-exhausted',
