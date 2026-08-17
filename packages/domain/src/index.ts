@@ -358,7 +358,7 @@ export type {
   PlanAssessmentCounts,
   AssessmentInput,
 } from './preflight/plan-assessment.js';
-export { FEASIBILITIES, assessPlan } from './preflight/plan-assessment.js';
+export { FEASIBILITIES, assessPlan, reconciledScore } from './preflight/plan-assessment.js';
 
 export type {
   RuntimeHopKind,

@@ -118,7 +118,10 @@ export const classifyUnmatchedRequirement = (
   if (signals.hasInvalidSymbolAssumption) {
     return classify(
       'INVALID_ASSUMPTION',
-      'the requirement names an identifier that does not exist at the indexed revision',
+      // ADR-0023: this classification rests on a path-shaped identifier that did not resolve —
+      // strong enough to raise, never strong enough to assert nonexistence. The assumption
+      // analyzer, which reads the container and its base types, owns the stronger claim.
+      'the requirement names an identifier that could not be resolved at the indexed revision',
       0.85,
     );
   }

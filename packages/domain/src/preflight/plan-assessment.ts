@@ -246,7 +246,7 @@ const SCORE_CEILING: Readonly<Record<Feasibility, number>> = {
   BLOCKED: 20,
 };
 
-const reconciledScore = (
+export const reconciledScore = (
   score: number,
   feasibility: Feasibility,
 ): { score: number; scoreCappedReason?: string } => {

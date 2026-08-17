@@ -82,6 +82,8 @@ export const classifyRequirements = (
       // A blocking invalid assumption raised here would carry no evidence — the assumption
       // analyzer owns that finding and cites the container it read. Here it can only warn.
       severity: severity === 'blocking' ? 'warning' : severity,
+      // Carries no evidence of its own, so it can only ever be a question (ADR-0023).
+      verification: 'unverified-assumption',
       requirementIds: [classification.requirementId],
       statement: `${classification.requirementId} — ${classification.classification}: ${classification.rationale}.${statement === '' ? '' : ` Requirement: ${statement.slice(0, 160)}`}`,
       recommendation: RECOMMENDATION[classification.classification],

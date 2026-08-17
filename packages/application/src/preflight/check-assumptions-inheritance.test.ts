@@ -246,7 +246,10 @@ describe('checkAssumptions — inherited members (the SqlOutboundQueueRepository
     expect(findings).toHaveLength(1);
     const finding = findings[0];
     expect(finding?.severity).toBe('warning');
-    expect(finding?.kind).toBe('coverage-gap');
+    // ADR-0023: the honest kind is `invalid-assumption` — it is a statement about an assumption.
+    // What keeps it from stopping work is its EVIDENCE grade, not its kind.
+    expect(finding?.kind).toBe('invalid-assumption');
+    expect(finding?.verification).toBe('unverified-assumption');
     expect(finding?.statement).toContain('could not be verified');
     expect(finding?.statement).toContain('inherits from types outside the index');
     expect(finding?.statement).not.toContain('is not a member');

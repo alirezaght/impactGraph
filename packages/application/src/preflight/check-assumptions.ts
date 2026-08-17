@@ -214,7 +214,11 @@ const unverifiableAssumption = (
   const key = `${qualifier}.${member}`;
   const result = createPreflightFinding({
     id: input.nextId(`${input.requirementId}:${key}`),
-    kind: 'coverage-gap',
+    // ADR-0023: this IS a statement about a specification assumption — it was only labelled a
+    // coverage gap because the old model gated blocking by kind, and `invalid-assumption` could
+    // block. Blocking is now gated by evidence, so the honest kind is safe to use and the verdict
+    // can say NEEDS_VERIFICATION instead of burying the question among coverage warnings.
+    kind: 'invalid-assumption',
     severity: 'warning',
     verification: 'unverified-assumption',
     requirementIds: [input.requirementId],

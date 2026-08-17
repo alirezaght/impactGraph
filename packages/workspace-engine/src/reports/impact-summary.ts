@@ -1,6 +1,7 @@
 import {
   categorizeIndexWarnings,
   computeReadiness,
+  reconciledScore,
   evidenceTypesOf,
   primaryEvidenceType,
   provenanceLabel,
@@ -212,7 +213,18 @@ const consistentReadiness = (
   ) {
     return readiness;
   }
-  return { ...readiness, recommendedAction: assessment.decision };
+  // ADR-0023: the SCORE is reconciled too, not only the sentence. "Readiness: 100%" printed beside
+  // "BLOCKED" is the contradiction the evaluation reported, and deferring in prose while leaving
+  // the number alone left the reader to decide which half to believe.
+  const reconciled = reconciledScore(readiness.score, assessment.feasibility);
+  return {
+    ...readiness,
+    score: reconciled.score,
+    recommendedAction:
+      reconciled.scoreCappedReason === undefined
+        ? assessment.decision
+        : `${assessment.decision} ${reconciled.scoreCappedReason}`,
+  };
 };
 
 const provisionalReasons = (
