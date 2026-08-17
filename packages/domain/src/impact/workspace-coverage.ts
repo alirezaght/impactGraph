@@ -46,6 +46,32 @@ const UNMATCHED_RATIO_THRESHOLD = 0.5;
 const count = (n: number, singular: string, plural: string): string =>
   `${String(n)} ${n === 1 ? singular : plural}`;
 
+/**
+ * Requirements whose absence says nothing about the index: new construction matches nothing by
+ * definition, and a requirement that names no component could never have matched anything.
+ */
+const explainableUnmatched = (input: CoverageSufficiencyInput): number =>
+  Math.min(
+    (input.newSurfaceRequirementCount ?? 0) + (input.conceptlessUnmatchedCount ?? 0),
+    input.unmatchedRequirementCount,
+  );
+
+/**
+ * "Missing repositories are likely" is only an honest reading of a high unmatched ratio when a
+ * registered repository IS actually missing. Otherwise the same ratio has two mundane causes —
+ * new surface, or vocabulary that does not match the index — and asserting missing repositories
+ * would contradict the roster facts reported next to this verdict.
+ */
+const unmatchedRatioReason = (input: CoverageSufficiencyInput): string | undefined => {
+  const unexplained = input.unmatchedRequirementCount - explainableUnmatched(input);
+  if (unexplained / input.requirementCount < UNMATCHED_RATIO_THRESHOLD) {
+    return undefined;
+  }
+  return input.missingRepositoryCount > 0
+    ? `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.`
+    : `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — either they describe new surface, or their vocabulary does not match the indexed components; no registered repository is missing from the index.`;
+};
+
 export const assessCoverageSufficiency = (
   input: CoverageSufficiencyInput,
 ): WorkspaceCoverageVerdict => {
@@ -53,21 +79,9 @@ export const assessCoverageSufficiency = (
   if (input.requirementCount === 0) {
     return { status: 'adequate', reasons };
   }
-  // "Missing repositories are likely" is only an honest reading of a high unmatched ratio when a
-  // registered repository IS actually missing. Otherwise the same ratio has two mundane causes —
-  // new surface, or vocabulary that does not match the index — and asserting missing repositories
-  // would contradict the roster facts reported next to this verdict.
-  const explainable = Math.min(
-    (input.newSurfaceRequirementCount ?? 0) + (input.conceptlessUnmatchedCount ?? 0),
-    input.unmatchedRequirementCount,
-  );
-  const unexplained = input.unmatchedRequirementCount - explainable;
-  if (unexplained / input.requirementCount >= UNMATCHED_RATIO_THRESHOLD) {
-    reasons.push(
-      input.missingRepositoryCount > 0
-        ? `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — the indexed repositories likely do not contain the parts of the system this specification changes.`
-        : `${String(unexplained)} of ${String(input.requirementCount)} requirements match no indexed component — either they describe new surface, or their vocabulary does not match the indexed components; no registered repository is missing from the index.`,
-    );
+  const ratioReason = unmatchedRatioReason(input);
+  if (ratioReason !== undefined) {
+    reasons.push(ratioReason);
   }
   if (input.totalConceptCount > 0 && input.unresolvedConceptCount >= input.totalConceptCount) {
     reasons.push(

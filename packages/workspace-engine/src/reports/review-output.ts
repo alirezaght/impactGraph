@@ -6,6 +6,7 @@ import { driftOmittedTotal } from './review-drift.js';
 import type { ReviewRepositoryScope } from './review-scope.js';
 import type { RuleViolation } from '@impactgraph/application';
 import type { AcceptedDeviationDto, CliReviewDrift, CliReviewOutput } from '@impactgraph/contracts';
+import type { ReviewVerdict } from '@impactgraph/domain';
 import type {
   ImpactAnalysis,
   ImplementationReview,
@@ -124,20 +125,38 @@ export interface ReviewOutputExtras {
   readonly boundFindings?: boolean;
 }
 
+const toWireFinding = (finding: ImplementationReview['findings'][number]): WireFinding => ({
+  category: finding.category,
+  nodeId: finding.nodeId,
+  nodeName: finding.nodeName,
+  ...(finding.requirementId === undefined ? {} : { requirementId: finding.requirementId }),
+  explanation: finding.explanation,
+  filePaths: [...finding.filePaths],
+});
+
+/** The verdict block, with whatever the wire cap withheld stated inside it (ADR-0015/0022). */
+const verdictDto = (
+  verdict: ReviewVerdict,
+  truncated: Record<string, number>,
+): NonNullable<CliReviewOutput['verdict']> => ({
+  status: verdict.status,
+  headline: verdict.headline,
+  counts: verdict.counts,
+  decidingFindings: verdict.decidingFindings.map((finding) => ({
+    category: finding.category,
+    nodeId: finding.nodeId,
+    explanation: finding.explanation,
+  })),
+  ...(Object.keys(truncated).length === 0 ? {} : { truncatedFindingCounts: truncated }),
+});
+
 export const buildReviewOutput = (
   review: ImplementationReview,
   analysis: ImpactAnalysis,
   violations: readonly RuleViolation[],
   extras: ReviewOutputExtras = {},
 ): CliReviewOutput => {
-  const allFindings: WireFinding[] = review.findings.map((finding) => ({
-    category: finding.category,
-    nodeId: finding.nodeId,
-    nodeName: finding.nodeName,
-    ...(finding.requirementId === undefined ? {} : { requirementId: finding.requirementId }),
-    explanation: finding.explanation,
-    filePaths: [...finding.filePaths],
-  }));
+  const allFindings = review.findings.map(toWireFinding);
   const bounded =
     extras.boundFindings === false
       ? { findings: allFindings, truncated: {} }
@@ -148,19 +167,7 @@ export const buildReviewOutput = (
     acceptedNodeIds: (extras.acceptedDeviations ?? []).map((deviation) => deviation.nodeId),
   });
   return {
-  verdict: {
-    status: verdict.status,
-    headline: verdict.headline,
-    counts: verdict.counts,
-    decidingFindings: verdict.decidingFindings.map((finding) => ({
-      category: finding.category,
-      nodeId: finding.nodeId,
-      explanation: finding.explanation,
-    })),
-    ...(Object.keys(bounded.truncated).length === 0
-      ? {}
-      : { truncatedFindingCounts: bounded.truncated }),
-  },
+  verdict: verdictDto(verdict, bounded.truncated),
   ...(extras.planContract === undefined ? {} : { planContract: extras.planContract }),
   schemaVersion: 1,
   command: 'review',

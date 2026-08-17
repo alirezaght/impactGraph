@@ -294,6 +294,27 @@ const explanationFor = (
   return `${route} Predicted change: ${context.change.kind} ("${context.change.cue}"), ${context.change.compatibility}.`;
 };
 
+/**
+ * ADR-0022: the plan's expectation applies to the ANCHOR the reuse clause named, never to a
+ * component traversal reached from it — a sentence about reusing one thing says nothing about
+ * what its callers must do.
+ */
+const expectationFields = (
+  candidate: ImpactCandidate,
+  context: ClassifyContext,
+  node: GraphNode,
+  requirementId: string,
+): Pick<RequirementImpact, 'changeExpectation' | 'expectedChanges'> => {
+  const cue = context.changeExpectation;
+  if (cue === undefined || candidate.distance > 0) {
+    return { expectedChanges: [`Review ${node.name} against requirement ${requirementId}`] };
+  }
+  return {
+    changeExpectation: cue.expectation,
+    expectedChanges: [`Plan expects no change here (${cue.expectation}, "${cue.cue}")`],
+  };
+};
+
 /** Deterministic rule-based classification — provenance stays `static-analysis` (§43.5). */
 export const classifyCandidate = (
   candidate: ImpactCandidate,
@@ -329,19 +350,12 @@ export const classifyCandidate = (
       confidence: confidence.value.value,
       confidenceSignals: confidence.value.signals,
       explanation: `${explanationFor(candidate, node, context)}${caveat} Basis: ${basis.primary}.`,
-      expectedChanges: [
-        context.changeExpectation === undefined || candidate.distance > 0
-          ? `Review ${node.name} against requirement ${requirementId}`
-          : `Plan expects no change here (${context.changeExpectation.expectation}, "${context.changeExpectation.cue}")`,
-      ],
+      ...expectationFields(candidate, context, node, requirementId),
       evidenceIds,
       dependencyPath: candidate.dependencyPath,
       provenance: 'static-analysis',
       evidenceTypes: basis.evidenceTypes,
       ...(likelihood === proposed ? {} : { tierCappedBy: basis.primary }),
-      ...(context.changeExpectation === undefined || candidate.distance > 0
-        ? {}
-        : { changeExpectation: context.changeExpectation.expectation }),
     },
   };
 };

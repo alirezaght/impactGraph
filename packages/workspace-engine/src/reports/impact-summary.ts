@@ -2,7 +2,6 @@ import {
   categorizeIndexWarnings,
   computeReadiness,
   evidenceTypesOf,
-  originOf,
   primaryEvidenceType,
   provenanceLabel,
 } from '@impactgraph/domain';
@@ -12,6 +11,7 @@ import {
   toSuppliedIdentifiersDto,
 } from '../supplied-identifiers.js';
 
+import { buildHeadline, strongSurfaceCount } from './analysis-headline.js';
 import { buildEvidenceQuality, evidenceLimitations } from './evidence-quality-block.js';
 import {
   DEFAULT_TOP_N,
@@ -28,7 +28,6 @@ import {
   toIndependenceDto,
 } from './preflight-block.js';
 import { buildRequiredActions } from './required-actions.js';
-import { buildHeadline, strongSurfaceCount } from './analysis-headline.js';
 import { buildUnmatchedBlock } from './unmatched-block.js';
 import { buildWorkspaceCoverage } from './workspace-coverage-block.js';
 
@@ -48,7 +47,6 @@ import type {
   NodeId,
   PlanAssessment,
   RawIndexWarning,
-  RequirementClassification,
   Specification,
 } from '@impactgraph/domain';
 
@@ -349,6 +347,41 @@ const preflightBlock = (
   };
 };
 
+/**
+ * ADR-0022 — the decision block: the assessment, its evidence-independence split, and the one
+ * sentence that reads them together. Assembled apart from the document so the ordering that puts
+ * it first is visible in one place.
+ */
+const decisionBlock = (
+  input: ImpactSummaryInput,
+  facts: {
+    topImpacts: CliImpactSummary['topImpacts'];
+    unmatchedCount: number;
+    unresolvedCount: number;
+  },
+): Partial<CliImpactSummary> => {
+  const preflight = preflightBlock(input);
+  const headline = buildHeadline({
+    assessment: preflight.planAssessment,
+    independence: preflight.evidenceIndependence,
+    strongSurfaceCount: strongSurfaceCount(facts.topImpacts),
+    unmatchedRequirementCount: facts.unmatchedCount,
+    unresolvedConceptCount: facts.unresolvedCount,
+  });
+  return { ...preflight, ...(headline === undefined ? {} : { headline }) };
+};
+
+const analysisBlock = (
+  analysis: ImpactSummaryInput['analysis'],
+  reasons: readonly string[],
+): CliImpactSummary['analysis'] => ({
+  id: analysis.id,
+  snapshotId: analysis.repositorySnapshotId,
+  status: analysis.status,
+  provisional: reasons.length > 0,
+  provisionalReasons: [...reasons],
+});
+
 export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
@@ -365,28 +398,17 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
   const warnings = importantWarnings(analysis);
   const includeFullPaths = input.filters?.includeFullPaths ?? true;
   const topImpacts = grouped.map((entry) => impactLine(entry, graph, includeFullPaths));
-  const preflight = preflightBlock(input);
   const unresolved = unresolvedConcepts(analysis);
-  const headline = buildHeadline({
-    assessment: preflight.planAssessment,
-    independence: preflight.evidenceIndependence,
-    strongSurfaceCount: strongSurfaceCount(topImpacts),
-    unmatchedRequirementCount: unmatched.length,
-    unresolvedConceptCount: unresolved.length,
-  });
   return {
     // ADR-0022 — decision first: the verdict and its one-sentence reading precede the evidence.
-    ...preflight,
-    ...(headline === undefined ? {} : { headline }),
+    ...decisionBlock(input, {
+      topImpacts,
+      unmatchedCount: unmatched.length,
+      unresolvedCount: unresolved.length,
+    }),
     schemaVersion: 1,
     command: 'analyze',
-    analysis: {
-      id: analysis.id,
-      snapshotId: analysis.repositorySnapshotId,
-      status: analysis.status,
-      provisional: reasons.length > 0,
-      provisionalReasons: [...reasons],
-    },
+    analysis: analysisBlock(analysis, reasons),
     specification: specificationBlock(
       input,
       unmatched.map((requirement) => requirement.id),

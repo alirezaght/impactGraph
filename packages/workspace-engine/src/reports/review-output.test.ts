@@ -1,5 +1,5 @@
-import { anAnalysis, anImpact } from '@impactgraph/test-kit';
 import { createImplementationReview } from '@impactgraph/domain';
+import { anAnalysis, anImpact } from '@impactgraph/test-kit';
 import { describe, expect, it } from 'vitest';
 
 import { applyAcceptedDeviations, buildReviewOutput, pageReviewFindings } from './review-output.js';
@@ -93,6 +93,7 @@ describe('accepted deviations and paging', () => {
 
     const answered = applyAcceptedDeviations(stored, [
       {
+        id: 'deviation-1',
         nodeId: 'file:src/surprise.ts',
         category: 'unexpected',
         reason: 'generated output, reviewed separately',

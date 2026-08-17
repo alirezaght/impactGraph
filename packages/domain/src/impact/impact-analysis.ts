@@ -281,7 +281,7 @@ const impactTaxonomyIssues = (impact: RequirementImpact, path: string): Validati
   if (!isProvenance(impact.provenance) || knowledgeCategoryOf(impact.provenance) === 'reserved') {
     issues.push(validationIssue('unknown-provenance', `${path}.provenance`, 'invalid provenance'));
   }
-  issues.push(...evidenceBasisIssues(impact, path));
+  issues.push(...evidenceBasisIssues(impact, path), ...additiveAxisIssues(impact, path));
   return issues;
 };
 
@@ -314,14 +314,6 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
       validationIssue('invalid-type', `${path}.evidenceProvenance`, 'unknown evidence provenance'),
     );
   }
-  if (
-    impact.changeExpectation !== undefined &&
-    !(CHANGE_EXPECTATIONS as readonly string[]).includes(impact.changeExpectation)
-  ) {
-    issues.push(
-      validationIssue('invalid-type', `${path}.changeExpectation`, 'unknown change expectation'),
-    );
-  }
   if (types.length === 0) {
     return issues;
   }
@@ -337,6 +329,13 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
   }
   return issues;
 };
+
+/** The additive axes validate on their own so the basis check keeps its single responsibility. */
+const additiveAxisIssues = (impact: RequirementImpact, path: string): ValidationIssue[] =>
+  impact.changeExpectation !== undefined &&
+  !(CHANGE_EXPECTATIONS as readonly string[]).includes(impact.changeExpectation)
+    ? [validationIssue('invalid-type', `${path}.changeExpectation`, 'unknown change expectation')]
+    : [];
 
 const impactIssues = (impact: RequirementImpact, path: string): ValidationIssue[] => {
   const issues: ValidationIssue[] = [

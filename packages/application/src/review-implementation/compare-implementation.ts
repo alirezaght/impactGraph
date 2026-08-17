@@ -86,6 +86,33 @@ const finding = (
   filePaths: detail.filePaths,
 });
 
+/**
+ * ADR-0022: a surface the plan expected to leave alone. Unchanged is the plan working; changed
+ * contradicts it, and whichever of the two is wrong is what a human should look at.
+ */
+const classifyNoChangeExpected = (
+  impact: RequirementImpact,
+  expectation: 'reuse-unchanged' | 'verify-only',
+  detail: { name: string; path: string; changed: boolean },
+): ReviewFinding => {
+  const { name, path } = detail;
+  if (detail.changed) {
+    return finding('divergent', impact, {
+      nodeName: name,
+      explanation: `'${name}' was ${expectation === 'verify-only' ? 'planned as existing behaviour to verify' : 'planned as reuse'} without changes, but ${path} was modified.`,
+      filePaths: [path],
+    });
+  }
+  return finding('reuse-confirmed', impact, {
+    nodeName: name,
+    explanation:
+      expectation === 'verify-only'
+        ? `Existing behaviour verified: '${name}' was planned as verify-only and ${path} is unchanged.`
+        : `Planned reuse: '${name}' was reused unchanged by design (${path}).`,
+    filePaths: [path],
+  });
+};
+
 const classifyImpact = (
   impact: RequirementImpact,
   context: ComparisonContext,
@@ -105,16 +132,11 @@ const classifyImpact = (
       : undefined;
   }
   const expectation = changeExpectationOf(impact);
-  if (context.changedFiles.has(path)) {
-    if (expectation !== 'must-change') {
-      // The plan predicted no diff here. A diff is not a success — it contradicts the plan, and
-      // whichever of the two is wrong is exactly what a human should look at.
-      return finding('divergent', impact, {
-        nodeName: name,
-        explanation: `'${name}' was ${expectation === 'verify-only' ? 'planned as existing behaviour to verify' : 'planned as reuse'} without changes, but ${path} was modified.`,
-        filePaths: [path],
-      });
-    }
+  const changed = context.changedFiles.has(path);
+  if (expectation !== 'must-change') {
+    return classifyNoChangeExpected(impact, expectation, { name, path, changed });
+  }
+  if (changed) {
     return currentGraph.nodes.has(impact.nodeId as NodeId)
       ? finding('matched', impact, {
           nodeName: name,
@@ -126,16 +148,6 @@ const classifyImpact = (
           explanation: `'${name}' was removed, but the approved analysis expected it to change in place.`,
           filePaths: [path],
         });
-  }
-  if (expectation !== 'must-change') {
-    return finding('reuse-confirmed', impact, {
-      nodeName: name,
-      explanation:
-        expectation === 'verify-only'
-          ? `Existing behaviour verified: '${name}' was planned as verify-only and ${path} is unchanged.`
-          : `Planned reuse: '${name}' was reused unchanged by design (${path}).`,
-      filePaths: [path],
-    });
   }
   if (impact.likelihood === 'required') {
     return finding('missing', impact, {

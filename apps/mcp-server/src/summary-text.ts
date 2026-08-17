@@ -25,6 +25,23 @@ const countLine = (counts: Record<string, unknown> | undefined): string | undefi
   return parts.length === 0 ? undefined : parts.join(' · ');
 };
 
+/** The bounded "why" lines under a failing verdict. */
+const decidingLines = (deciding: unknown): string[] => {
+  if (!Array.isArray(deciding)) {
+    return [];
+  }
+  return deciding
+    .slice(0, 3)
+    .map((entry) => {
+      const record = asRecord(entry);
+      const explanation = asString(record?.['explanation']);
+      return explanation === undefined
+        ? undefined
+        : `- [${asString(record?.['category']) ?? 'finding'}] ${explanation}`;
+    })
+    .filter((line): line is string => line !== undefined);
+};
+
 /** The review verdict block, when this payload is a review report. */
 const reviewLines = (payload: Record<string, unknown>): string[] | undefined => {
   const verdict = asRecord(payload['verdict']);
@@ -37,16 +54,7 @@ const reviewLines = (payload: Record<string, unknown>): string[] | undefined => 
   if (counts !== undefined) {
     lines.push(counts);
   }
-  const deciding = verdict['decidingFindings'];
-  if (Array.isArray(deciding)) {
-    for (const entry of deciding.slice(0, 3)) {
-      const record = asRecord(entry);
-      const explanation = asString(record?.['explanation']);
-      if (explanation !== undefined) {
-        lines.push(`- [${asString(record?.['category']) ?? 'finding'}] ${explanation}`);
-      }
-    }
-  }
+  lines.push(...decidingLines(verdict['decidingFindings']));
   return lines;
 };
 
