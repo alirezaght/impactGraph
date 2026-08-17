@@ -190,7 +190,11 @@ export async function run(
   cwd: string = process.cwd(),
 ): Promise<number> {
   const staged = argv.includes('--staged');
-  const unknown = argv.filter((arg) => arg !== '--staged');
+  const rest = argv.filter((arg) => arg !== '--staged');
+  // lint-staged appends the staged file list to every command it runs. In --staged mode the
+  // diff already defines the scope, so those paths are redundant rather than erroneous —
+  // rejecting them made the pre-commit hook fail on every commit. Flags are still validated.
+  const unknown = rest.filter((arg) => arg.startsWith('-') || !staged);
   if (unknown.length > 0) {
     process.stderr.write(
       `secret-scan: unknown argument(s): ${unknown.join(' ')}\nusage: quality:secrets [--staged]\n`,
