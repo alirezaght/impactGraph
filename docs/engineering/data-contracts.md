@@ -171,6 +171,26 @@ trustworthy one. The index and status documents carry the matching additive `rep
 `candidateRepositories` arrays (`repositoryIndexStateSchema`, `candidateRepositorySchema`), all
 DERIVED from the current snapshot's file hashes — never persisted.
 
+### Graduated prose extraction on the specification artifact and analyze document
+
+Graduated extraction (the per-statement classifier replacing the all-or-nothing prose fallback)
+adds three **additive** pieces, all v1, no schema bump owed:
+
+- `Requirement.extractionConfidence` (optional, `[0, 1]`) on the persisted specification artifact
+  (`specification.v1`, read via the domain serializer) and the AI extraction response DTO
+  (`ai/extraction-response.v1`, bounded on receipt — out-of-range is a schema failure at the
+  provider boundary and the value is dropped, never clamped, at the application boundary). Set
+  only where admission was the extractor's decision; a statement from the author's own list
+  carries none. Absence means "not the extractor's call", never "low confidence".
+- The requirement `origin` vocabulary gains `prose-modal` (admitted from prose on normative
+  modality or an imperative head verb); the extraction-quality `strategy` vocabulary gains
+  `prose-modal` (no structured list, but normative prose was admitted — NOT provisional).
+  Readers of the prior vocabulary lose nothing: both values appear only on newly produced records.
+- `extractionQuality.uncertainStatementCount` (optional) on the specification artifact and the
+  analyze document: prose sentences routed to open questions ("is this a requirement or
+  context?", severity `minor`) instead of being invented as requirements. Absent on artifacts
+  stored before graduated extraction — never a measured zero.
+
 ### Proposed structure on the analyze document (§18.4)
 
 `analyze` carries an **additive, optional** v1 field `proposedStructure`

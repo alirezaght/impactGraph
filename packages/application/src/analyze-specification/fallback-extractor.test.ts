@@ -16,9 +16,10 @@ describe('fallbackExtraction segmentation', () => {
       'which packaging excludes.',
     ].join('\n');
 
+    // The second sentence is present-state narration ("currently fails … because …") — under
+    // graduated extraction it is context, not a requirement, and must not be invented as one.
     expect(statements(spec)).toEqual([
       'The packaged `.vsix` must contain the `better-sqlite3` native binding so the installed extension can open its SQLite index.',
-      '`openSqliteIndexStore` currently fails in an installed extension because the binding is external to the esbuild bundle and lives in `node_modules`, which packaging excludes.',
     ]);
   });
 

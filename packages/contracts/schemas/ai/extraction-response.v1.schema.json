@@ -66,8 +66,14 @@
                   "acceptance-criterion",
                   "task-item",
                   "bullet-item",
+                  "prose-modal",
                   "prose-fallback"
                 ]
+              },
+              "extractionConfidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
               }
             },
             "required": ["statement", "type", "concepts", "actors"],

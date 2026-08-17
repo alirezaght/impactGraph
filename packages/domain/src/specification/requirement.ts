@@ -46,6 +46,12 @@ export const REQUIREMENT_ORIGINS = [
   'task-item',
   /** A plain bullet under a requirements-like heading. */
   'bullet-item',
+  /**
+   * A prose sentence the deterministic classifier admitted on normative modality (must/should/
+   * shall/needs to) or an imperative head verb. The statement is the author's; the decision that
+   * it is a requirement is the extractor's, which is why it carries an `extractionConfidence`.
+   */
+  'prose-modal',
   /** Cut out of running prose because the specification declared no requirements at all. */
   'prose-fallback',
 ] as const;
@@ -88,6 +94,13 @@ export interface Requirement {
   readonly label?: string;
   /** Heading the requirement was found under, verbatim. */
   readonly heading?: string;
+  /**
+   * How confident the EXTRACTOR is that this statement is a requirement at all, in [0, 1].
+   * Additive; set only where admission was the extractor's decision (prose origins) — a statement
+   * from the author's own list needs no such number. Never model-supplied: the value is derived
+   * from the deterministic admission signal (modality strength, imperative head).
+   */
+  readonly extractionConfidence?: number;
 }
 
 /** The weakest reading is the default: an unlabeled requirement is treated as extractor prose. */
@@ -125,6 +138,22 @@ const rangeIssues = (range: TextRange | undefined, path: string): ValidationIssu
     : [validationIssue('out-of-range', path, 'sourceRange offsets must be ordered and >= 0')];
 };
 
+const confidenceIssues = (confidence: number | undefined, path: string): ValidationIssue[] => {
+  if (confidence === undefined) {
+    return [];
+  }
+  const valid = Number.isFinite(confidence) && confidence >= 0 && confidence <= 1;
+  return valid
+    ? []
+    : [
+        validationIssue(
+          'out-of-range',
+          `${path}.extractionConfidence`,
+          'extractionConfidence must be within [0, 1]',
+        ),
+      ];
+};
+
 export const requirementIssues = (requirement: Requirement, path: string): ValidationIssue[] => {
   const issues: ValidationIssue[] = [
     ...blankIdIssue(requirement.id, `${path}.id`),
@@ -155,6 +184,7 @@ export const requirementIssues = (requirement: Requirement, path: string): Valid
       validationIssue('invalid-type', `${path}.origin`, `unknown origin '${requirement.origin}'`),
     );
   }
+  issues.push(...confidenceIssues(requirement.extractionConfidence, path));
   if (
     requirement.priority !== undefined &&
     !(REQUIREMENT_PRIORITIES as readonly string[]).includes(requirement.priority)

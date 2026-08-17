@@ -31,6 +31,7 @@ const requirementOriginSchema = z.enum([
   'acceptance-criterion',
   'task-item',
   'bullet-item',
+  'prose-modal',
   'prose-fallback',
 ]);
 
@@ -43,6 +44,11 @@ const extractedRequirementSchema = z
     priority: z.enum(['must', 'should', 'could']).optional(),
     sourceExcerpt: z.string().min(1).max(2000).optional(),
     origin: requirementOriginSchema.optional(),
+    /**
+     * Additive: how confident the EXTRACTOR is that the statement is a requirement at all.
+     * Bounded on receipt — an out-of-range value is a schema failure, never clamped.
+     */
+    extractionConfidence: z.number().min(0).max(1).optional(),
   })
   .strict();
 

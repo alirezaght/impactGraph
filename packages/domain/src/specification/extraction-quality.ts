@@ -17,7 +17,12 @@ export const EXTRACTION_STRATEGIES = [
   'structured',
   /** Structured content existed but part of the specification still needed prose splitting. */
   'partially-structured',
-  /** No structured content at all — the whole specification was sentence-split. */
+  /**
+   * No structured list, but the prose carried normative statements (must/should/shall/imperative)
+   * the per-statement classifier admitted — a legitimate design-doc specification, not a guess.
+   */
+  'prose-modal',
+  /** No structured content and no normative prose — nothing admissible was found. */
   'prose-fallback',
 ] as const;
 
@@ -27,6 +32,12 @@ export interface ExtractionQuality {
   readonly strategy: ExtractionStrategy;
   readonly structuredRequirementCount: number;
   readonly proseRequirementCount: number;
+  /**
+   * Prose sentences the classifier could not decide about — routed to open questions instead of
+   * being invented as requirements. Additive: absent on artifacts stored before graduated
+   * extraction existed, which is not the same claim as a measured zero.
+   */
+  readonly uncertainStatementCount?: number;
   /** Headings recognized as structural, verbatim — so a reader can audit the classification. */
   readonly recognizedSections: readonly string[];
   /**
@@ -52,8 +63,9 @@ export const extractionQualityIssues = (
   for (const [field, value] of [
     ['structuredRequirementCount', quality.structuredRequirementCount],
     ['proseRequirementCount', quality.proseRequirementCount],
+    ['uncertainStatementCount', quality.uncertainStatementCount],
   ] as const) {
-    if (!Number.isInteger(value) || value < 0) {
+    if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
       issues.push(validationIssue('out-of-range', `${path}.${field}`, 'must be an integer >= 0'));
     }
   }
@@ -63,29 +75,36 @@ export const extractionQualityIssues = (
 /**
  * The strategy implied by the counts. A single structured requirement is enough to prove the
  * author declared a list; anything additional that had to be split is reported as partial rather
- * than allowed to downgrade the whole extraction.
+ * than allowed to downgrade the whole extraction. Without a list, the strategy is `prose-modal`
+ * as soon as the classifier admitted at least one normative statement — the document specified
+ * behavior in prose, which is how real design docs are written.
  */
-export const strategyFor = (structured: number, prose: number): ExtractionStrategy => {
-  if (structured === 0) {
-    return 'prose-fallback';
+export const strategyFor = (
+  structured: number,
+  proseModal: number,
+  proseFallback = 0,
+): ExtractionStrategy => {
+  if (structured > 0) {
+    return proseModal + proseFallback === 0 ? 'structured' : 'partially-structured';
   }
-  return prose === 0 ? 'structured' : 'partially-structured';
+  return proseModal > 0 ? 'prose-modal' : 'prose-fallback';
 };
 
 /**
- * How many prose-derived requirements the extractor may produce before the extraction is called
+ * How many UNCERTAIN prose statements the classifier may find before the extraction is called
  * provisional.
  *
- * The failure the trials exposed is INFLATION: a page of prose became dozens of "requirements", and
- * every count computed from them — coverage, readiness, unmatched — measured the inflation. A
- * one-line specification under a title has the same strategy but not the same problem: there is one
- * statement, the extractor cut it at the only boundary available, and withholding readiness over
- * that would degrade the tool for the commonest input there is.
+ * Two failures shaped this rule. The trials exposed INFLATION: a page of prose became dozens of
+ * "requirements", and every count computed from them measured the inflation. Field feedback then
+ * exposed the over-correction: a normal design doc whose Goals prose was full of "must"/"should"
+ * statements was still marked PROVISIONAL, readiness withheld, its author told to reformat.
  *
- * So the strategy is always reported honestly, and `provisional` — which withholds readiness and
- * taints the analysis — trips only once the guess is load-bearing.
+ * So provisionality now measures the guesswork, not the format: a document whose prose is mostly
+ * requirement-grade modal statements is a specification and readiness stands. Provisional trips
+ * only when the classifier found mostly uncertain sentences (little modal signal) AND the
+ * uncertainty is load-bearing — a one-line note under a title still gets a score.
  */
 export const PROSE_PROVISIONAL_THRESHOLD = 3;
 
-export const isProvisional = (structured: number, prose: number): boolean =>
-  structured === 0 && prose > PROSE_PROVISIONAL_THRESHOLD;
+export const isProvisional = (structured: number, proseModal: number, uncertain: number): boolean =>
+  structured === 0 && uncertain > proseModal && uncertain > PROSE_PROVISIONAL_THRESHOLD;

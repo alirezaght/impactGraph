@@ -22,6 +22,12 @@ export interface ExtractedRequirementDraft {
   readonly origin?: RequirementOrigin | undefined;
   /** Author-assigned identifier, when the specification declared one. */
   readonly label?: string | undefined;
+  /**
+   * How confident the extractor is that this statement is a requirement at all, in [0, 1]. Set
+   * where admission was the extractor's decision (prose origins); out-of-range values are dropped
+   * by the use case, never clamped into a stronger claim.
+   */
+  readonly extractionConfidence?: number | undefined;
   /** Heading the statement was found under, verbatim. */
   readonly heading?: string | undefined;
 }

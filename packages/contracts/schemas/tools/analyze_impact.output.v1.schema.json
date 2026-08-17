@@ -65,13 +65,17 @@
               "properties": {
                 "strategy": {
                   "type": "string",
-                  "enum": ["structured", "partially-structured", "prose-fallback"]
+                  "enum": ["structured", "partially-structured", "prose-modal", "prose-fallback"]
                 },
                 "structuredRequirementCount": {
                   "type": "integer",
                   "minimum": 0
                 },
                 "proseRequirementCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "uncertainStatementCount": {
                   "type": "integer",
                   "minimum": 0
                 },

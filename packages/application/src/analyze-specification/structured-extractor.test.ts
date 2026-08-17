@@ -211,24 +211,28 @@ describe('structuredExtraction — formatting tolerance (field feedback)', () =>
   });
 });
 
-describe('structuredExtraction — prose fallback', () => {
+describe('structuredExtraction — graduated prose extraction', () => {
   const extraction = structuredExtraction(
     '# Notes\n\nThe notification service should render the message. The buyer must see it in their inbox.\n\n## Out of scope\n\nRewriting the mailer.\n',
   );
 
-  it('only sentence-splits when no structured content exists', () => {
-    expect(extraction.requirements.length).toBeGreaterThan(0);
+  it('admits normative prose statements as prose-modal requirements with a confidence', () => {
+    expect(extraction.requirements).toHaveLength(2);
     expect(
-      extraction.requirements.every((requirement) => requirement.origin === 'prose-fallback'),
+      extraction.requirements.every((requirement) => requirement.origin === 'prose-modal'),
+    ).toBe(true);
+    expect(
+      extraction.requirements.every((requirement) => (requirement.extractionConfidence ?? 0) > 0),
     ).toBe(true);
   });
 
-  it('reports the fallback prominently even when the guess is small', () => {
-    expect(extraction.quality?.strategy).toBe('prose-fallback');
-    expect(extraction.quality?.warnings[0]).toContain('FALLBACK EXTRACTION');
-    // Two statements is not the inflation failure — the strategy is reported, readiness is not
-    // withheld. See PROSE_PROVISIONAL_THRESHOLD.
+  it('reports prose-modal extraction without withholding readiness or demanding a reformat', () => {
+    expect(extraction.quality?.strategy).toBe('prose-modal');
     expect(extraction.quality?.provisional).toBe(false);
+    const warning = extraction.quality?.warnings[0] ?? '';
+    expect(warning).toContain('PROSE EXTRACTION');
+    expect(warning).not.toContain('re-submit');
+    expect(warning).not.toContain('PROVISIONAL');
   });
 
   it('names the actually accepted shapes instead of demanding R1/R2 phrasing', () => {
@@ -241,8 +245,8 @@ describe('structuredExtraction — prose fallback', () => {
     expect(warning).toContain('optional');
   });
 
-  it('marks the extraction provisional once the guess becomes load-bearing', () => {
-    const inflated = structuredExtraction(
+  it('is NOT provisional for many modal statements — modal prose is a specification', () => {
+    const modal = structuredExtraction(
       '# Plan\n\n' +
         [
           'The service must render messages.',
@@ -253,15 +257,119 @@ describe('structuredExtraction — prose fallback', () => {
         ].join(' ') +
         '\n',
     );
-    expect(inflated.requirements.length).toBeGreaterThan(3);
-    expect(inflated.quality?.provisional).toBe(true);
-    expect(inflated.quality?.warnings[0]).toContain('PROVISIONAL');
+    expect(modal.requirements.length).toBe(5);
+    expect(modal.quality?.provisional).toBe(false);
+    expect(modal.quality?.strategy).toBe('prose-modal');
   });
 
-  it('still refuses to turn a non-goal into a requirement in fallback mode', () => {
+  it('stays provisional when the prose is mostly uncertain sentences', () => {
+    const uncertain = structuredExtraction(
+      '# Plan\n\n' +
+        [
+          'The service renders messages in one place.',
+          'The buyer sees the message in the inbox view.',
+          'The seller gets a notification path of some kind.',
+          'The audit log keeps one entry per send there.',
+          'The retry policy backs off between attempts always.',
+        ].join(' ') +
+        '\n',
+    );
+    expect(uncertain.requirements).toHaveLength(0);
+    expect(uncertain.quality?.provisional).toBe(true);
+    expect(uncertain.quality?.warnings[0]).toContain('PROVISIONAL');
+    expect(uncertain.quality?.uncertainStatementCount).toBe(5);
+    expect(uncertain.openQuestions.length).toBe(5);
+  });
+
+  it('still refuses to turn a non-goal into a requirement in graduated mode', () => {
     const statements = extraction.requirements.map((requirement) => requirement.statement);
     expect(statements.some((statement) => statement.includes('Rewriting the mailer'))).toBe(false);
     expect((extraction.notes ?? []).some((note) => note.kind === 'non-goal')).toBe(true);
+  });
+});
+
+describe('structuredExtraction — a normal design doc (field failure)', () => {
+  // The document that triggered the direction change: ## Background prose, ## Goals prose,
+  // ## Non-goals. It used to be sentence-split wholesale into ~20 "requirements", marked
+  // PROVISIONAL, readiness withheld, and its author told to reformat and re-submit.
+  const DESIGN_DOC = [
+    '# Confidence rework',
+    '',
+    '## Background',
+    '',
+    'Path resolution today anchors spec paths at the workspace root. The `legacy-path-resolver`',
+    'was originally built for single-repository workspaces. This has been a source of false',
+    'positives because lexical matches outrank structural ones.',
+    '',
+    '## Goals',
+    '',
+    'The confidence engine must stop assigning high confidence to purely lexical matches.',
+    'Structural evidence should outrank lexical evidence in every ranking. Ranking changes',
+    'apply to the HTML export as well.',
+    '',
+    '## Non-goals',
+    '',
+    '- Reworking the persistence layer.',
+    '',
+  ].join('\n');
+  const extraction = structuredExtraction(DESIGN_DOC);
+
+  it('never turns background narration into requirements', () => {
+    const statements = extraction.requirements.map((requirement) => requirement.statement);
+    expect(statements.some((statement) => statement.includes('anchors spec paths'))).toBe(false);
+    expect(statements.some((statement) => statement.includes('originally built'))).toBe(false);
+    expect(statements.some((statement) => statement.includes('false positives'))).toBe(false);
+  });
+
+  it('admits the modal Goals sentences as prose-modal requirements with confidence', () => {
+    const statements = extraction.requirements.map((requirement) => requirement.statement);
+    expect(statements).toContain(
+      'The confidence engine must stop assigning high confidence to purely lexical matches.',
+    );
+    expect(statements).toContain(
+      'Structural evidence should outrank lexical evidence in every ranking.',
+    );
+    expect(
+      extraction.requirements.every((requirement) => requirement.origin === 'prose-modal'),
+    ).toBe(true);
+    expect(
+      extraction.requirements.every((requirement) => (requirement.extractionConfidence ?? 0) > 0),
+    ).toBe(true);
+  });
+
+  it('is not provisional and does not tell the author to reformat', () => {
+    expect(extraction.quality?.provisional).toBe(false);
+    expect(extraction.quality?.strategy).toBe('prose-modal');
+    const warnings = (extraction.quality?.warnings ?? []).join(' ');
+    expect(warnings).not.toContain('re-submit');
+    expect(warnings).not.toContain('PROVISIONAL');
+  });
+
+  it('routes the uncertain Goals sentence to an open question instead of inventing a requirement', () => {
+    const statements = extraction.requirements.map((requirement) => requirement.statement);
+    expect(statements.some((statement) => statement.includes('apply to the HTML export'))).toBe(
+      false,
+    );
+    expect(
+      extraction.openQuestions.some((question) =>
+        question.question.includes('apply to the HTML export'),
+      ),
+    ).toBe(true);
+    expect(extraction.quality?.uncertainStatementCount).toBe(1);
+    const ambiguous = (extraction.notes ?? []).filter((note) => note.kind === 'ambiguous');
+    expect(ambiguous.some((note) => note.statement.includes('apply to the HTML export'))).toBe(
+      true,
+    );
+  });
+
+  it('keeps concepts from rejected background prose off every requirement', () => {
+    const concepts = extraction.requirements.flatMap((requirement) => requirement.concepts);
+    expect(concepts).not.toContain('legacy-path-resolver');
+  });
+
+  it('keeps the non-goal out of the requirements', () => {
+    const statements = extraction.requirements.map((requirement) => requirement.statement);
+    expect(statements.some((statement) => statement.includes('persistence layer'))).toBe(false);
   });
 });
 

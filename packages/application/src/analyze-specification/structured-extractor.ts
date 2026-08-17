@@ -1,26 +1,29 @@
 import { isProvisional, strategyFor } from '@impactgraph/domain';
 
+import { admitProse } from './prose-admission.js';
 import { itemsOf, paragraphsOf } from './spec-items.js';
 import { splitSections } from './spec-sections.js';
-import { conceptsOf, classifyType, priorityOf, proseStatements } from './statement-analysis.js';
+import { conceptsOf, classifyType, priorityOf } from './statement-analysis.js';
 
 import type {
   ExtractedNoteDraft,
   ExtractedRequirementDraft,
   SpecificationExtraction,
 } from './extraction-types.js';
+import type { ProseAdmission } from './prose-admission.js';
 import type { SpecItem } from './spec-items.js';
 import type { SectionRole, SpecSection } from './spec-sections.js';
-import type { RequirementOrigin, SpecNoteKind } from '@impactgraph/domain';
+import type { SpecNoteKind } from '@impactgraph/domain';
 
 /**
  * Structure-respecting deterministic extraction (item 1 of the trial follow-up).
  *
  * The rule the previous extractor broke: a specification's own structure outranks any heuristic.
  * If the author wrote R1–R7, the analysis is about seven requirements. If they wrote a
- * Non-goals section, those statements are exclusions. Sentence-splitting is the LAST resort, used
- * only when the document declares no structured content at all — and when it is used, it is
- * reported prominently rather than presented as though the requirements were the author's.
+ * Non-goals section, those statements are exclusions. When the document declares no structured
+ * content at all, prose is read GRADUATED (prose-admission.ts): normative sentences are admitted
+ * as requirements, uncertain sentences become open questions, and narration stays context — never
+ * the old all-or-nothing sentence split that turned background prose into invented requirements.
  */
 
 /** Sections whose list items are requirements. */
@@ -128,35 +131,11 @@ const dedupeByStatement = (
   return kept;
 };
 
-const PROSE_ORIGIN: RequirementOrigin = 'prose-fallback';
-
-/**
- * Last resort. Only reached when the document declared no requirement list of any kind, and the
- * result is flagged provisional so nothing downstream treats these statements as the author's.
- */
-const proseFallback = (sections: readonly SpecSection[]): ExtractedRequirementDraft[] => {
-  const drafts: ExtractedRequirementDraft[] = [];
-  for (const section of sections) {
-    // Sections that are definitionally NOT requirements stay out of the fallback too — a
-    // non-goal must never become a positive requirement, however desperate the extractor is.
-    if (section.role === 'non-goals' || section.role === 'open-questions') {
-      continue;
-    }
-    for (const statement of proseStatements(section.lines.join('\n'))) {
-      const priority = priorityOf(statement);
-      drafts.push({
-        statement,
-        type: classifyType(statement),
-        concepts: conceptsOf(statement),
-        actors: [],
-        ...(priority === undefined ? {} : { priority }),
-        sourceExcerpt: statement,
-        origin: PROSE_ORIGIN,
-        ...(section.heading.length === 0 ? {} : { heading: section.heading }),
-      });
-    }
-  }
-  return drafts;
+const EMPTY_ADMISSION: ProseAdmission = {
+  requirements: [],
+  notes: [],
+  questions: [],
+  uncertainCount: 0,
 };
 
 // The remediation names every accepted shape — telling the user only the narrowest one
@@ -165,10 +144,20 @@ const ACCEPTED_SHAPES =
   'a Requirements, Acceptance Criteria, or task section containing bulleted (-, *, +, •) or ' +
   'numbered items; explicit labels like R1/FR-2 are optional';
 
-const fallbackWarning = (count: number, provisional: boolean): string =>
-  `FALLBACK EXTRACTION: the specification declared no requirements list, acceptance criteria, or ` +
-  `task list, so all ${String(count)} requirement(s) below were cut out of running prose by the ` +
-  `extractor — they are the extractor's reading, not the author's list.` +
+/** Graduated extraction succeeded: modal prose is a specification, not a reformat request. */
+const proseModalWarning = (admitted: number, uncertain: number): string =>
+  `PROSE EXTRACTION: the specification declared no requirements list, acceptance criteria, or ` +
+  `task list. ${String(admitted)} normative statement(s) in the prose were admitted as ` +
+  `requirements and ${String(uncertain)} uncertain statement(s) were routed to open questions ` +
+  `instead of being invented as requirements. An explicit requirements section ` +
+  `(${ACCEPTED_SHAPES}) remains more precise, but is not required.`;
+
+/** Little modal signal: the requirement list would be a guess, so that is said out loud. */
+const uncertainProseWarning = (admitted: number, uncertain: number, provisional: boolean): string =>
+  `FALLBACK EXTRACTION: the specification declared no requirements list and its prose carries ` +
+  `little normative signal — ${String(admitted)} statement(s) were admitted as requirements and ` +
+  `${String(uncertain)} uncertain statement(s) were routed to open questions rather than ` +
+  `invented as requirements.` +
   (provisional
     ? ` The analysis is PROVISIONAL and readiness is withheld. Add ${ACCEPTED_SHAPES} — then re-submit.`
     : ` Add ${ACCEPTED_SHAPES} — that removes the guesswork.`);
@@ -194,8 +183,11 @@ export const structuredExtraction = (rawText: string): SpecificationExtraction =
     collectStrayLabels(accumulator, section);
   }
   const structured = dedupeByStatement(accumulator.requirements);
-  const prose = structured.length === 0 ? proseFallback(sections) : [];
-  const requirements = [...structured, ...dedupeByStatement(prose)];
+  // Graduated extraction (never all-or-nothing): with no structured list, each prose sentence is
+  // classified — normative statements are admitted, uncertain ones become open questions.
+  const admission = structured.length === 0 ? admitProse(sections) : EMPTY_ADMISSION;
+  const prose = dedupeByStatement(admission.requirements);
+  const requirements = [...structured, ...prose];
   const ambiguous = requirements
     .filter((draft) => isAmbiguous(draft.statement))
     .map((draft) => noteFor(draft.statement, 'ambiguous', draft.heading ?? ''));
@@ -203,29 +195,47 @@ export const structuredExtraction = (rawText: string): SpecificationExtraction =
     requirements,
     actors: [],
     constraints: [...new Set(accumulator.constraints)],
-    openQuestions: accumulator.questions.map((question) => ({
-      question,
-      reason: 'stated as an open question in the specification',
-      severity: 'important',
-      affectedRequirementStatements: [],
-    })),
-    notes: [...accumulator.notes, ...ambiguous],
-    quality: qualityReport(structured.length, prose.length, accumulator.recognizedSections),
+    openQuestions: [
+      ...accumulator.questions.map((question) => ({
+        question,
+        reason: 'stated as an open question in the specification',
+        severity: 'important',
+        affectedRequirementStatements: [],
+      })),
+      // Exposed uncertainty (same channel, lower severity): "is this a requirement or context?"
+      ...admission.questions,
+    ],
+    notes: [...accumulator.notes, ...admission.notes, ...ambiguous],
+    quality: qualityReport(
+      structured.length,
+      prose.length,
+      admission.uncertainCount,
+      accumulator.recognizedSections,
+    ),
   };
 };
 
 const qualityReport = (
   structured: number,
-  prose: number,
+  proseModal: number,
+  uncertain: number,
   recognizedSections: readonly string[],
 ): SpecificationExtraction['quality'] => {
-  const provisional = isProvisional(structured, prose);
+  const provisional = isProvisional(structured, proseModal, uncertain);
+  const warnings =
+    structured > 0 || proseModal + uncertain === 0
+      ? []
+      : provisional || proseModal === 0
+        ? [uncertainProseWarning(proseModal, uncertain, provisional)]
+        : [proseModalWarning(proseModal, uncertain)];
   return {
-    strategy: strategyFor(structured, prose),
+    strategy: strategyFor(structured, proseModal),
     structuredRequirementCount: structured,
-    proseRequirementCount: prose,
+    proseRequirementCount: proseModal,
+    // Measured only when the graduated pass ran; a structured document's count stays unclaimed.
+    ...(structured === 0 ? { uncertainStatementCount: uncertain } : {}),
     recognizedSections,
     provisional,
-    warnings: structured === 0 && prose > 0 ? [fallbackWarning(prose, provisional)] : [],
+    warnings,
   };
 };

@@ -82,6 +82,16 @@ const coerce = (draft: ExtractedRequirementDraft) => ({
       : ('prose-fallback' as RequirementOrigin),
 });
 
+/** In [0, 1] or absent — an out-of-range value is dropped, never clamped into a stronger claim. */
+const confidenceOf = (
+  draft: ExtractedRequirementDraft,
+): Partial<Pick<Requirement, 'extractionConfidence'>> => {
+  const value = draft.extractionConfidence;
+  return value !== undefined && Number.isFinite(value) && value >= 0 && value <= 1
+    ? { extractionConfidence: value }
+    : {};
+};
+
 const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requirement => {
   const { type, priority, origin } = coerce(draft);
   const offset = draft.sourceExcerpt === undefined ? -1 : rawText.indexOf(draft.sourceExcerpt);
@@ -99,6 +109,7 @@ const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requi
     origin,
     ...(draft.label === undefined ? {} : { label: draft.label }),
     ...(draft.heading === undefined ? {} : { heading: draft.heading }),
+    ...confidenceOf(draft),
   };
 };
 
@@ -130,15 +141,20 @@ const qualityOf = (
   const structured = requirements.filter((requirement) =>
     isStructuredOrigin(originOf(requirement)),
   ).length;
-  const prose = requirements.length - structured;
+  const modal = requirements.filter(
+    (requirement) => originOf(requirement) === 'prose-modal',
+  ).length;
+  // Origin-less drafts coerce to prose-fallback — the weakest reading, counted as uncertain so a
+  // provider cannot dodge provisionality by omission.
+  const fallback = requirements.length - structured - modal;
   return {
-    strategy: strategyFor(structured, prose),
+    strategy: strategyFor(structured, modal, fallback),
     structuredRequirementCount: structured,
-    proseRequirementCount: prose,
+    proseRequirementCount: modal + fallback,
     recognizedSections: [],
-    provisional: isProvisional(structured, prose),
+    provisional: isProvisional(structured, modal, fallback),
     warnings:
-      structured === 0 && requirements.length > 0
+      structured === 0 && fallback === requirements.length && requirements.length > 0
         ? [
             'The extraction provider reported no requirement origins, so no requirement can be ' +
               'traced to an explicit statement in the specification — the analysis is provisional.',
