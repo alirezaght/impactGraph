@@ -128,6 +128,15 @@ export {
   findShortestPath,
   extractSubgraph,
 } from './repository/graph-queries.js';
+export type {
+  PathBearing,
+  PathResolutionVia,
+  ResolvedPathReference,
+  AmbiguousPathReference,
+  UnresolvedPathReference,
+  PathReferenceResolution,
+} from './repository/path-resolution.js';
+export { normalizePathReference, resolvePathReference } from './repository/path-resolution.js';
 
 export type {
   KnowledgeEnvelopeJson,

@@ -9,8 +9,14 @@ import type { ConfidenceScore, ConfidenceSignalType } from '../provenance/confid
 // explainable after any re-weighting (provenance-model.md).
 
 export const IMPACT_SIGNAL_WEIGHTS: Readonly<Partial<Record<ConfidenceSignalType, number>>> = {
+  // 0.9 is reserved for identifier-grade anchors: unique path/suffix resolutions and name
+  // matches the specification wrote as identifiers ("required must mean strong").
   'exact-concept-to-symbol-match': 0.9,
   'human-confirmed-mapping': 0.9,
+  // A container named in prose and a bare filename are weaker claims: real matches, but not a
+  // specific change surface, so they must stay below the review threshold on their own.
+  'container-name-match': 0.45,
+  'basename-file-match': 0.45,
   'semantic-concept-match': 0.5,
   'direct-import': 0.1,
   'direct-function-call': 0.1,

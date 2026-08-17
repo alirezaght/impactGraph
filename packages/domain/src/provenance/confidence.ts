@@ -12,6 +12,15 @@ export const CONFIDENCE_SIGNAL_TYPES = [
   // confidence 1.0). The PRD's signal list is explicitly non-exhaustive ("Potential signals").
   'direct-observation',
   'exact-concept-to-symbol-match',
+  // container-name-match: the concept names a container-kind node (package, workspace,
+  // repository, directory) by NAME. Naming the box is not naming a change surface inside it —
+  // a product name matching its own package once anchored required/0.9 impacts — so this signal
+  // is deliberately weaker than an identifier-grade match.
+  'container-name-match',
+  // basename-file-match: the concept is a bare filename (extension, no '/') that matched a file
+  // by basename alone. The specification did not say WHICH file of that name, so the signal is
+  // weaker than a path-qualified or verbatim match.
+  'basename-file-match',
   'semantic-concept-match',
   'direct-import',
   'direct-function-call',

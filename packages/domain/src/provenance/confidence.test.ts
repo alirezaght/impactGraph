@@ -10,7 +10,11 @@ describe('ConfidenceScore (PRD §14)', () => {
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('historical-co-change');
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('human-confirmed-mapping');
     expect(CONFIDENCE_SIGNAL_TYPES).toContain('direct-observation');
-    expect(CONFIDENCE_SIGNAL_TYPES).toHaveLength(19);
+    // "Required must mean strong": container-name and basename anchors carry their own weaker
+    // signals instead of borrowing the identifier-grade exact match.
+    expect(CONFIDENCE_SIGNAL_TYPES).toContain('container-name-match');
+    expect(CONFIDENCE_SIGNAL_TYPES).toContain('basename-file-match');
+    expect(CONFIDENCE_SIGNAL_TYPES).toHaveLength(21);
     expect([...PENALTY_SIGNAL_TYPES]).toEqual([
       'graph-distance',
       'ambiguity',
