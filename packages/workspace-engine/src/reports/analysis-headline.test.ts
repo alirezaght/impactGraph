@@ -50,7 +50,7 @@ describe('buildHeadline (ADR-0022)', () => {
     expect(headline).toContain('READY WITH WARNINGS — 2 risks to verify');
     expect(headline).toContain('14 change surfaces on strong evidence');
     expect(headline).toContain('3 supplied by the specification, 11 independently corroborated');
-    expect(headline).toContain('no known coverage gaps');
+    expect(headline).toContain('No known coverage gaps');
   });
 
   it('names the coverage gaps when there are any', () => {

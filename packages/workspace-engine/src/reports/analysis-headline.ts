@@ -25,6 +25,9 @@ const VERDICT_PHRASES: Readonly<Record<string, string>> = {
   BLOCKED: 'BLOCKED',
 };
 
+const capitalize = (value: string): string =>
+  value.length === 0 ? value : `${value[0]?.toUpperCase() ?? ''}${value.slice(1)}`;
+
 const plural = (count: number, singular: string, suffix = 's'): string =>
   `${String(count)} ${singular}${count === 1 ? '' : suffix}`;
 
@@ -60,9 +63,7 @@ const containmentNote = (topImpacts: CliImpactSummary['topImpacts']): string | u
   const components = new Set(
     strong.map((impact) => topLevelOf(impact.path ?? impact.nodeId)).filter((part) => part !== ''),
   );
-  return components.size === 1
-    ? 'the change looks local and well contained'
-    : undefined;
+  return components.size === 1 ? 'The change looks local and well contained' : undefined;
 };
 
 export interface HeadlineInput {
@@ -110,7 +111,9 @@ export const buildHeadline = (input: HeadlineInput): string | undefined => {
   // the risk count is stated whenever there is one.
   const parts = [risks === 0 ? verdict : `${verdict} — ${plural(risks, 'risk')} to verify`];
   const split = independenceSplit(input);
-  const surfaces = `${plural(input.strongSurfaceCount, 'change surface')} on strong evidence`;
+  const surfaces = capitalize(
+    `${plural(input.strongSurfaceCount, 'change surface')} on strong evidence`,
+  );
   parts.push(
     split === undefined
       ? surfaces
@@ -123,7 +126,7 @@ export const buildHeadline = (input: HeadlineInput): string | undefined => {
   if (input.unresolvedConceptCount > 0) {
     gaps.push(`${plural(input.unresolvedConceptCount, 'named component')} did not resolve`);
   }
-  parts.push(gaps.length === 0 ? 'no known coverage gaps' : gaps.join(', '));
+  parts.push(gaps.length === 0 ? 'No known coverage gaps' : capitalize(gaps.join(', ')));
   const containment = containmentNote(input.topImpacts);
   if (containment !== undefined) {
     parts.push(containment);
