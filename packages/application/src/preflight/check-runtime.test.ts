@@ -192,8 +192,33 @@ describe('checkRuntime — the aggregator scenario', () => {
     expect(findings.every((finding) => finding.severity === 'warning')).toBe(true);
     // The gap still names the process and the missing value; the unresolved line is subsumed.
     expect(findings.some((finding) => finding.statement.includes('does not receive'))).toBe(true);
-    expect(findings.some((finding) => finding.statement.includes('could not be resolved'))).toBe(
-      false,
-    );
+    expect(findings.some((finding) => finding.statement.includes('could not resolve'))).toBe(false);
+  });
+
+  // ADR-0023: the `local.*_service_url` case. A chain ImpactGraph cannot follow is a limit of its
+  // own resolution — it belongs to no requirement, and it is not evidence against the plan.
+  it('reports an unresolvable chain as a caveat about the analysis, attributed to no requirement', () => {
+    const graph = aggregatorGraph([]);
+    const partial = resolveRuntimePaths({ graph }).map((path) => ({
+      ...path,
+      incompleteReason: 'the chain stops at local.newsletter_service_url',
+    }));
+
+    const findings = checkRuntime({
+      paths: partial,
+      // No configuration requirement, so no gap finding subsumes the unresolved line.
+      requirements: [],
+      configuredByProcess: configuredNamesByProcess(graph),
+      planConfiguredNodeIds: new Set(),
+      requirementIds: ['R1', 'R2', 'R3'],
+      nextId,
+    });
+
+    const caveat = findings.find((finding) => finding.statement.includes('could not resolve'));
+    expect(caveat?.origin).toBe('analysis-caveat');
+    expect(caveat?.verification).toBe('unverified-assumption');
+    expect(caveat?.requirementIds).toEqual([]);
+    expect(caveat?.statement).toContain('limit of the analysis');
+    expect(caveat?.severity).toBe('warning');
   });
 });
