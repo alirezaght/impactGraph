@@ -295,9 +295,15 @@ const explanationFor = (
 };
 
 /**
- * ADR-0022: the plan's expectation applies to the ANCHOR the reuse clause named, never to a
- * component traversal reached from it — a sentence about reusing one thing says nothing about
- * what its callers must do.
+ * ADR-0022: the plan's expectation applies to the ANCHOR the clause named, never to a component
+ * traversal reached from it — a sentence about reusing one thing says nothing about what its
+ * callers must do.
+ *
+ * A regression boundary is held to the same distance-0 rule, and deliberately so. A guard protects
+ * the surface the author named; extending it to every neighbour a traversal walked to would turn
+ * "the send job must not change" into a freeze on its callers, manufacturing guard violations out
+ * of ordinary work and teaching readers to ignore the category. Err conservative: mark the anchored
+ * surfaces, and let the author widen the boundary by naming more of them.
  */
 const expectationFields = (
   candidate: ImpactCandidate,
@@ -311,7 +317,11 @@ const expectationFields = (
   }
   return {
     changeExpectation: cue.expectation,
-    expectedChanges: [`Plan expects no change here (${cue.expectation}, "${cue.cue}")`],
+    expectedChanges: [
+      cue.expectation === 'preserve'
+        ? `Specification protects this surface — preserve current behaviour, no diff expected ("${cue.cue}")`
+        : `Plan expects no change here (${cue.expectation}, "${cue.cue}")`,
+    ],
   };
 };
 

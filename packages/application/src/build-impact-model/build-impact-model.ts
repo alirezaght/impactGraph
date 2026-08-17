@@ -1,5 +1,12 @@
-import { createImpactAnalysis, err, validationError, validationIssue } from '@impactgraph/domain';
+import {
+  createImpactAnalysis,
+  err,
+  intentOf,
+  validationError,
+  validationIssue,
+} from '@impactgraph/domain';
 
+import { guardCueOf } from '../analyze-specification/no-change-language.js';
 import { isSpeculativeConcept } from '../analyze-specification/statement-analysis.js';
 import { buildCoChangeIndex } from '../history/co-change-index.js';
 
@@ -12,6 +19,7 @@ import { applyNonGoalExclusions, resolveNonGoals } from './non-goal-exclusions.j
 import { gateProposedStructure } from './proposed-structure-gate.js';
 
 import type { ImpactCandidate, TraversalOptions } from './candidate-traversal.js';
+import type { ChangeExpectationCue } from './change-expectation.js';
 import type { CoChangeIndex } from '../history/co-change-index.js';
 import type {
   AnalysisWarning,
@@ -213,6 +221,17 @@ const scoreCandidates = (
 ): RequirementImpact[] => {
   const requirementId = requirement.id;
   const change = inferChange(requirement.statement);
+  // A regression boundary belongs to the REQUIREMENT, not to a clause a per-candidate matcher has
+  // to re-derive: the author already said "this must not change", and the surface it protects is
+  // often a phrase ("existing lookup behaviour") no subject grammar could capture. So intent wins
+  // over wording here; the reuse/verify cue still reads design choices out of the same statement.
+  const guard: ChangeExpectationCue | undefined =
+    intentOf(requirement) === 'preserve'
+      ? {
+          expectation: 'preserve',
+          cue: guardCueOf(requirement.statement)?.cue ?? 'preserve intent',
+        }
+      : undefined;
   const { request, excluded, warnings } = pipeline;
   const scored: RequirementImpact[] = [];
   for (const candidate of candidates) {
@@ -231,10 +250,8 @@ const scoreCandidates = (
     const classified = classifyCandidate(candidate, node, requirementId, {
       coChangeCount: coChangeCountFor(pipeline, candidate, node),
       change,
-      changeExpectation: changeExpectationFor(requirement.statement, [
-        candidate.match.concept,
-        node.name,
-      ]),
+      changeExpectation:
+        guard ?? changeExpectationFor(requirement.statement, [candidate.match.concept, node.name]),
     });
     if (classified.ok) {
       scored.push(classified.value);

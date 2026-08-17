@@ -266,6 +266,27 @@ deterministic knowledge: it renders as text beside likelihood (plus a `TIER CAPP
 marker, §37 colour-independent) and as a graph facet, and it never restyles the three §3
 knowledge-category badges.
 
+### Regression boundaries (ADR-0023)
+
+Three **additive, optional** pieces carry a preservation requirement end to end, each with a
+defaulting accessor so a record written before the axis existed reads exactly as it did:
+
+- `Requirement.intent` (`'change' | 'preserve'`, read through `intentOf` → `change`) on the
+  persisted specification (`specification.v1`) and on the AI extraction DTO
+  (`ai/extraction-response.v1`). The specification writer spreads the domain record, so no writer
+  change was owed; the reader accepts it alongside `origin`/`label`/`heading`.
+- `'preserve'` as a fourth `CHANGE_EXPECTATIONS` value on `RequirementImpact.changeExpectation`
+  (read through `changeExpectationOf` → `must-change`). It is a value in a domain union that the
+  impact JSON already round-trips as an optional string, so no analysis schema bump is owed.
+- `'guard-violated'` as an additive review category on `cli/review-output.v1` (and therefore on
+  `artifacts/implementation-review.v1`, `review_implementation` and `get_review_report`), plus
+  `verdict.counts.guardViolated`. Both are v1-additive: no producer emitted them before, so a
+  reader of the prior shape loses nothing, and every current producer emits the count.
+
+`ACCEPTABLE_DEVIATION_CATEGORIES` deliberately does NOT include `guard-violated` yet — accepting a
+crossed regression boundary is a persisted-artifact enum change with its own approval, and the
+current answer to one is to amend the specification. See the ADR's revisit trigger.
+
 AI response DTOs (`ai/extraction.ts`, `ai/classification.ts`)
 are under `schemas/ai/`. Clarification ADRs (`clarification.v1`, PRD §C9) are domain-serialized
 artifacts under `.impactgraph/artifacts/clarifications/`; the MCP tool roster is 30 tools

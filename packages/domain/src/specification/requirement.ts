@@ -28,6 +28,22 @@ export const REQUIREMENT_STATUSES = ['draft', 'confirmed', 'rejected'] as const;
 export type RequirementStatus = (typeof REQUIREMENT_STATUSES)[number];
 
 /**
+ * Which DIRECTION a requirement points in.
+ *
+ * "Deduplication behaviour must remain unchanged" is a requirement — it is the author drawing a
+ * REGRESSION BOUNDARY around the change — and no existing axis could carry it. `type` says what
+ * subject matter, `priority` says how strongly, `origin` says where the statement came from,
+ * `status` says whether a human confirmed it. Without `intent`, every one of those read the
+ * sentence as a request to change the thing it protects: the exact inverse of what it says.
+ *
+ * A preservation requirement is NOT a non-goal. A non-goal removes a component from the analysis
+ * (`excluded` likelihood; a change there is `unexpected`). A guard keeps it IN, expects it to be
+ * exercised, and demands that the diff leave it alone.
+ */
+export const REQUIREMENT_INTENTS = ['change', 'preserve'] as const;
+export type RequirementIntent = (typeof REQUIREMENT_INTENTS)[number];
+
+/**
  * Where a requirement came from in the specification text.
  *
  * This is the honesty field. `explicit-label` means the author wrote "R3:" and the statement is
@@ -101,11 +117,20 @@ export interface Requirement {
    * from the deterministic admission signal (modality strength, imperative head).
    */
   readonly extractionConfidence?: number;
+  /**
+   * Additive field. Absent on specifications extracted before the axis existed — read it through
+   * `intentOf`, which maps absence to `change`, preserving the older reading exactly.
+   */
+  readonly intent?: RequirementIntent;
 }
 
 /** The weakest reading is the default: an unlabeled requirement is treated as extractor prose. */
 export const originOf = (requirement: Requirement): RequirementOrigin =>
   requirement.origin ?? 'prose-fallback';
+
+/** Absence means the pre-axis reading: the requirement asks for a change. */
+export const intentOf = (requirement: Requirement): RequirementIntent =>
+  requirement.intent ?? 'change';
 
 /** Deterministic content-derived id: FNV-1a over normalized text, with a kind prefix. */
 export const stableContentId = (prefix: string, text: string): string => {
@@ -182,6 +207,14 @@ export const requirementIssues = (requirement: Requirement, path: string): Valid
   ) {
     issues.push(
       validationIssue('invalid-type', `${path}.origin`, `unknown origin '${requirement.origin}'`),
+    );
+  }
+  if (
+    requirement.intent !== undefined &&
+    !(REQUIREMENT_INTENTS as readonly string[]).includes(requirement.intent)
+  ) {
+    issues.push(
+      validationIssue('invalid-type', `${path}.intent`, `unknown intent '${requirement.intent}'`),
     );
   }
   issues.push(...confidenceIssues(requirement.extractionConfidence, path));

@@ -20,6 +20,11 @@ export type SectionRole =
   | 'constraints'
   /** An explicit exclusion — a negative signal, never a positive impact. */
   | 'non-goals'
+  /**
+   * A regression boundary: statements here are requirements that the named surfaces must NOT
+   * change. Not a non-goal — the components stay in scope and are expected to be exercised.
+   */
+  | 'preservation'
   /** A recorded design/technical decision — advisory how-to, never a requirement on its own. */
   | 'decisions'
   /** Intent framing (goals, objectives, scope) — explanatory, never a requirement. */
@@ -41,6 +46,21 @@ interface HeadingRule {
  * first ("out of scope" before "scope", "non-functional requirements" before "requirements").
  */
 const HEADING_RULES: readonly HeadingRule[] = [
+  // FIRST, and specifically ahead of `requirements`: `behaviou?rs?` there matched "Unchanged
+  // behaviour" and turned a section of things that must NOT change into positive change
+  // predictions — the inverted meaning of the document. Ahead of `non-goals` is safe because the
+  // two vocabularies are disjoint: nothing here matches "non-goals", "out of scope" or "excluded",
+  // and a heading about unchanged behaviour is preservation, not exclusion.
+  {
+    role: 'preservation',
+    pattern:
+      /\b(explicitly\s+unchanged|(?:must\s+)?remain(?:s)?\s+unchanged|unchanged\s+behaviou?rs?|preserved\s+behaviou?rs?|behaviou?rs?\s+preserved)\b/i,
+  },
+  {
+    role: 'preservation',
+    pattern:
+      /\b(regression\s+(?:boundar(?:y|ies)|guards?)|backwards?[-\s]?compat(?:ibility|ible)?|no\s+(?:behaviou?r(?:al)?|functional)\s+change)\b/i,
+  },
   { role: 'non-goals', pattern: /\b(non[-\s]?goals?|out[-\s]of[-\s]scope|not\s+in\s+scope)\b/i },
   { role: 'non-goals', pattern: /\b(explicitly\s+)?excluded\b/i },
   {

@@ -115,11 +115,21 @@ export interface RequirementImpact {
 }
 
 /**
- * What the plan expects of a predicted surface. `verify-only` and `reuse-unchanged` differ in
- * intent — one asserts existing behaviour is correct, the other asserts it will be depended on —
- * but both predict NO diff, which is what review acts on.
+ * What the plan expects of a predicted surface. `verify-only`, `reuse-unchanged` and `preserve`
+ * differ in intent — one asserts existing behaviour is correct, one asserts it will be depended on,
+ * and one is the author FORBIDDING a behavioural change — but all three predict NO diff, which is
+ * what review acts on.
+ *
+ * `preserve` is the strongest of the three and is reported differently when it is broken: reuse and
+ * verification are design choices the implementer may revisit, whereas a regression boundary is a
+ * requirement, so a diff there is a guard violation rather than a divergence.
  */
-export const CHANGE_EXPECTATIONS = ['must-change', 'reuse-unchanged', 'verify-only'] as const;
+export const CHANGE_EXPECTATIONS = [
+  'must-change',
+  'reuse-unchanged',
+  'verify-only',
+  'preserve',
+] as const;
 export type ChangeExpectation = (typeof CHANGE_EXPECTATIONS)[number];
 
 /** Absence means the pre-ADR-0022 reading: the surface was expected to change. */

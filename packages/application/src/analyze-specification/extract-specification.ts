@@ -5,6 +5,7 @@ import {
   isStructuredOrigin,
   ok,
   originOf,
+  REQUIREMENT_INTENTS,
   REQUIREMENT_ORIGINS,
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_TYPES,
@@ -80,6 +81,12 @@ const coerce = (draft: ExtractedRequirementDraft) => ({
     draft.origin !== undefined && (REQUIREMENT_ORIGINS as readonly string[]).includes(draft.origin)
       ? draft.origin
       : ('prose-fallback' as RequirementOrigin),
+  // `change` is the weakest reading here too: an unrecognized value must never manufacture a
+  // regression boundary the specification did not state.
+  intent:
+    draft.intent !== undefined && (REQUIREMENT_INTENTS as readonly string[]).includes(draft.intent)
+      ? draft.intent
+      : undefined,
 });
 
 /** In [0, 1] or absent — an out-of-range value is dropped, never clamped into a stronger claim. */
@@ -93,7 +100,7 @@ const confidenceOf = (
 };
 
 const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requirement => {
-  const { type, priority, origin } = coerce(draft);
+  const { type, priority, origin, intent } = coerce(draft);
   const offset = draft.sourceExcerpt === undefined ? -1 : rawText.indexOf(draft.sourceExcerpt);
   return {
     id: stableRequirementId(draft.statement),
@@ -107,6 +114,7 @@ const toRequirement = (draft: ExtractedRequirementDraft, rawText: string): Requi
       : { sourceRange: { startOffset: offset, endOffset: offset + draft.sourceExcerpt.length } }),
     status: 'draft',
     origin,
+    ...(intent === undefined ? {} : { intent }),
     ...(draft.label === undefined ? {} : { label: draft.label }),
     ...(draft.heading === undefined ? {} : { heading: draft.heading }),
     ...confidenceOf(draft),

@@ -1,6 +1,7 @@
 import type { ModelProviderError } from '../ports/model-provider.js';
 import type {
   ExtractionQuality,
+  RequirementIntent,
   RequirementOrigin,
   Result,
   SpecNoteKind,
@@ -30,6 +31,11 @@ export interface ExtractedRequirementDraft {
   readonly extractionConfidence?: number | undefined;
   /** Heading the statement was found under, verbatim. */
   readonly heading?: string | undefined;
+  /**
+   * Which direction the requirement points in. Absent → `change`, the pre-axis reading. `preserve`
+   * marks a regression boundary: the named surface must come out of the change unmodified.
+   */
+  readonly intent?: RequirementIntent | undefined;
 }
 
 /** Specification prose that is explicitly NOT a requirement (context, non-goal, ambiguous, …). */

@@ -17,6 +17,8 @@ const reviewFindingSchema = z
       'divergent',
       /** Additive v1 value (ADR-0022): planned reuse that stayed unchanged, by design. */
       'reuse-confirmed',
+      /** Additive v1 value: a surface a preservation requirement protected that was modified. */
+      'guard-violated',
       'unverifiable',
       'accepted-deviation',
     ]),
@@ -75,6 +77,7 @@ const reviewVerdictSchema = z
         missing: z.number().int().min(0),
         unexpected: z.number().int().min(0),
         divergent: z.number().int().min(0),
+        guardViolated: z.number().int().min(0),
         reuseConfirmed: z.number().int().min(0),
         unverifiable: z.number().int().min(0),
         acceptedDeviations: z.number().int().min(0),
