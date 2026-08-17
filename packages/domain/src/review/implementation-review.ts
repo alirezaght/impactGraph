@@ -19,6 +19,13 @@ export const REVIEW_CATEGORIES = [
    * (ADR-0022). Reuse is a design outcome, so it is reported as satisfaction — never as a gap.
    */
   'reuse-confirmed',
+  /**
+   * A surface a preservation requirement protected — "the send job must not change behavior" —
+   * that the diff modified anyway. Distinct from `divergent`: divergence is "changed differently
+   * than planned", a judgement about direction; this is the author's stated regression boundary
+   * being crossed, which is the strongest thing a specification says about a surface.
+   */
+  'guard-violated',
   'unverifiable',
   'accepted-deviation',
 ] as const;
@@ -127,5 +134,6 @@ export const hasDiscrepancies = (review: ImplementationReview): boolean =>
     (finding) =>
       finding.category === 'missing' ||
       finding.category === 'unexpected' ||
-      finding.category === 'divergent',
+      finding.category === 'divergent' ||
+      finding.category === 'guard-violated',
   );

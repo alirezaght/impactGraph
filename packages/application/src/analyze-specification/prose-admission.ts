@@ -1,3 +1,4 @@
+import { boundaryQuestionFor, readGuard } from './no-change-language.js';
 import { classifyType, conceptsOf, priorityOf, proseStatements } from './statement-analysis.js';
 
 import type {
@@ -19,7 +20,14 @@ import type { RequirementOrigin } from '@impactgraph/domain';
  * an open question instead of inventing a requirement out of it. Deterministic, pure, explainable.
  */
 
-export type ProseStatementClass = 'requirement' | 'uncertain' | 'non-requirement';
+export type ProseStatementClass =
+  | 'requirement'
+  /** A regression boundary with a surface to anchor on — a requirement pointing the other way. */
+  | 'preservation'
+  /** A boundary around nothing nameable — a question, never an invented guard. */
+  | 'vague-preservation'
+  | 'uncertain'
+  | 'non-requirement';
 
 /** Normative modality — the author committing the system to behavior (RFC-2119 vocabulary). */
 const STRONG_MODAL =
@@ -64,15 +72,26 @@ const isDemoted = (statement: string): boolean =>
   META_DOCUMENT.test(statement);
 
 /**
- * Rule order is the semantics: a question or a strongly modal sentence is decided first; an
- * imperative opening decides next (narration rarely opens with a bare verb); only then do the
- * demotion markers apply, so "must … because …" stays a requirement while "will … for example …"
- * does not. What remains — plain declaratives — is UNCERTAIN, never silently a requirement.
+ * Rule order is the semantics: a question is decided first, then NEGATED PRESERVATION, then a
+ * strongly modal sentence; an imperative opening decides next (narration rarely opens with a bare
+ * verb); only then do the demotion markers apply, so "must … because …" stays a requirement while
+ * "will … for example …" does not. What remains — plain declaratives — is UNCERTAIN, never
+ * silently a requirement.
+ *
+ * The preservation branch MUST precede the modal branch. "The send job must not change behavior"
+ * contains "must", so the positive branch used to admit it as a prediction that the send job
+ * changes — the exact inverse of the sentence. And "Existing lookup behaviour remains unchanged"
+ * carries no modal at all, so it fell through to `uncertain` and became homework instead of the
+ * requirement it is.
  */
 export const classifyStatement = (statement: string): ProseStatementClass => {
   const text = statement.trim();
   if (text.endsWith('?')) {
     return 'non-requirement';
+  }
+  const guard = readGuard(text);
+  if (guard !== undefined) {
+    return guard.kind === 'guard' ? 'preservation' : 'vague-preservation';
   }
   if (STRONG_MODAL.test(text)) {
     return 'requirement';
@@ -91,6 +110,11 @@ export const classifyStatement = (statement: string): ProseStatementClass => {
 
 /** Deterministic admission confidence, derived from WHICH signal admitted the statement. */
 export const admissionConfidence = (statement: string): number => {
+  // A guard clause is the least ambiguous thing a specification writes: "must not change" cannot
+  // be read as narration or rationale, so its admission is at least as certain as a modal's.
+  if (readGuard(statement)?.kind === 'guard') {
+    return 0.8;
+  }
   if (STRONG_MODAL.test(statement)) {
     return 0.8;
   }
@@ -124,9 +148,14 @@ const EXCERPT_LIMIT = 200;
 const excerpt = (statement: string): string =>
   statement.length <= EXCERPT_LIMIT ? statement : `${statement.slice(0, EXCERPT_LIMIT - 1)}…`;
 
-const toDraft = (statement: string, heading: string): ExtractedRequirementDraft => {
+const toDraft = (
+  statement: string,
+  heading: string,
+  intent: 'change' | 'preserve' = 'change',
+): ExtractedRequirementDraft => {
   const priority = priorityOf(statement);
   return {
+    ...(intent === 'preserve' ? { intent } : {}),
     statement,
     type: classifyType(statement),
     // Concepts are mined ONLY from admitted requirements — rejected prose must not flood
@@ -157,31 +186,69 @@ interface Sink {
   uncertainCount: number;
 }
 
-/** The strict bar: only strongly modal statements are admitted, nothing becomes a question. */
-const strictVerdict = (statement: string): ProseStatementClass =>
-  classifyStatement(statement) === 'requirement' && STRONG_MODAL.test(statement)
-    ? 'requirement'
-    : 'non-requirement';
+/**
+ * The strict bar: only strongly modal statements are admitted, nothing becomes a question. A guard
+ * clears it when it carries a modal ("must remain unchanged"), which keeps a boundary stated inside
+ * a Decisions section, while "lookup behaviour remains unchanged" in a Background section stays
+ * what it reads as there — narration of the present.
+ */
+const strictVerdict = (statement: string): ProseStatementClass => {
+  const verdict = classifyStatement(statement);
+  if (!STRONG_MODAL.test(statement)) {
+    return 'non-requirement';
+  }
+  return verdict === 'requirement' || verdict === 'preservation' ? verdict : 'non-requirement';
+};
+
+const ambiguousNote = (statement: string, heading: string): ExtractedNoteDraft => ({
+  statement,
+  kind: 'ambiguous',
+  heading: heading || undefined,
+});
+
+/** One classified statement into the sink. Split out of the loop to keep each rule readable. */
+const admitStatement = (
+  sink: Sink,
+  verdict: ProseStatementClass,
+  statement: string,
+  section: SpecSection,
+): void => {
+  const heading = section.heading;
+  if (verdict === 'requirement' || verdict === 'preservation') {
+    sink.requirements.push(
+      toDraft(statement, heading, verdict === 'preservation' ? 'preserve' : 'change'),
+    );
+    return;
+  }
+  if (verdict === 'vague-preservation') {
+    // Not uncertainty about what the sentence IS — the author was clear. It is a boundary with
+    // nothing to anchor to, so it is asked back rather than counted against the extraction.
+    sink.questions.push(boundaryQuestionFor(statement, heading));
+    sink.notes.push(ambiguousNote(statement, heading));
+    return;
+  }
+  if (verdict === 'uncertain') {
+    sink.uncertainCount += 1;
+    sink.notes.push(ambiguousNote(statement, heading));
+    sink.questions.push(questionFor(statement, heading));
+    return;
+  }
+  // Rejected prose in a role-less section would otherwise vanish; recognized roles already
+  // produced their paragraph-level notes in the structured pass.
+  if (section.role === 'unknown') {
+    sink.notes.push({ statement, kind: 'context', heading: heading || undefined });
+  }
+};
 
 const admitSection = (sink: Sink, section: SpecSection): void => {
   const strict = STRICT_ROLES.includes(section.role);
   for (const statement of proseStatements(section.lines.join('\n'))) {
-    const verdict = strict ? strictVerdict(statement) : classifyStatement(statement);
-    if (verdict === 'requirement') {
-      sink.requirements.push(toDraft(statement, section.heading));
-      continue;
-    }
-    if (verdict === 'uncertain') {
-      sink.uncertainCount += 1;
-      sink.notes.push({ statement, kind: 'ambiguous', heading: section.heading || undefined });
-      sink.questions.push(questionFor(statement, section.heading));
-      continue;
-    }
-    // Rejected prose in a role-less section would otherwise vanish; recognized roles already
-    // produced their paragraph-level notes in the structured pass.
-    if (section.role === 'unknown') {
-      sink.notes.push({ statement, kind: 'context', heading: section.heading || undefined });
-    }
+    admitStatement(
+      sink,
+      strict ? strictVerdict(statement) : classifyStatement(statement),
+      statement,
+      section,
+    );
   }
 };
 

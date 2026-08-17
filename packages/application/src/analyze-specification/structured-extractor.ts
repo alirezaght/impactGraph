@@ -1,5 +1,6 @@
 import { isProvisional, strategyFor } from '@impactgraph/domain';
 
+import { boundaryQuestionFor, protectsNothingNameable, readGuard } from './no-change-language.js';
 import { admitProse } from './prose-admission.js';
 import { itemsOf, paragraphsOf } from './spec-items.js';
 import { splitSections } from './spec-sections.js';
@@ -7,6 +8,7 @@ import { conceptsOf, classifyType, priorityOf } from './statement-analysis.js';
 
 import type {
   ExtractedNoteDraft,
+  ExtractedQuestionDraft,
   ExtractedRequirementDraft,
   SpecificationExtraction,
 } from './extraction-types.js';
@@ -26,8 +28,20 @@ import type { SpecNoteKind } from '@impactgraph/domain';
  * the old all-or-nothing sentence split that turned background prose into invented requirements.
  */
 
-/** Sections whose list items are requirements. */
-const REQUIREMENT_ROLES: readonly SectionRole[] = ['requirements', 'acceptance-criteria', 'tasks'];
+/**
+ * Sections whose list items are requirements.
+ *
+ * `preservation` belongs here: "the send job must not change behavior" is a requirement — the
+ * author drawing a regression boundary — and the only difference from the others is which way it
+ * points, which `intent` carries. Leaving it out was how an "Explicitly unchanged" section either
+ * vanished or, worse, was read as a list of things to change.
+ */
+const REQUIREMENT_ROLES: readonly SectionRole[] = [
+  'requirements',
+  'acceptance-criteria',
+  'tasks',
+  'preservation',
+];
 
 const NOTE_KIND_BY_ROLE: Readonly<Partial<Record<SectionRole, SpecNoteKind>>> = {
   context: 'context',
@@ -57,6 +71,10 @@ const toRequirement = (item: SpecItem, section: SpecSection): ExtractedRequireme
     ...(priority === undefined ? {} : { priority }),
     sourceExcerpt: item.text,
     origin: item.origin,
+    // The section role decides the direction, not the wording: a preservation-worded bullet under
+    // Non-goals is still an exclusion, and a bullet under "Explicitly unchanged" is still a guard
+    // even when the author wrote it as a bare noun phrase ("Deduplication behaviour").
+    ...(section.role === 'preservation' ? { intent: 'preserve' as const } : {}),
     ...(item.label === undefined ? {} : { label: item.label }),
     ...(section.heading.length === 0 ? {} : { heading: section.heading }),
   };
@@ -73,16 +91,41 @@ interface Accumulator {
   readonly notes: ExtractedNoteDraft[];
   readonly constraints: string[];
   readonly questions: string[];
+  /** Questions the extractor itself raised, already carrying their reason and severity. */
+  readonly raised: ExtractedQuestionDraft[];
   readonly recognizedSections: string[];
 }
 
+/** A protected statement that names nothing is asked back, never turned into a guard. */
+const admitProtected = (accumulator: Accumulator, statement: string, heading: string): boolean => {
+  if (!protectsNothingNameable(statement)) {
+    return true;
+  }
+  accumulator.raised.push(boundaryQuestionFor(statement, heading));
+  accumulator.notes.push(noteFor(statement, 'ambiguous', heading));
+  return false;
+};
+
 const collectRequirementSection = (accumulator: Accumulator, section: SpecSection): void => {
+  const preservation = section.role === 'preservation';
   for (const item of itemsOf(section)) {
+    if (preservation && !admitProtected(accumulator, item.text, section.heading)) {
+      continue;
+    }
     accumulator.requirements.push(toRequirement(item, section));
   }
-  // Prose inside a requirements section describes the requirements around it; it is context, not
-  // an extra requirement. Promoting it is how one heading becomes a dozen statements.
   for (const paragraph of paragraphsOf(section)) {
+    // Under a preservation heading, a sentence that states a boundary IS the requirement — the
+    // author wrote the section instead of a bullet list. Everywhere else, prose inside a
+    // requirements section describes the requirements around it: context, not an extra statement.
+    if (preservation && readGuard(paragraph) !== undefined) {
+      if (admitProtected(accumulator, paragraph, section.heading)) {
+        accumulator.requirements.push(
+          toRequirement({ text: paragraph, origin: 'prose-modal' }, section),
+        );
+      }
+      continue;
+    }
     accumulator.notes.push(noteFor(paragraph, 'context', section.heading));
   }
 };
@@ -169,6 +212,7 @@ export const structuredExtraction = (rawText: string): SpecificationExtraction =
     notes: [],
     constraints: [],
     questions: [],
+    raised: [],
     recognizedSections: [],
   };
   for (const section of sections) {
@@ -202,6 +246,8 @@ export const structuredExtraction = (rawText: string): SpecificationExtraction =
         severity: 'important',
         affectedRequirementStatements: [],
       })),
+      // The forcing function: boundaries the author drew around nothing nameable.
+      ...accumulator.raised,
       // Exposed uncertainty (same channel, lower severity): "is this a requirement or context?"
       ...admission.questions,
     ],

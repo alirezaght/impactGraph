@@ -9,59 +9,15 @@
  * only the component the reuse clause names.
  */
 
+import { SUBJECT_PATTERNS } from '../analyze-specification/no-change-language.js';
+
+import type { NoChangeExpectation } from '../analyze-specification/no-change-language.js';
+
 export type ChangeExpectationCue = {
-  readonly expectation: 'reuse-unchanged' | 'verify-only';
+  readonly expectation: NoChangeExpectation | 'preserve';
   /** The wording that produced this reading, quoted so the classification is auditable. */
   readonly cue: string;
 };
-
-interface Pattern {
-  readonly pattern: RegExp;
-  readonly expectation: 'reuse-unchanged' | 'verify-only';
-}
-
-/**
- * Each pattern captures the clause AND the subject it governs, so the subject can be matched
- * against the impact's concept. `SUBJECT` is deliberately narrow: an identifier-ish run of words,
- * optionally backticked or quoted, immediately adjacent to the clause.
- */
-const SUBJECT = String.raw`\s+(?:the\s+)?(?:existing\s+|current\s+)?[\`'"]?([\w./-]+)[\`'"]?`;
-
-const PATTERNS: readonly Pattern[] = [
-  // "reuse X", "re-use the existing X", "keep using X", "continue to use X"
-  {
-    pattern: new RegExp(
-      String.raw`\b(?:re-?use|keep using|continue(?:s|d)? (?:to use|using))${SUBJECT}`,
-      'i',
-    ),
-    expectation: 'reuse-unchanged',
-  },
-  // "X without modification/changes", "X is unchanged", "X remains unchanged", "X stays as-is"
-  {
-    pattern: new RegExp(
-      String.raw`[\`'"]?([\w./-]+)[\`'"]?\s+(?:is|are|remains?|stays?)?\s*(?:unchanged|untouched|as-is|as is)\b`,
-      'i',
-    ),
-    expectation: 'reuse-unchanged',
-  },
-  {
-    pattern: new RegExp(
-      String.raw`[\`'"]?([\w./-]+)[\`'"]?\s+without\s+(?:any\s+)?(?:modification|modifications|changes|change)\b`,
-      'i',
-    ),
-    expectation: 'reuse-unchanged',
-  },
-  // "no changes to X", "X needs no changes"
-  {
-    pattern: new RegExp(String.raw`\bno\s+(?:changes?|modifications?)\s+(?:to|in)${SUBJECT}`, 'i'),
-    expectation: 'reuse-unchanged',
-  },
-  // "verify that X already ...", "confirm X still ..."
-  {
-    pattern: new RegExp(String.raw`\b(?:verify|confirm)(?:\s+that)?${SUBJECT}`, 'i'),
-    expectation: 'verify-only',
-  },
-];
 
 const normalize = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -89,6 +45,11 @@ const governs = (subject: string, conceptNames: readonly string[]): boolean => {
 /**
  * The expectation this statement sets for a surface anchored on `conceptNames`, or undefined when
  * the statement says nothing explicit about it — the safe default, read as `must-change`.
+ *
+ * This reads DESIGN CHOICES only (planned reuse, verification). A regression boundary rides on the
+ * requirement's `intent` instead: it is a property of the requirement, not a clause the reader has
+ * to re-derive per candidate, and its protected surface is often a phrase this subject grammar
+ * cannot capture ("existing lookup behaviour").
  */
 export const changeExpectationFor = (
   statement: string,
@@ -97,7 +58,7 @@ export const changeExpectationFor = (
   if (conceptNames.length === 0) {
     return undefined;
   }
-  for (const { pattern, expectation } of PATTERNS) {
+  for (const { pattern, expectation } of SUBJECT_PATTERNS) {
     const match = pattern.exec(statement);
     const subject = match?.[1];
     if (match !== null && subject !== undefined && governs(subject, conceptNames)) {

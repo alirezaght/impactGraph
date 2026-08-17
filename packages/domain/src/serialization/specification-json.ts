@@ -85,7 +85,7 @@ const readRequirement: Reader<Requirement> = (raw, path, issues) => {
     ...(sourceRange === undefined ? {} : { sourceRange }),
     status: readString(obj, 'status', `${path}.status`, issues) as Requirement['status'],
     // Additive fields: absent on specifications stored before structure-aware extraction.
-    ...optionalStrings(obj, path, issues, ['origin', 'label', 'heading']),
+    ...optionalStrings(obj, path, issues, ['origin', 'label', 'heading', 'intent']),
     ...optionalNumber(obj, 'extractionConfidence', path, issues),
   };
 };

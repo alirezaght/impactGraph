@@ -21,6 +21,8 @@ export interface ReviewVerdictCounts {
   readonly missing: number;
   readonly unexpected: number;
   readonly divergent: number;
+  /** Surfaces a preservation requirement protected that the diff modified anyway. */
+  readonly guardViolated: number;
   readonly reuseConfirmed: number;
   readonly unverifiable: number;
   readonly acceptedDeviations: number;
@@ -54,8 +56,17 @@ const DECIDING_LIMIT = 5;
  * Ordered by how much a reader must act on them. A diff that touches fifty generated files must
  * not push the one missing requirement out of the deciding slice — array order is the order
  * findings happened to be produced in, which carries no meaning for the reader.
+ *
+ * A guard violation ranks second only to missing work: the author named that surface precisely to
+ * say "do not change this", so crossing the boundary outranks changing something differently than
+ * planned.
  */
-const DISCREPANCY_CATEGORIES: readonly ReviewCategory[] = ['missing', 'divergent', 'unexpected'];
+const DISCREPANCY_CATEGORIES: readonly ReviewCategory[] = [
+  'missing',
+  'guard-violated',
+  'divergent',
+  'unexpected',
+];
 
 const countOf = (findings: readonly ReviewFinding[], category: ReviewCategory): number =>
   findings.filter((finding) => finding.category === category).length;
@@ -69,12 +80,14 @@ const headlineFor = (status: ReviewVerdictStatus, counts: ReviewVerdictCounts): 
       ? [
           phrase(counts.ruleViolations, 'violation', 'violations'),
           phrase(counts.missing, 'missing requirement', 'missing requirements'),
+          `${phrase(counts.guardViolated, 'regression boundary', 'regression boundaries')} crossed`,
           `${phrase(counts.reuseConfirmed, 'planned surface', 'planned surfaces')} reused unchanged by design`,
           `${phrase(counts.matched, 'predicted change', 'predicted changes')} occurred`,
           `${phrase(counts.unexpected, 'additional surface', 'additional surfaces')} changed`,
         ]
       : [
           phrase(counts.missing, 'missing requirement', 'missing requirements'),
+          `${phrase(counts.guardViolated, 'regression boundary', 'regression boundaries')} crossed`,
           phrase(counts.unexpected, 'unexpected change', 'unexpected changes'),
           phrase(counts.divergent, 'divergent surface', 'divergent surfaces'),
           phrase(counts.ruleViolations, 'constraint violation', 'constraint violations'),
@@ -90,6 +103,7 @@ export const reviewVerdict = (input: ReviewVerdictInput): ReviewVerdict => {
     missing: countOf(input.findings, 'missing'),
     unexpected: countOf(input.findings, 'unexpected'),
     divergent: countOf(input.findings, 'divergent'),
+    guardViolated: countOf(input.findings, 'guard-violated'),
     reuseConfirmed: countOf(input.findings, 'reuse-confirmed'),
     unverifiable: countOf(input.findings, 'unverifiable'),
     acceptedDeviations: input.findings.filter((finding) => accepted.has(finding.nodeId)).length,

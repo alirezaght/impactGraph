@@ -74,6 +74,10 @@
                 "type": "number",
                 "minimum": 0,
                 "maximum": 1
+              },
+              "intent": {
+                "type": "string",
+                "enum": ["change", "preserve"]
               }
             },
             "required": ["statement", "type", "concepts", "actors"],

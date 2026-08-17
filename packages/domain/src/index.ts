@@ -167,6 +167,7 @@ export type {
   RequirementPriority,
   RequirementStatus,
   RequirementOrigin,
+  RequirementIntent,
   TextRange,
   Requirement,
 } from './specification/requirement.js';
@@ -175,9 +176,11 @@ export {
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_STATUSES,
   REQUIREMENT_ORIGINS,
+  REQUIREMENT_INTENTS,
   STRUCTURED_ORIGINS,
   isStructuredOrigin,
   originOf,
+  intentOf,
   stableContentId,
   stableRequirementId,
 } from './specification/requirement.js';
