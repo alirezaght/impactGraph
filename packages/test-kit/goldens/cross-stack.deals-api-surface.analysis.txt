@@ -1,7 +1,7 @@
 impacts:
 req-0e24b3d5|cross-stack|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance|direct-structural|-
 req-0e24b3d5|cross-stack|possible|domain-model|indirect|0.25|CONTAINS|53f3c0cb|ambiguity+exact-concept-to-symbol-match+graph-distance+graph-distance|transitive-structural|-
-req-0e24b3d5|deals-web|required|domain-model|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match|direct-structural|-
+req-0e24b3d5|deals-web|possible|domain-model|direct|0.30|anchor|7bebc38d|ambiguity+container-name-match|direct-structural|-
 req-0e24b3d5|deals-web|required|infrastructure|direct|0.75|anchor|b805927d|ambiguity+exact-concept-to-symbol-match|configuration-asset+direct-structural|-
 req-0e24b3d5|main.tf|likely|domain-model|indirect|0.50|CONTAINS|36e5f450|ambiguity+exact-concept-to-symbol-match+graph-distance|direct-structural|-
 req-d00e8268|/|possible|read-model|indirect|0.15|EXPOSES|1088c175|exact-concept-to-symbol-match+graph-distance+graph-distance+graph-distance|external-contract|-

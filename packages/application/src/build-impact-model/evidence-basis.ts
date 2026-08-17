@@ -76,6 +76,11 @@ const CONFIG_NODE_TYPES = new Set([
 const MECHANISM_BASIS: Readonly<Record<MatchMechanism, ImpactEvidenceType>> = {
   exact: 'direct-structural',
   alias: 'direct-structural',
+  // A unique scoped path resolution IS the specification naming the file — identifier-grade.
+  'path-suffix': 'direct-structural',
+  // A bare filename matched one file by basename alone: a name-level guess, so it shares the
+  // capped `name-similarity` basis and the `likely` ceiling records itself as `tierCappedBy`.
+  basename: 'name-similarity',
   // A fuzzy name match is NOT direct structural evidence: the specification did not name this
   // component, the engine guessed it from token alignment. Filed under its own basis so the tier
   // ceiling (`likely`) applies and the guess is auditable (dogfooding item 4).

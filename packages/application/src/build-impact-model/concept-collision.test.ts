@@ -96,7 +96,10 @@ describe('matchConcepts exact-name collisions across containers', () => {
     expect(result.matches.every((match) => match.collision === undefined)).toBe(true);
   });
 
-  it('leaves a path-qualified concept untouched however many containers share the name', () => {
+  it('escalates a bare filename shared by several containers to an ambiguous concept', () => {
+    // "Required must mean strong": a bare filename is not identifier-grade — `handlers.py` in
+    // four services is four coincidences, and matching all of them once anchored required-tier
+    // impacts on the wrong files. Only a '/'-qualified path names one specific place.
     const graph = graphOf(
       ['auth-service', 'billing-service', 'notification-service', 'gdpr-service'].map((service) =>
         node(`file:${service}`, 'file', 'handlers.py', `${service}/src/handlers.py`),
@@ -105,9 +108,8 @@ describe('matchConcepts exact-name collisions across containers', () => {
 
     const result = matchConcepts(graph, ['handlers.py']);
 
-    expect(result.matches).toHaveLength(4);
-    expect(result.matches.every((match) => match.collision === undefined)).toBe(true);
-    expect(result.ambiguousConcepts).toEqual([]);
+    expect(result.matches).toEqual([]);
+    expect(result.ambiguousConcepts).toEqual(['handlers.py']);
   });
 
   it('derives containers from declared package nodes in a monorepo', () => {
