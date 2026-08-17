@@ -1,7 +1,7 @@
 # ADR-0023 — Evidence grades, one authoritative verdict, and analysis proportional to the change
 
 Date: 2026-08-17
-Status: Proposed — awaiting human ratification
+Status: Accepted
 Extends: ADR-0017 (findings as a first-class output), ADR-0018 (constraint extraction trust model),
 ADR-0021 (built-in red-team analysis), ADR-0022 (decision-first outputs).
 
@@ -111,7 +111,8 @@ change is much higher than the cost of over-analyzing a local one.
   contracts, apps/cli.
 - Backward compatibility: all contract changes additive-optional with defaulting readers; stored
   artifacts remain readable. `NEEDS_VERIFICATION` is a new enum value consumers must tolerate.
-- New human-approval obligations: none beyond the existing schema-change and ADR rules.
+- New human-approval obligations: the `verification`/`origin` axes, `NEEDS_VERIFICATION`,
+  `analysisCaveats` and `scoreCappedReason` were ratified by the product owner on 2026-08-17.
 
 ## Revisit trigger
 

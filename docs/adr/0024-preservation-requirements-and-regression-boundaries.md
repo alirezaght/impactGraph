@@ -1,6 +1,6 @@
 # ADR-0024: Model "must remain unchanged" as a requirement intent, not an exclusion
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-17
 - **Deciders:** product owner (pending), specification-intelligence, impact-modeling,
   implementation-review, domain-provenance
@@ -139,9 +139,10 @@ stays a non-goal.
   and analyses stored before this change read back with identical meaning. The `guard-violated`
   category and the `guardViolated` verdict count are additive values on v1 documents — no producer
   emitted them before, so no reader loses anything; JSON Schemas are regenerated.
-- New human-approval obligations created: yes. Per CLAUDE.md, expanding a transmitted enum (review
-  category) and adding contract fields require human approval before merge, and this ADR requires
-  acceptance before its Status moves off Proposed.
+- New human-approval obligations created: yes, and they were met. Per CLAUDE.md, expanding a
+  transmitted enum (review category) and adding contract fields require human approval before
+  merge; the product owner ratified this ADR, the `Requirement.intent` axis, the `preserve` change
+  expectation and the `guard-violated` category (with its verdict count) on 2026-08-17.
 
 ## Revisit trigger
 
