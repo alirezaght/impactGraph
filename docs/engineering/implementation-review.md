@@ -64,18 +64,22 @@ dependencies, removed dependencies"). Edge changes are evaluated against archite
 (PRD §27) — e.g. "domain must not import infrastructure" — producing rule-violation findings with
 evidence (rule ID + the offending edge + source ranges).
 
-## The six result categories (PRD §24.1)
+## The result categories (PRD §24.1, ADR-0022)
 
-Every (requirement-impact × actual-change) pairing lands in exactly one category:
+Every (requirement-impact × actual-change) pairing lands in exactly one category. Which one
+depends on two axes: whether the surface changed, and what the plan EXPECTED to happen there
+(`changeExpectation` on the impact — `must-change` by default, `reuse-unchanged` or `verify-only`
+when the specification says so explicitly).
 
-| Category               | Classification rule                                                                                                                                                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Matched**            | Predicted node (or its rename-tracked successor) changed, and the change kind is consistent with the predicted `impactType` and expected changes (e.g. predicted `data-model` impact and the model symbol changed)                     |
-| **Missing**            | Impact with likelihood `required` in the approved model, node unchanged, and no evidence explains the absence (no accepted deviation, no equivalent change elsewhere mapped to the same requirement)                                   |
-| **Unexpected**         | A component changed that appears nowhere in the approved analysis (neither accepted nor explicitly rejected) — including brand-new untracked files                                                                                     |
-| **Divergent**          | Predicted node changed, but differently from the approved architectural direction — e.g. approved Option A (query-time visibility) but the diff adds a scheduled job; or the change introduces edges the approved model excluded       |
-| **Unverifiable**       | The engine cannot tell — binary files, fallback-only language coverage, adapter degradation (`language-adapters.md`), or requirements with no mappable concept. Stated honestly, never rounded to Matched or Missing                   |
-| **Accepted deviation** | The user approved a discrepancy and recorded a reason — a human decision record (provenance `human-confirmed`) that supersedes the finding's open status, append-only per `provenance-model.md`. The finding itself remains in history |
+| Category               | Classification rule                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Matched**            | Predicted node (or its rename-tracked successor) changed, and the change kind is consistent with the predicted `impactType` and expected changes (e.g. predicted `data-model` impact and the model symbol changed)                                                                                                                                                                            |
+| **Missing**            | Impact with likelihood `required` AND expectation `must-change` in the approved model, node unchanged, and no evidence explains the absence (no accepted deviation, no equivalent change elsewhere mapped to the same requirement)                                                                                                                                                            |
+| **Unexpected**         | A component changed that appears nowhere in the approved analysis (neither accepted nor explicitly rejected) — including brand-new untracked files                                                                                                                                                                                                                                            |
+| **Divergent**          | Predicted node changed, but differently from the approved architectural direction — e.g. approved Option A (query-time visibility) but the diff adds a scheduled job; or the change introduces edges the approved model excluded                                                                                                                                                              |
+| **Reuse confirmed**    | The plan expected no change here — the specification said the surface would be reused as it is, or that existing behaviour would be verified — and the diff left it alone. Reported as satisfaction and counted toward requirement coverage: a correct decision to reuse existing code is the plan working, not a gap. A surface planned as reuse that WAS modified is Divergent, not Matched |
+| **Unverifiable**       | The engine cannot tell — binary files, fallback-only language coverage, adapter degradation (`language-adapters.md`), or requirements with no mappable concept. Stated honestly, never rounded to Matched or Missing                                                                                                                                                                          |
+| **Accepted deviation** | The user approved a discrepancy and recorded a reason — a human decision record (provenance `human-confirmed`) that supersedes the finding's open status, append-only per `provenance-model.md`. The finding itself remains in history                                                                                                                                                        |
 
 Classification inputs are deterministic (graph diff + approved model). Where AI assists in judging
 "consistent with the specification" for Matched-vs-Divergent, that judgment is provenance
@@ -88,6 +92,21 @@ user-rejected impacts are never reported as Matched, and their paths do not shie
 the Unexpected category — a change inside a non-goal-excluded area is Unexpected, with the specific
 contradicted non-goal named. Reporting a non-prediction as a successful prediction would invert the
 report's meaning (a non-goal violation reading as success).
+
+## The verdict comes first (ADR-0022)
+
+The review document opens with a `verdict` block — `PASS` or `NEEDS_ATTENTION`, a one-sentence
+headline, counts per category, and the bounded set of findings that decided it (missing outranks
+divergent outranks unexpected). A reader who only needs the answer reads that block and stops.
+
+The wire document is bounded: at most twelve findings per category, with the withheld counts
+stated in `verdict.truncatedFindingCounts`. The PERSISTED artifact keeps every finding, and
+`get_review_report` pages them by `category`/`topN`/`offset`. A large diff can no longer bury the
+answer under a finding per changed file.
+
+Accepted deviations subtract from the failure signal: a discrepancy a human has settled no longer
+makes the verdict `NEEDS_ATTENTION`, though the finding itself is never rewritten (append-only,
+`provenance-model.md`).
 
 ## Requirement coverage (PRD §25 — an estimate, not proof)
 

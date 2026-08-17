@@ -53,7 +53,7 @@ decision-relevant conclusions; volume is opt-in.**
 
 Concretely:
 
-**1. `required` means the specification named it or structure forces it.** Exact/alias *name*
+**1. `required` means the specification named it or structure forces it.** Exact/alias _name_
 matches to container-kind nodes (package, workspace, directory-like) cap at `possible` with a
 weak-anchor confidence signal — naming a product is not naming a change surface. Bare filenames
 (extension, no slash) are not identifier-grade: they participate in collision assessment and cap
@@ -77,7 +77,7 @@ findings state what was checked.
 recognizer (reuse/without-modification/verify language) sets
 `changeExpectation: must-change | reuse-unchanged | verify-only` (defaulting accessor:
 `must-change`). Review classifies `reuse-unchanged` + unchanged as a new positive category
-`reuse-confirmed` (counts toward coverage, excluded from discrepancies); planned reuse that *was*
+`reuse-confirmed` (counts toward coverage, excluded from discrepancies); planned reuse that _was_
 modified becomes `divergent`. Unchanged-means-missing survives only for `must-change` required
 impacts.
 

@@ -69,6 +69,24 @@ penalties. Weights live in domain code under test — changing them is an impact
 (`bounded-contexts.md`), and stored records keep the contributions they were computed with, so old
 scores remain explainable after a re-weighting.
 
+## Anchor grade: what a name match is worth (ADR-0022)
+
+The `exact-concept-to-symbol-match` weight (0.9) is reserved for IDENTIFIER-GRADE anchors: a
+concept that resolved to a component by path — verbatim, or by a unique path-boundary suffix, so a
+service-relative `src/domain/alert/eligibility.py` resolves inside its package — or a name match to
+a symbol-grade node. Two shapes are deliberately weaker, because equality of a string is not
+evidence that the author meant that component:
+
+- **Container names** (package, workspace, repository, directory nodes) cap at `possible` with the
+  `container-name-match` signal. A specification that names the product it is about was
+  anchoring `required` impacts on the root `package.json`.
+- **Bare filenames** (an extension, no slash) are not identifier-grade: they take part in collision
+  assessment, and even a unique match caps at `likely` under the ADR-0015 tier ceiling with the
+  `basename-file-match` signal. `specification.ts` matched the wrong `specification.ts` at 0.9.
+
+Ambiguous suffix resolutions never anchor a `required` impact; they become clarification questions
+listing the candidates, which is the honest reading of "several places match this".
+
 ## Supersession: append-only, human-confirmed wins
 
 Human confirmation **supersedes** prior knowledge; it never rewrites it (CLAUDE.md rule 1):
