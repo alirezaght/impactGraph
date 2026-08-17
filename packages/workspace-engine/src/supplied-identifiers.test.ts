@@ -118,6 +118,7 @@ describe('toSuppliedIdentifiersDto', () => {
       pathShapedCount: 14,
       resolvedCount: 0,
       unresolved,
+      unresolvedInKnownScope: unresolved,
     });
     expect(dto.unresolved).toHaveLength(UNRESOLVED_IDENTIFIER_LIMIT);
     expect(dto.pathShapedCount).toBe(14);

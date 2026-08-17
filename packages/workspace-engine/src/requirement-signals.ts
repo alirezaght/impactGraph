@@ -72,6 +72,11 @@ export interface RequirementSignalContext {
    * requirement that states one of these without creation language is asserting a file that does
    * not exist at the indexed revision.
    */
+  /**
+   * Unresolved path-shaped identifiers whose containing directory IS indexed (ADR-0022). A path
+   * whose whole scope is unknown to the index is new surface, another system, or an example —
+   * never evidence that the specification assumes something this repository lacks.
+   */
   readonly unresolvedSuppliedIdentifiers: readonly string[];
 }
 

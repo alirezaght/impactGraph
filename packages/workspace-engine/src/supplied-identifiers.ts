@@ -21,6 +21,16 @@ export interface SuppliedIdentifierResolution {
   /** The full unresolved list (lowercased, sorted). Cap at the wire, not here — the
    *  invalid-assumption signal needs every miss, the report only the first few. */
   readonly unresolved: readonly string[];
+  /**
+   * The unresolved subset whose CONTAINING DIRECTORY is itself indexed (ADR-0022).
+   *
+   * These are the only ones a wrong-assumption reading survives: the author pointed at a real
+   * place in this repository and named something that is not there. An unresolved path whose
+   * whole scope is unknown — `templates/admin/digest_preview.html` in a repository with no
+   * `templates/admin` — is new surface, another system, or an illustrative example, and calling
+   * it an invalid assumption was the tool inventing a risk out of a for-instance.
+   */
+  readonly unresolvedInKnownScope: readonly string[];
 }
 
 /** How many unresolved identifiers the summary block lists. */
@@ -57,6 +67,48 @@ const resolvesInGraph = (graph: KnowledgeGraph, token: string): boolean => {
   return false;
 };
 
+/** Every directory that contains an indexed file, as a lowercase set of path prefixes. */
+const indexedDirectories = (graph: KnowledgeGraph): ReadonlySet<string> => {
+  const directories = new Set<string>();
+  for (const node of graph.nodes.values()) {
+    const path = node.path?.toLowerCase();
+    if (path === undefined) {
+      continue;
+    }
+    let cut = path.lastIndexOf('/');
+    while (cut > 0) {
+      const directory = path.slice(0, cut);
+      if (directories.has(directory)) {
+        break;
+      }
+      directories.add(directory);
+      cut = directory.lastIndexOf('/');
+    }
+  }
+  return directories;
+};
+
+/**
+ * True when the token's parent directory is indexed — verbatim or as the tail of an indexed
+ * directory, so a service-relative `src/domain/alert` is recognised inside its package.
+ */
+const scopeIsKnown = (token: string, directories: ReadonlySet<string>): boolean => {
+  const cut = token.lastIndexOf('/');
+  if (cut <= 0) {
+    return false; // a bare filename carries no scope to check
+  }
+  const parent = token.slice(0, cut);
+  if (directories.has(parent)) {
+    return true;
+  }
+  for (const directory of directories) {
+    if (directory.endsWith(`/${parent}`)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const resolveSuppliedIdentifiers = (
   specificationText: string,
   graph: KnowledgeGraph,
@@ -65,10 +117,12 @@ export const resolveSuppliedIdentifiers = (
     [...suppliedIdentifiers(specificationText)].filter(isPathShaped),
   );
   const unresolved = pathShaped.filter((token) => !resolvesInGraph(graph, token)).sort();
+  const directories = indexedDirectories(graph);
   return {
     pathShapedCount: pathShaped.length,
     resolvedCount: pathShaped.length - unresolved.length,
     unresolved,
+    unresolvedInKnownScope: unresolved.filter((token) => scopeIsKnown(token, directories)),
   };
 };
 

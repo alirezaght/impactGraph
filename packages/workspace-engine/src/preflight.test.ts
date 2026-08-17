@@ -43,10 +43,20 @@ const graph = (): KnowledgeGraph => {
     type: 'service',
     knowledge,
   });
-  if (!node.ok) {
+  // A real indexed file, so `services/` is a KNOWN scope: an unresolved path inside it is a wrong
+  // assumption, while one in a scope the index has never heard of is not (ADR-0022).
+  const relay = createGraphNode({
+    id: 'file:services/relay.py',
+    name: 'relay.py',
+    path: 'services/relay.py',
+    category: 'application',
+    type: 'service',
+    knowledge,
+  });
+  if (!node.ok || !relay.ok) {
     throw new Error('bad fixture node');
   }
-  const created = createKnowledgeGraph([node.value], []);
+  const created = createKnowledgeGraph([node.value, relay.value], []);
   if (!created.ok) {
     throw new Error('bad fixture graph');
   }
@@ -294,6 +304,13 @@ describe('runPreflightForAnalysis — unresolved path-shaped identifiers (ADR-00
   it('creation language is never flagged — the file is supposed to be missing', () => {
     const classifications = classify(['Add the file foo/bar.ts with the relay handler.']);
     expect(classifications.get('req-1')).toBe('NEW_SURFACE');
+  });
+
+  // ADR-0022: `templates/admin/digest_preview.html` in a repository with no `templates/admin` is
+  // new surface, another system, or an illustrative example — never a wrong assumption about here.
+  it('a path whose whole scope is unknown to the index is not called a wrong assumption', () => {
+    const classifications = classify(['Modify templates/admin/digest_preview.html to add a row.']);
+    expect(classifications.get('req-1')).not.toBe('INVALID_ASSUMPTION');
   });
 
   it('a requirement that does not state the missing path is not blamed for it', () => {

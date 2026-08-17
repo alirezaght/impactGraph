@@ -70,11 +70,40 @@ export const toIndependenceDto = (outcome: PreflightOutcome): EvidenceIndependen
   ...outcome.independence,
 });
 
-/** Findings already arrive strongest-first, so the head of the list is the decisive slice. */
+/**
+ * How many coverage-gap findings the slice carries (ADR-0022).
+ *
+ * A coverage gap says "this requirement matched nothing", which `unmatchedRequirements` already
+ * states for every requirement. On a prose specification they filled the whole budget — seven
+ * near-identical warnings crowded out the one invalid assumption a reader had to act on. The rest
+ * are counted, not printed, and remain in list_preflight_findings.
+ */
+const COVERAGE_GAP_SLICE = 3;
+
+/**
+ * Findings already arrive strongest-first, so the head of the list is the decisive slice — but
+ * one repetitive kind must not evict the distinct ones behind it.
+ */
 export const summaryFindings = (
   outcome: PreflightOutcome,
   limit = SUMMARY_FINDING_LIMIT,
-): readonly PreflightFindingDto[] => outcome.findings.slice(0, limit).map(toFindingDto);
+): readonly PreflightFindingDto[] => {
+  const kept: PreflightFinding[] = [];
+  let coverageGaps = 0;
+  for (const finding of outcome.findings) {
+    if (kept.length >= limit) {
+      break;
+    }
+    if (finding.kind === 'coverage-gap') {
+      coverageGaps += 1;
+      if (coverageGaps > COVERAGE_GAP_SLICE) {
+        continue;
+      }
+    }
+    kept.push(finding);
+  }
+  return kept.map(toFindingDto);
+};
 
 export const toConstraintSummary = (constraint: RepositoryConstraint): ConstraintSummaryDto => ({
   id: constraint.id,

@@ -58,7 +58,7 @@ const newSurfaceCount = (
     unresolvedSuppliedIdentifiers:
       input.graph === undefined
         ? []
-        : resolveSuppliedIdentifiers(input.specification.rawText, input.graph).unresolved,
+        : resolveSuppliedIdentifiers(input.specification.rawText, input.graph).unresolvedInKnownScope,
   };
   return unmatched.filter(
     (requirement) =>

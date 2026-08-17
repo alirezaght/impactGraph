@@ -175,7 +175,7 @@ const preflightRequirements = (context: PreflightContext): readonly PreflightReq
     unresolvedSuppliedIdentifiers: resolveSuppliedIdentifiers(
       context.specificationText,
       context.graph,
-    ).unresolved,
+    ).unresolvedInKnownScope,
   };
   const withImpact = new Set(
     context.analysis.requirementImpacts.map((impact) => impact.requirementId),
