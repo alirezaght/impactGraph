@@ -8,6 +8,7 @@ import { estimateCoverage } from './coverage.js';
 
 import type { ChangedPath } from '../ports/git.js';
 import type {
+  ChangeExpectation,
   EdgeChangeSummary,
   ImpactAnalysis,
   ImplementationReview,
@@ -87,15 +88,36 @@ const finding = (
 });
 
 /**
- * ADR-0022: a surface the plan expected to leave alone. Unchanged is the plan working; changed
- * contradicts it, and whichever of the two is wrong is what a human should look at.
+ * ADR-0022 + regression boundaries: a surface the plan expected to leave alone. Unchanged is the
+ * plan working; changed contradicts it, and whichever of the two is wrong is what a human should
+ * look at.
+ *
+ * `preserve` is reported apart from the other two on both sides. Reuse and verification are DESIGN
+ * CHOICES — an implementer who modified the surface anyway may simply have found a better route, so
+ * `divergent` ("changed differently than planned") is the honest reading. A preservation
+ * requirement is the AUTHOR forbidding the change, so crossing it is a violated requirement, and
+ * honouring it is a verified one — never "planned reuse", which claims something the author never
+ * said about how the work should be built.
  */
 const classifyNoChangeExpected = (
   impact: RequirementImpact,
-  expectation: 'reuse-unchanged' | 'verify-only',
+  expectation: Exclude<ChangeExpectation, 'must-change'>,
   detail: { name: string; path: string; changed: boolean },
 ): ReviewFinding => {
   const { name, path } = detail;
+  if (expectation === 'preserve') {
+    return detail.changed
+      ? finding('guard-violated', impact, {
+          nodeName: name,
+          explanation: `The specification set a regression boundary around '${name}' — it must remain unchanged — but ${path} was modified.`,
+          filePaths: [path],
+        })
+      : finding('reuse-confirmed', impact, {
+          nodeName: name,
+          explanation: `Regression boundary held: the specification requires '${name}' to remain unchanged, and ${path} is unchanged.`,
+          filePaths: [path],
+        });
+  }
   if (detail.changed) {
     return finding('divergent', impact, {
       nodeName: name,

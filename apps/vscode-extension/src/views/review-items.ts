@@ -17,6 +17,8 @@ const CATEGORY_ORDER = [
   'missing',
   'unexpected',
   'divergent',
+  'guard-violated',
+  'reuse-confirmed',
   'unverifiable',
   'accepted-deviation',
 ] as const;

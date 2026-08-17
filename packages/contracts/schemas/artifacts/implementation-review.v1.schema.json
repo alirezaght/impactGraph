@@ -49,6 +49,10 @@
                       "type": "integer",
                       "minimum": 0
                     },
+                    "guardViolated": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "reuseConfirmed": {
                       "type": "integer",
                       "minimum": 0
@@ -71,6 +75,7 @@
                     "missing",
                     "unexpected",
                     "divergent",
+                    "guardViolated",
                     "reuseConfirmed",
                     "unverifiable",
                     "acceptedDeviations",
@@ -196,6 +201,7 @@
                       "unexpected",
                       "divergent",
                       "reuse-confirmed",
+                      "guard-violated",
                       "unverifiable",
                       "accepted-deviation"
                     ]

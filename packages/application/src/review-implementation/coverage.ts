@@ -46,7 +46,13 @@ export const estimateCoverage = (
         if (finding.category === 'reuse-confirmed') {
           return { marker: 'confirmed', note: finding.explanation };
         }
-        if (finding.category === 'missing' || finding.category === 'divergent') {
+        // A crossed regression boundary is the requirement being broken, not merely unverified:
+        // the specification asked for no change here and got one.
+        if (
+          finding.category === 'missing' ||
+          finding.category === 'divergent' ||
+          finding.category === 'guard-violated'
+        ) {
           return { marker: 'missing', note: finding.explanation };
         }
         return { marker: 'unclear', note: finding.explanation };
@@ -66,9 +72,11 @@ export const estimateCoverage = (
           related.length === 0
             ? 'unclear'
             : statusFor(
+                // A protected surface the diff left alone SATISFIES its requirement — that is the
+                // verification value of stating a regression boundary in the first place.
                 count('matched') + count('reuse-confirmed'),
                 count('missing'),
-                count('divergent'),
+                count('divergent') + count('guard-violated'),
                 count('unverifiable'),
               ),
         evidence,

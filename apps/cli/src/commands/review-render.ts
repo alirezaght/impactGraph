@@ -99,7 +99,7 @@ const verdictLines = (report: CliReviewOutput): string[] => {
   const counts = verdict.counts;
   return [
     verdict.headline,
-    `  matched ${String(counts.matched)} · reused unchanged ${String(counts.reuseConfirmed)} · missing ${String(counts.missing)} · unexpected ${String(counts.unexpected)} · divergent ${String(counts.divergent)} · rule violations ${String(counts.ruleViolations)}`,
+    `  matched ${String(counts.matched)} · reused unchanged ${String(counts.reuseConfirmed)} · missing ${String(counts.missing)} · unexpected ${String(counts.unexpected)} · divergent ${String(counts.divergent)} · regression boundaries crossed ${String(counts.guardViolated)} · rule violations ${String(counts.ruleViolations)}`,
     '',
   ];
 };

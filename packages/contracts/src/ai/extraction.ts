@@ -49,6 +49,12 @@ const extractedRequirementSchema = z
      * Bounded on receipt — an out-of-range value is a schema failure, never clamped.
      */
     extractionConfidence: z.number().min(0).max(1).optional(),
+    /**
+     * Additive: which direction the requirement points in. `preserve` marks a regression boundary
+     * ("the send job must not change behavior") — a requirement about what the change must NOT
+     * break. Absent → `change`, which is the reading every consumer had before the axis existed.
+     */
+    intent: z.enum(['change', 'preserve']).optional(),
   })
   .strict();
 

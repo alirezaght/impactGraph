@@ -14,6 +14,7 @@ const SECTION_TITLES: Record<ReviewCategory, string> = {
   unexpected: 'Unexpected',
   divergent: 'Divergent',
   'reuse-confirmed': 'Reused Unchanged (by design)',
+  'guard-violated': 'Regression Boundary Violated',
   unverifiable: 'Unverifiable',
   'accepted-deviation': 'Accepted Deviations',
 };
