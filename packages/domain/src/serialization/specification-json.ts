@@ -7,6 +7,7 @@ import {
   isRawObject,
   readArray,
   readNumber,
+  readOptionalNumber,
   readOptionalString,
   readString,
   readStringArray,
@@ -85,7 +86,19 @@ const readRequirement: Reader<Requirement> = (raw, path, issues) => {
     status: readString(obj, 'status', `${path}.status`, issues) as Requirement['status'],
     // Additive fields: absent on specifications stored before structure-aware extraction.
     ...optionalStrings(obj, path, issues, ['origin', 'label', 'heading']),
+    ...optionalNumber(obj, 'extractionConfidence', path, issues),
   };
+};
+
+/** Reads one optional number field into a spread-ready object, skipping it when absent. */
+const optionalNumber = (
+  obj: RawObject,
+  field: string,
+  path: string,
+  issues: ValidationIssue[],
+): Record<string, number> => {
+  const value = readOptionalNumber(obj, field, `${path}.${field}`, issues);
+  return value === undefined ? {} : { [field]: value };
 };
 
 /** Reads a set of optional string fields into a spread-ready object, skipping the absent ones. */
@@ -145,6 +158,8 @@ const readExtractionQuality = (
       `${path}.proseRequirementCount`,
       issues,
     ),
+    // Additive: absent on artifacts stored before graduated extraction — never defaulted to 0.
+    ...optionalNumber(obj, 'uncertainStatementCount', path, issues),
     recognizedSections: readStringArray(
       obj,
       'recognizedSections',

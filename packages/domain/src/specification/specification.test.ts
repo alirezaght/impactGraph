@@ -214,6 +214,55 @@ describe('specification serialization', () => {
     }
   });
 
+  it('round-trips a prose-modal requirement with its extraction confidence', () => {
+    const spec = createSpecification({
+      ...baseSpec,
+      openQuestions: [],
+      requirements: [
+        requirement('The engine must stop ranking lexical matches first.', {
+          origin: 'prose-modal',
+          extractionConfidence: 0.8,
+        }),
+      ],
+      extractionQuality: {
+        strategy: 'prose-modal',
+        structuredRequirementCount: 0,
+        proseRequirementCount: 1,
+        uncertainStatementCount: 2,
+        recognizedSections: ['Goals'],
+        provisional: false,
+        warnings: [],
+      },
+    });
+    if (!spec.ok) {
+      throw new Error('fixture invalid');
+    }
+    const parsed = parseSpecification(
+      JSON.parse(JSON.stringify(serializeSpecification(spec.value))),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.requirements[0]?.origin).toBe('prose-modal');
+      expect(parsed.value.requirements[0]?.extractionConfidence).toBe(0.8);
+      expect(parsed.value.extractionQuality?.uncertainStatementCount).toBe(2);
+      expect(parsed.value).toEqual(spec.value);
+    }
+  });
+
+  it('rejects an extraction confidence outside [0, 1]', () => {
+    const result = createSpecification({
+      ...baseSpec,
+      openQuestions: [],
+      requirements: [
+        requirement('The engine must stop ranking lexical matches first.', {
+          origin: 'prose-modal',
+          extractionConfidence: 1.5,
+        }),
+      ],
+    });
+    expect(result.ok).toBe(false);
+  });
+
   it('rejects tampered payloads', () => {
     const spec = createSpecification(baseSpec);
     if (!spec.ok) {

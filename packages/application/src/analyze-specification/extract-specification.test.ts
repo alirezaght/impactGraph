@@ -121,6 +121,35 @@ describe('extractSpecification with a provider (Story 5.3)', () => {
     expect(spec.extractionQuality?.proseRequirementCount).toBe(1);
   });
 
+  it('keeps a valid extraction confidence and drops an out-of-range one', async () => {
+    const [firstDraft, secondDraft] = providerExtraction.requirements;
+    if (firstDraft === undefined || secondDraft === undefined) {
+      throw new Error('fixture must declare two requirement drafts');
+    }
+    const withConfidence: SpecificationExtraction = {
+      ...providerExtraction,
+      requirements: [
+        { ...firstDraft, origin: 'prose-modal', extractionConfidence: 0.8 },
+        { ...secondDraft, origin: 'prose-modal', extractionConfidence: 7 }, // invalid — dropped
+      ],
+    };
+    const outcome = await extractSpecification(request, {
+      clock,
+      extractor: stubExtractor(ok(withConfidence)),
+    });
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) {
+      return;
+    }
+    const spec = outcome.value.specification;
+    expect(spec.requirements[0]?.extractionConfidence).toBe(0.8);
+    expect(spec.requirements[1]?.extractionConfidence).toBeUndefined();
+    // Two prose-modal drafts: the extraction is prose-modal and NOT provisional — modal prose is
+    // a specification, not a guess (ratified direction change).
+    expect(spec.extractionQuality?.strategy).toBe('prose-modal');
+    expect(spec.extractionQuality?.provisional).toBe(false);
+  });
+
   it('re-extraction appends version 2 and keeps unchanged requirement ids stable', async () => {
     const deps: ExtractSpecificationDeps = {
       clock,

@@ -53,9 +53,14 @@ export { indexFreshnessSchema, indexWarningReportSchema } from './index-health.j
 
 export const extractionQualitySchema = z
   .object({
-    strategy: z.enum(['structured', 'partially-structured', 'prose-fallback']),
+    strategy: z.enum(['structured', 'partially-structured', 'prose-modal', 'prose-fallback']),
     structuredRequirementCount: z.number().int().min(0),
     proseRequirementCount: z.number().int().min(0),
+    /**
+     * Additive: prose sentences the classifier routed to open questions instead of inventing
+     * requirements. Absent on analyses stored before graduated extraction — never a measured 0.
+     */
+    uncertainStatementCount: z.number().int().min(0).optional(),
     recognizedSections: z.array(z.string().min(1)),
     provisional: z.boolean(),
     warnings: z.array(z.string().min(1)),

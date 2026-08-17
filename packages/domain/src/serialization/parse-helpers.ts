@@ -38,6 +38,20 @@ export const readOptionalString = (
   return undefined;
 };
 
+export const readOptionalNumber = (
+  obj: RawObject,
+  key: string,
+  path: string,
+  issues: ValidationIssue[],
+): number | undefined => {
+  const value = obj[key];
+  if (value === undefined || typeof value === 'number') {
+    return value;
+  }
+  issues.push(typeIssue(path, 'a number when present'));
+  return undefined;
+};
+
 export const readNumber = (
   obj: RawObject,
   key: string,

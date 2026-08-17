@@ -45,6 +45,17 @@ describe('extractionResponseSchema — requirement origin', () => {
     expect(rejected.success).toBe(false);
   });
 
+  it('accepts an extraction confidence within [0, 1] and rejects one outside it', () => {
+    const accepted = extractionResponseSchema.safeParse(
+      response({ ...baseRequirement, origin: 'prose-modal', extractionConfidence: 0.8 }),
+    );
+    expect(accepted.success).toBe(true);
+    const rejected = extractionResponseSchema.safeParse(
+      response({ ...baseRequirement, origin: 'prose-modal', extractionConfidence: 1.5 }),
+    );
+    expect(rejected.success).toBe(false);
+  });
+
   it('stays strict: unknown requirement keys are rejected', () => {
     const rejected = extractionResponseSchema.safeParse(
       response({ ...baseRequirement, provenance: 'human-confirmed' }),
