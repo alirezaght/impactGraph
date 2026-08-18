@@ -119,18 +119,70 @@ const countsBlock = (output: CliImpactSummary): string[] => {
     .join(', ');
   return [
     `Impacts: ${String(output.counts.totalImpacts)} across ${String(output.counts.componentCount)} components`,
+    ...(output.planningSignal === undefined ? [] : [`  ${output.planningSignal.statement}`]),
     ...(tiers.length === 0 ? [] : [`  by tier: ${tiers}`]),
     ...(bases.length === 0 ? [] : [`  by evidence: ${bases}`]),
     '',
   ];
 };
 
+/**
+ * The secondary half, in one paragraph. Printing the rows would undo the whole point; printing
+ * nothing would make the primary list read as "this is everything reachable", which it is not.
+ */
+const contextBlock = (output: CliImpactSummary): string[] => {
+  const context = output.dependencyContext;
+  if (context === undefined) {
+    return [];
+  }
+  const kinds = Object.entries(context.byImpactType)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([kind, count]) => `${kind} ${String(count)}`)
+    .join(', ');
+  return [
+    `Dependency context (not shown above): ${String(context.componentCount)} reachable component(s) with no evidence of impact, ${String(context.investigationLeadCount)} name-match lead(s).`,
+    ...(kinds.length === 0 ? [] : [`  by kind: ${kinds}`]),
+    ...(context.reachedFrom.length === 0
+      ? []
+      : [`  reached from: ${context.reachedFrom.join(', ')}`]),
+    `  ${context.howToInspect}`,
+    '',
+  ];
+};
+
+/**
+ * Absences, printed BEFORE the components that do exist. A route the specification commits to and
+ * the repository does not serve is usually the work, and it used to print last, as a warning.
+ */
+const unresolvedSurfaceBlock = (output: CliImpactSummary): string[] => {
+  const surfaces = output.unresolvedSurfaces ?? [];
+  if (surfaces.length === 0) {
+    return [];
+  }
+  const lines = [`Unresolved / new surfaces (${String(surfaces.length)}):`];
+  for (const surface of surfaces) {
+    lines.push(`- ${surface.label} — ${surface.rationale}`);
+    if (surface.alternativeKinds.length > 0) {
+      lines.push(`    also possible: ${surface.alternativeKinds.join(', ')}`);
+    }
+    if (surface.nearestExisting.length > 0) {
+      lines.push(
+        `    nearest indexed names (vocabulary, not impacts): ${surface.nearestExisting.join(', ')}`,
+      );
+    }
+  }
+  return [...lines, ''];
+};
+
 const impactBlock = (output: CliImpactSummary): string[] => {
   if (output.topImpacts.length === 0) {
-    return ['No structural impact was found under the current filters.', ''];
+    return [
+      'No component qualified as a planning decision under the current filters. That is not the same as "nothing changes" — see dependency context and unresolved surfaces below.',
+      '',
+    ];
   }
   const lines = [
-    `Top structural impacts (${String(output.pagination.returned)} of ${String(output.pagination.totalMatching)} matching):`,
+    `Planning impacts (${String(output.pagination.returned)} of ${String(output.pagination.totalMatching)} matching):`,
   ];
   for (const impact of output.topImpacts) {
     const labels =
@@ -236,7 +288,9 @@ export const renderImpactSummary = (context: CommandContext, output: CliImpactSu
     ...assessmentBlock(output),
     ...specificationBlock(output),
     ...countsBlock(output),
+    ...unresolvedSurfaceBlock(output),
     ...impactBlock(output),
+    ...contextBlock(output),
     ...findingsBlock(output),
     ...gapsBlock(output),
     ...warningBlock(output),

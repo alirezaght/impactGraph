@@ -314,3 +314,55 @@ describe('cytoscape elements keep the three knowledge categories distinct (PRD Â
     expect(groups[0]?.data.label).toBe('no context assigned');
   });
 });
+
+// ADR-0025 â€” the planning-role facet. The only facet whose default is a SELECTION rather than
+// "everything": "what does this specification touch" means the decisions, not everything
+// reachable from them.
+describe('planning-role filtering (ADR-0025)', () => {
+  const roleNode = (id: string, planningRole?: string): ImpactGraphNodeDto => ({
+    id,
+    name: id,
+    kind: 'impact',
+    requirementIds: ['req-1'],
+    likelihood: 'possible',
+    impactType: 'domain-model',
+    directness: 'indirect',
+    confidence: 0.5,
+    ...(planningRole === undefined
+      ? {}
+      : { planningRole: planningRole as ImpactGraphNodeDto['planningRole'] }),
+  });
+
+  it('shows only planning impacts by default', () => {
+    const kept = applyNodeFilters(
+      [
+        roleNode('a', 'planning-impact'),
+        roleNode('b', 'dependency-context'),
+        roleNode('c', 'investigation-lead'),
+      ],
+      DEFAULT_FILTERS,
+    );
+    expect(kept.map((node) => node.id)).toEqual(['a']);
+  });
+
+  it('shows everything once the facet is cleared', () => {
+    const kept = applyNodeFilters(
+      [roleNode('a', 'planning-impact'), roleNode('b', 'dependency-context')],
+      { ...DEFAULT_FILTERS, planningRoles: [] },
+    );
+    expect(kept.map((node) => node.id)).toEqual(['a', 'b']);
+  });
+
+  /** A stored analysis written before the axis reports no role; blanking its graph would be worse. */
+  it('never hides a node from an analysis that predates the axis', () => {
+    expect(applyNodeFilters([roleNode('legacy')], DEFAULT_FILTERS).map((node) => node.id)).toEqual([
+      'legacy',
+    ]);
+  });
+
+  it('groups by role when asked', () => {
+    expect(groupFor(roleNode('a', 'dependency-context'), 'planning-role', new Map()).label).toBe(
+      'dependency-context',
+    );
+  });
+});

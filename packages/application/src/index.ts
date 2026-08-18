@@ -139,6 +139,14 @@ export {
 } from './clarify-specification/interpretation-compare.js';
 export { deriveProposedRelationships } from './clarify-specification/proposed-relationships.js';
 export type { ProposedRelationshipOutcome } from './clarify-specification/proposed-relationships.js';
+export {
+  indexedTypes,
+  referencesExternalBoundary,
+  siblingSurfaceIndexed,
+  usesCreationLanguage,
+} from './analyze-specification/requirement-language.js';
+export { collectUnresolvedSurfaces } from './build-impact-model/unresolved-surfaces.js';
+export type { UnresolvedSurfaceInput } from './build-impact-model/unresolved-surfaces.js';
 export { gateProposedStructure } from './build-impact-model/proposed-structure-gate.js';
 export type { ProposedStructureGateResult } from './build-impact-model/proposed-structure-gate.js';
 export type {

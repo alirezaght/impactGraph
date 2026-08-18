@@ -236,6 +236,23 @@ export type {
 } from './cli/repository-state.js';
 export type { IndexFreshnessDto, IndexWarningReportDto } from './cli/index-health.js';
 
+// ADR-0025 — the planning-role axis: what a finding is FOR, and the absences worth reporting.
+export {
+  conceptShapeSchema,
+  dependencyContextSchema,
+  planningRoleRuleSchema,
+  planningRoleSchema,
+  planningSignalSchema,
+  unresolvedSurfaceKindSchema,
+  unresolvedSurfaceSchema,
+} from './cli/planning-role.js';
+export type {
+  DependencyContextDto,
+  PlanningRoleDto,
+  PlanningSignalDto,
+  UnresolvedSurfaceDto,
+} from './cli/planning-role.js';
+
 // The bounded analyze document and its paginated detail page (item 9 of the trial follow-up).
 export {
   cliImpactSummarySchema,

@@ -206,3 +206,70 @@ describe('isUserSupplied', () => {
     expect(isUserSupplied(graph(), 'file:aggregator', supplied)).toBe(false);
   });
 });
+
+// ADR-0025 — the role axis rides on the same pass, because it reads the provenance decided here.
+describe('assignEvidenceProvenance — planning roles', () => {
+  const analysisOf = (impacts: readonly RequirementImpact[]): ImpactAnalysis => ({
+    id: 'analysis-1',
+    specificationId: 'spec-1',
+    specificationVersion: 1,
+    repositorySnapshotId: 'snap-1',
+    createdAt: '2026-08-12T00:00:00.000Z',
+    status: 'draft',
+    requirementImpacts: [...impacts],
+    architecturalOptions: [],
+    warnings: [],
+    userDecisions: [],
+  });
+
+  it('stores the role, the deciding rule, and a reason on every impact', () => {
+    const assigned = assignEvidenceProvenance({
+      analysis: analysisOf([impact('file:aggregator', ['direct-structural'])]),
+      graph: graph(),
+      specificationText: 'The aggregator must publish a digest.',
+    });
+    const [first] = assigned.analysis.requirementImpacts;
+    expect(first?.planningRole).toBe('planning-impact');
+    expect(first?.planningRoleRule).toBe('structural-obligation');
+    expect(first?.planningRoleReason?.length ?? 0).toBeGreaterThan(20);
+  });
+
+  /**
+   * The reason the role is assigned HERE and not in `classifyCandidate`: a component a constraint
+   * selected is only known to be constraint-derived after the preflight pass, and that pass re-runs
+   * this whole assignment. Deriving the role earlier would file every guard-selected surface as
+   * ordinary reachability.
+   */
+  it('re-roles a constraint-derived surface that would otherwise be mere reachability', () => {
+    const reachable = impact('file:aggregator', ['transitive-structural']);
+    const base = assignEvidenceProvenance({
+      analysis: analysisOf([{ ...reachable, likelihood: 'possible' }]),
+      graph: graph(),
+      specificationText: 'Something unrelated.',
+    });
+    expect(base.analysis.requirementImpacts[0]?.planningRole).toBe('dependency-context');
+
+    const derived = assignEvidenceProvenance({
+      analysis: analysisOf([{ ...reachable, likelihood: 'possible' }]),
+      graph: graph(),
+      specificationText: 'Something unrelated.',
+      constraintDerivedNodeIds: new Set(['file:aggregator']),
+    });
+    expect(derived.analysis.requirementImpacts[0]?.planningRole).toBe('planning-impact');
+    expect(derived.analysis.requirementImpacts[0]?.planningRoleRule).toBe('adversarially-derived');
+  });
+
+  it('summarises the split so every surface repeats one sentence', () => {
+    const assigned = assignEvidenceProvenance({
+      analysis: analysisOf([
+        impact('file:aggregator', ['direct-structural']),
+        { ...impact('file:digest_builder', ['transitive-structural']), likelihood: 'possible' },
+      ]),
+      graph: graph(),
+      specificationText: 'Something unrelated.',
+    });
+    expect(assigned.planningSignal.planningImpactCount).toBe(1);
+    expect(assigned.planningSignal.dependencyContextCount).toBe(1);
+    expect(assigned.planningSignal.planningShare).toBe(0.5);
+  });
+});

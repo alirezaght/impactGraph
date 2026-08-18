@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { nodeExplanationSchema } from '../artifacts/explanation.js';
 import { impactEvidenceTypeSchema } from '../cli/evidence-basis.js';
 import { readinessSchema } from '../cli/outputs.js';
+import { planningRoleRuleSchema, planningRoleSchema } from '../cli/planning-role.js';
 
 // The three §18 review surfaces the webview renders, as versioned DTOs. The webview renders and
 // requests — it never derives these; the host maps engine results into them (main skill §9).
@@ -106,6 +107,14 @@ export const impactGraphNodeSchema = z
     evidenceTypes: z.array(impactEvidenceTypeSchema).min(1).optional(),
     /** Additive v1 (ADR-0015): the basis that reduced the likelihood tier. Absent = not capped. */
     tierCappedBy: impactEvidenceTypeSchema.optional(),
+    /**
+     * Additive v1 (ADR-0025): what this node is FOR — a planning decision, dependency context, or
+     * a lead. Like the evidence basis it is an attribute WITHIN deterministic knowledge: it decides
+     * what the default view emphasises, and it must never restyle the §3 provenance rendering.
+     */
+    planningRole: planningRoleSchema.optional(),
+    planningRoleRule: planningRoleRuleSchema.optional(),
+    planningRoleReason: z.string().min(1).optional(),
   })
   .strict();
 

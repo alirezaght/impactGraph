@@ -18,9 +18,11 @@ import { classifyCandidate } from './classification.js';
 import { matchConcepts } from './concept-matching.js';
 import { applyNonGoalExclusions, resolveNonGoals } from './non-goal-exclusions.js';
 import { gateProposedStructure } from './proposed-structure-gate.js';
+import { collectUnresolvedSurfaces } from './unresolved-surfaces.js';
 
 import type { ImpactCandidate, TraversalOptions } from './candidate-traversal.js';
 import type { ChangeExpectationCue } from './change-expectation.js';
+import type { ConceptMatchResult } from './concept-matching.js';
 import type { CoChangeIndex } from '../history/co-change-index.js';
 import type {
   AnalysisWarning,
@@ -57,6 +59,13 @@ export interface BuildImpactModelRequest {
   /** §18.4/§26 relationships the options would create — gated against the graph below. */
   readonly proposedStructure?: ProposedStructure | undefined;
   readonly traversal?: TraversalOptions;
+  /**
+   * ADR-0025: registered, enabled repositories absent from the current index. Feeds the
+   * unresolved-surface reading so "nothing matches this concept" is never called new construction
+   * when the area that would hold it was never indexed. Absent reads as zero — the caller has no
+   * roster, which is the same position as a fully indexed one for this decision.
+   */
+  readonly missingRepositoryCount?: number;
 }
 
 /**
@@ -155,6 +164,8 @@ interface RequirementPipeline {
   readonly coChange: CoChangeIndex;
   readonly impacts: RequirementImpact[];
   readonly warnings: AnalysisWarning[];
+  /** Concept-match results per requirement, kept so unresolved surfaces can be classified. */
+  readonly matchesByRequirement: Map<string, ConceptMatchResult>;
 }
 
 /** §14: recent commits in which the candidate changed together with the matched component. */
@@ -267,6 +278,7 @@ const classifyRequirementCandidates = (
 ): void => {
   const { request, impacts, warnings } = pipeline;
   const matched = matchConcepts(request.graph, requirement.concepts, request.aliases ?? {});
+  pipeline.matchesByRequirement.set(requirement.id, matched);
   recordMatchWarnings(warnings, matched, requirement.id);
   // ADR-0023: the walk a change deserves depends on how far it reaches. Judged from the anchors
   // concept matching already produced, so the saving costs nothing to find.
@@ -329,23 +341,12 @@ const extractionWarnings = (specification: Specification): AnalysisWarning[] => 
   ];
 };
 
-export const buildImpactModel = (
-  request: BuildImpactModelRequest,
-): Result<ImpactAnalysis, ValidationError> => {
-  const pipeline: RequirementPipeline = {
-    request,
-    excluded: new Set((request.excludedComponents ?? []).map((name) => name.toLowerCase())),
-    coChange: buildCoChangeIndex(request.history ?? []),
-    impacts: [],
-    warnings: [],
-  };
-
-  for (const requirement of request.specification.requirements) {
-    if (requirement.status !== 'rejected') {
-      classifyRequirementCandidates(pipeline, requirement);
-    }
-  }
-
+/**
+ * Apply the specification's non-goals to the deduplicated impacts, and report the non-goal terms
+ * that named nothing — an exclusion that excluded nothing is a fact the reader needs.
+ */
+const applyExclusions = (pipeline: RequirementPipeline): readonly RequirementImpact[] => {
+  const { request } = pipeline;
   const exclusions = resolveNonGoals(request.specification, request.graph, request.aliases ?? {});
   const excluded = applyNonGoalExclusions(dedupeStrongest(pipeline.impacts), exclusions);
   pipeline.warnings.push(...excluded.warnings, ...extractionWarnings(request.specification));
@@ -355,11 +356,42 @@ export const buildImpactModel = (
       message: `'${concept}' is named in the non-goal "${statement}" but matches no indexed artifact, so nothing was excluded on its behalf. No node was created for it.`,
     });
   }
-  const finalImpacts = excluded.impacts;
+  return excluded.impacts;
+};
+
+export const buildImpactModel = (
+  request: BuildImpactModelRequest,
+): Result<ImpactAnalysis, ValidationError> => {
+  const pipeline: RequirementPipeline = {
+    request,
+    excluded: new Set((request.excludedComponents ?? []).map((name) => name.toLowerCase())),
+    coChange: buildCoChangeIndex(request.history ?? []),
+    impacts: [],
+    warnings: [],
+    matchesByRequirement: new Map(),
+  };
+
+  for (const requirement of request.specification.requirements) {
+    if (requirement.status !== 'rejected') {
+      classifyRequirementCandidates(pipeline, requirement);
+    }
+  }
+
+  const finalImpacts = applyExclusions(pipeline);
   const referenceIssues = validateImpactReferences(finalImpacts, request.graph);
   if (referenceIssues.length > 0) {
     return err(validationError(referenceIssues));
   }
+  // ADR-0025: absences are collected as findings in their own right, never merged into the impact
+  // list — the moment an absence becomes an impact it stops being an absence.
+  const unresolvedSurfaces = collectUnresolvedSurfaces({
+    graph: request.graph,
+    requirements: request.specification.requirements.filter(
+      (requirement) => requirement.status !== 'rejected',
+    ),
+    matchesByRequirement: pipeline.matchesByRequirement,
+    missingRepositoryCount: request.missingRepositoryCount ?? 0,
+  });
   const options = [...(request.architecturalOptions ?? [])];
   const proposed = gateProposedStructure(
     request.proposedStructure,
@@ -379,6 +411,7 @@ export const buildImpactModel = (
       warnings: [...pipeline.warnings, ...proposed.warnings],
       userDecisions: [],
       ...(proposed.structure === undefined ? {} : { proposedStructure: proposed.structure }),
+      ...(unresolvedSurfaces.length === 0 ? {} : { unresolvedSurfaces }),
     },
     { existingNodeIds: new Set(request.graph.nodes.keys()) },
   );

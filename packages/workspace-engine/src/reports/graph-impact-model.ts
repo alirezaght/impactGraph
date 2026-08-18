@@ -185,4 +185,28 @@ export interface ImpactViewFacts {
   readonly impacts: readonly ImpactRow[];
   readonly warnings: readonly ImpactWarningRow[];
   readonly proposed?: ImpactProposedFacts | undefined;
+  /**
+   * ADR-0025: specification terms that resolve to no indexed artifact.
+   *
+   * Beside the impacts, never among them — the same separation `proposed` keeps, and for the same
+   * reason: these are things the repository does NOT contain, and merging them into a list of
+   * components would turn an absence into a claim that something exists. They are not drawn as
+   * boxes for that reason either; the diagram draws the indexed graph, and these are its holes.
+   */
+  readonly unresolvedSurfaces?: readonly UnresolvedSurfaceRow[] | undefined;
+}
+
+/** One unresolved surface, ready to render: the reading taken, and the readings still open. */
+export interface UnresolvedSurfaceRow {
+  readonly concept: string;
+  readonly label: string;
+  readonly shape: string;
+  readonly kind: string;
+  readonly alternativeKinds: readonly string[];
+  readonly rationale: string;
+  readonly requirementIds: readonly string[];
+  readonly nearestExisting: readonly string[];
+  readonly confidence: number;
+  /** True when the author wrote it as a specific commitment — a route, a path, an identifier. */
+  readonly primary: boolean;
 }

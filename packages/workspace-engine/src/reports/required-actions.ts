@@ -3,6 +3,7 @@ import { isNotIndexedState, isUnavailableState } from '../repository-reasons.js'
 import type { WorkspaceRepositoryContext } from '../repository-coverage.js';
 import type {
   EvidenceQualityDto,
+  PlanningSignalDto,
   RequiredActionDto,
   WorkspaceCoverageDto,
 } from '@impactgraph/contracts';
@@ -20,6 +21,8 @@ export interface RequiredActionsInput {
   readonly context?: WorkspaceRepositoryContext | undefined;
   /** The evidence-quality verdict over the shown impacts; absent when no analysis was run. */
   readonly evidenceQuality?: EvidenceQualityDto | undefined;
+  /** ADR-0025: the decisions/context/leads split over the WHOLE analysis, not the shown page. */
+  readonly planningSignal?: PlanningSignalDto | undefined;
 }
 
 const names = (entries: readonly { readonly name: string }[]): string[] =>
@@ -100,14 +103,34 @@ export const buildRequiredActions = (input: RequiredActionsInput): RequiredActio
         'Stop and report limited scope: state which repositories were indexed and present the unmatched requirements and unresolved concepts as gaps — do not present the partial impacts as a complete answer. If the user can point at the missing repositories, register and index them instead.',
     });
   }
-  if (input.evidenceQuality?.status === 'weak') {
-    actions.push({
-      action: 'report-limited-evidence',
-      reason:
-        input.evidenceQuality.reasons.join(' ') || 'the shown impacts rest on weak evidence',
-      instruction:
-        'Treat this prediction as exploratory: the shown impacts rest on name or meaning matches rather than structural evidence. Confirm the component names with find_components or with the user before implementing against them, and present the result as a starting point, not a change list.',
-    });
-  }
+  actions.push(...limitedEvidenceAction(input));
   return actions;
+};
+
+/**
+ * The weak-evidence warning, from either direction.
+ *
+ * The shown-set verdict is the original signal: what a reader is looking at rests on resemblances.
+ * ADR-0025 added a second way to reach the same place — the role gate keeps resemblances OUT of the
+ * primary view, so an analysis made entirely of name matches now presents as an empty plan rather
+ * than a weak one. An empty plan over a non-empty analysis is the strongest form of this warning,
+ * not the absence of it.
+ */
+const limitedEvidenceAction = (input: RequiredActionsInput): RequiredActionDto[] => {
+  const signal = input.planningSignal;
+  const emptyPlan = signal !== undefined && signal.totalCount > 0 && signal.planningImpactCount === 0;
+  if (input.evidenceQuality?.status !== 'weak' && !emptyPlan) {
+    return [];
+  }
+  const reason = emptyPlan
+    ? `no finding qualified as a planning decision — ${String(signal.investigationLeadCount)} rest on name or meaning matches and ${String(signal.dependencyContextCount)} are reachable components with no evidence of impact`
+    : (input.evidenceQuality?.reasons.join(' ') ?? '') || 'the shown impacts rest on weak evidence';
+  return [
+    {
+      action: 'report-limited-evidence',
+      reason,
+      instruction:
+        'Treat this prediction as exploratory: nothing here rests on structural evidence of change. Confirm the component names with find_components or with the user before implementing against them, and present the result as a starting point, not a change list.',
+    },
+  ];
 };

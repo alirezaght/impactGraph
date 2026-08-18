@@ -180,7 +180,7 @@ describe('impactgraph graph --analysis (impact export, PRD §18.4/§18.5/§33/§
 
   it('states the budget and accounts for every impact, drawn or not', () => {
     expect(html).toMatch(/Showing \d+ of \d+ components across \d+ of \d+ context groups/);
-    expect(html).toMatch(/\d+ impacts are direct concept matches/);
+    expect(html).toMatch(/\d+ of these are components the specification named directly/);
   });
 
   it('re-exporting an unchanged analysis is byte-identical', async () => {

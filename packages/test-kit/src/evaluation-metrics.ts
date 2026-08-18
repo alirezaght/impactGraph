@@ -2,6 +2,8 @@
 // interprets (evaluation.ts) so the evaluation test file holds only the harness and the gates —
 // what the numbers MEAN is decided here, in one place, under the effective-LOC budget.
 
+import { planningRoleOf } from '@impactgraph/domain';
+
 import type { SampleEvaluation } from './evaluation.js';
 import type { ImpactAnalysis, KnowledgeGraph, NodeId } from '@impactgraph/domain';
 
@@ -146,6 +148,90 @@ export const reportPossibleTier = (
     ),
     unsupportedByFirstEdge: tally(
       unsupported.map((impact) => firstEdgeType(graph, impact.dependencyPath)),
+    ),
+  };
+};
+
+/**
+ * ADR-0025: how an analysis splits between planning decisions, dependency context and leads —
+ * measured against ground truth rather than asserted.
+ *
+ * `retainedDirectImpacts` is the load-bearing number. Narrowing the primary view is only an
+ * improvement if the things that genuinely must change survive it; a smaller graph that dropped a
+ * ground-truth direct impact is a worse graph, not a cleaner one.
+ */
+export interface PlanningSignalReport {
+  readonly total: number;
+  readonly planningImpacts: number;
+  readonly dependencyContext: number;
+  readonly investigationLeads: number;
+  readonly planningShare: number;
+  /** Ground-truth direct impacts that are in the PRIMARY set (not merely in the analysis). */
+  readonly retainedDirectImpacts: number;
+  readonly expectedDirectImpacts: number;
+  /** Ground-truth direct impacts the role gate demoted out of the primary set — must stay empty. */
+  readonly demotedDirectImpacts: readonly string[];
+  /**
+   * The signal-to-noise figure, on the tier where the noise lived.
+   *
+   * `possibleTier` ground truth judges every `possible` candidate allowed / plausible / unsupported.
+   * `possibleStrictBefore` is the share of ALL possible candidates judged allowed — the primary
+   * view's precision before the role axis. `possibleStrictAfter` is the same share over only the
+   * possible candidates the role axis KEEPS. Undefined when the sample produced no such candidate.
+   */
+  /** Possible-tier candidates ground truth calls unsupported that the role axis still keeps. */
+  readonly keptButUnsupported: readonly string[];
+  /** Possible-tier candidates in total, and how many the role axis keeps in the primary view. */
+  readonly possibleCandidates: number;
+  readonly possibleKept: number;
+  readonly possibleStrictBefore?: number | undefined;
+  readonly possibleStrictAfter?: number | undefined;
+}
+
+export const reportPlanningSignal = (
+  sample: SampleEvaluation,
+  analysis: ImpactAnalysis,
+  graph: KnowledgeGraph,
+): PlanningSignalReport => {
+  const nameOf = (nodeId: string): string => graph.nodes.get(nodeId as NodeId)?.name ?? nodeId;
+  const impacts = analysis.requirementImpacts;
+  const inRole = (role: string): typeof impacts =>
+    impacts.filter((impact) => planningRoleOf(impact) === role);
+  const planning = inRole('planning-impact');
+  const planningNames = new Set(planning.map((impact) => nameOf(impact.nodeId)));
+  const { directImpacts } = sample.groundTruth;
+  const labels = new Map(
+    (sample.groundTruth.possibleTier ?? []).map((entry) => [entry.nodeId, entry.verdict]),
+  );
+  const allowedShare = (candidates: typeof impacts): number | undefined =>
+    candidates.length === 0
+      ? undefined
+      : share(
+          candidates.filter((impact) => labels.get(impact.nodeId) === 'allowed').length,
+          candidates.length,
+        );
+  const possible = impacts.filter((impact) => impact.likelihood === 'possible');
+  return {
+    total: impacts.length,
+    planningImpacts: planning.length,
+    dependencyContext: inRole('dependency-context').length,
+    investigationLeads: inRole('investigation-lead').length,
+    planningShare: share(planning.length, impacts.length),
+    retainedDirectImpacts: directImpacts.filter((name) => planningNames.has(name)).length,
+    expectedDirectImpacts: directImpacts.length,
+    demotedDirectImpacts: directImpacts.filter((name) => !planningNames.has(name)),
+    keptButUnsupported: possible
+      .filter(
+        (impact) =>
+          planningRoleOf(impact) === 'planning-impact' &&
+          labels.get(impact.nodeId) === 'unsupported',
+      )
+      .map((impact) => `${impact.nodeId} [${impact.planningRoleRule ?? '?'}]`),
+    possibleCandidates: possible.length,
+    possibleKept: possible.filter((impact) => planningRoleOf(impact) === 'planning-impact').length,
+    possibleStrictBefore: allowedShare(possible),
+    possibleStrictAfter: allowedShare(
+      possible.filter((impact) => planningRoleOf(impact) === 'planning-impact'),
     ),
   };
 };

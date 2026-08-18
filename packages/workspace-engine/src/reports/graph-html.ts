@@ -2,6 +2,7 @@ import {
   impactsTable,
   proposedTables,
   requirementsTable,
+  unresolvedSurfacesTable,
   warningsTable,
 } from './graph-html-impact-tables.js';
 import {
@@ -88,6 +89,11 @@ const impactBody = (view: GraphView, facts: ImpactViewFacts): string[] => [
   legendSection(),
   ...(facts.proposed === undefined ? [] : [proposedLegendSection()]),
   ...diagramSection(view),
+  // Before the requirements and impact tables on purpose: an absent surface is work the plan has
+  // to account for, and burying it under the components that DO exist is how it got missed.
+  ...(facts.unresolvedSurfaces === undefined || facts.unresolvedSurfaces.length === 0
+    ? []
+    : [unresolvedSurfacesTable(facts.unresolvedSurfaces)]),
   requirementsTable(facts),
   groupsTable(view),
   edgesTable(view),

@@ -26,6 +26,8 @@ import type {
   RequirementImpact,
   UserImpactDecision,
 } from '../impact/impact-analysis.js';
+import type { PlanningRole, PlanningRoleRule } from '../impact/planning-role.js';
+import type { UnresolvedSurface, UnresolvedSurfaceKind } from '../impact/unresolved-surface.js';
 import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
 import type { ConfidenceSignal } from '../provenance/confidence.js';
 
@@ -91,6 +93,19 @@ const readAdditiveImpactFields = (
     `${path}.changeExpectation`,
     issues,
   );
+  const planningRole = readOptionalString(obj, 'planningRole', `${path}.planningRole`, issues);
+  const planningRoleRule = readOptionalString(
+    obj,
+    'planningRoleRule',
+    `${path}.planningRoleRule`,
+    issues,
+  );
+  const planningRoleReason = readOptionalString(
+    obj,
+    'planningRoleReason',
+    `${path}.planningRoleReason`,
+    issues,
+  );
   return {
     ...(obj['evidenceTypes'] === undefined
       ? {}
@@ -109,6 +124,11 @@ const readAdditiveImpactFields = (
     ...(changeExpectation === undefined
       ? {}
       : { changeExpectation: changeExpectation as ChangeExpectation }),
+    ...(planningRole === undefined ? {} : { planningRole: planningRole as PlanningRole }),
+    ...(planningRoleRule === undefined
+      ? {}
+      : { planningRoleRule: planningRoleRule as PlanningRoleRule }),
+    ...(planningRoleReason === undefined ? {} : { planningRoleReason }),
   };
 };
 
@@ -227,6 +247,44 @@ const readOption: Reader<ArchitecturalOption> = (raw, path, issues) => {
   };
 };
 
+/**
+ * ADR-0025. Absent means the producer predates the axis — never "every concept resolved", which is
+ * why an empty array is not written when there is nothing to report.
+ */
+const readSurface: Reader<UnresolvedSurface> = (raw, path, issues) => {
+  const obj = expectObject(raw, path, issues);
+  return {
+    concept: readString(obj, 'concept', `${path}.concept`, issues),
+    shape: readString(obj, 'shape', `${path}.shape`, issues) as UnresolvedSurface['shape'],
+    kind: readString(obj, 'kind', `${path}.kind`, issues) as UnresolvedSurfaceKind,
+    alternativeKinds: readStringArray(
+      obj,
+      'alternativeKinds',
+      `${path}.alternativeKinds`,
+      issues,
+    ) as readonly UnresolvedSurfaceKind[],
+    rationale: readString(obj, 'rationale', `${path}.rationale`, issues),
+    requirementIds: readStringArray(obj, 'requirementIds', `${path}.requirementIds`, issues),
+    nearestExisting: readStringArray(obj, 'nearestExisting', `${path}.nearestExisting`, issues),
+    confidence: readNumber(obj, 'confidence', `${path}.confidence`, issues),
+  };
+};
+
+const readUnresolvedSurfaces = (
+  value: RawObject,
+  issues: ValidationIssue[],
+): Pick<ImpactAnalysis, 'unresolvedSurfaces'> | Record<string, never> =>
+  value['unresolvedSurfaces'] === undefined
+    ? {}
+    : {
+        unresolvedSurfaces: readEach(
+          readArray(value, 'unresolvedSurfaces', 'unresolvedSurfaces', issues),
+          'unresolvedSurfaces',
+          issues,
+          readSurface,
+        ),
+      };
+
 export const parseImpactAnalysis = (value: unknown): Result<ImpactAnalysis, ValidationError> => {
   if (!isRawObject(value)) {
     return err(
@@ -268,6 +326,7 @@ export const parseImpactAnalysis = (value: unknown): Result<ImpactAnalysis, Vali
       readDecision,
     ),
     ...(proposedStructure === undefined ? {} : { proposedStructure }),
+    ...readUnresolvedSurfaces(value, issues),
   };
   if (issues.length > 0) {
     return err(validationError(issues));

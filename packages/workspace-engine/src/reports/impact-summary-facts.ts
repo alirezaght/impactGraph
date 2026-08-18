@@ -1,4 +1,4 @@
-import { evidenceTypesOf, primaryEvidenceType } from '@impactgraph/domain';
+import { evidenceTypesOf, planningRoleOf, primaryEvidenceType } from '@impactgraph/domain';
 
 import { attributionPrefixes, componentsByRepository } from '../repository-attribution.js';
 
@@ -40,11 +40,14 @@ export const summaryCounts = (
 ): CliImpactSummary['counts'] => {
   const byLikelihood: Record<string, number> = {};
   const byEvidenceType: Record<string, number> = {};
+  const byPlanningRole: Record<string, number> = {};
   const nodes = new Set<string>();
   for (const impact of analysis.requirementImpacts) {
     byLikelihood[impact.likelihood] = (byLikelihood[impact.likelihood] ?? 0) + 1;
     const primary = primaryEvidenceType(evidenceTypesOf(impact));
     byEvidenceType[primary] = (byEvidenceType[primary] ?? 0) + 1;
+    const role = planningRoleOf(impact);
+    byPlanningRole[role] = (byPlanningRole[role] ?? 0) + 1;
     nodes.add(impact.nodeId);
   }
   const byRepository = byRepositoryOf(analysis, attribution);
@@ -53,6 +56,7 @@ export const summaryCounts = (
     componentCount: nodes.size,
     byLikelihood,
     byEvidenceType,
+    byPlanningRole,
     ...(byRepository === undefined ? {} : { byRepository }),
   };
 };

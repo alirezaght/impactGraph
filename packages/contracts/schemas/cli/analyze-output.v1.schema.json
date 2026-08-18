@@ -191,6 +191,28 @@
                     },
                     "tierCappedBy": {
                       "$ref": "#/definitions/CliAnalyzeOutputV1/properties/requirements/items/properties/impacts/items/properties/evidenceTypes/items"
+                    },
+                    "planningRole": {
+                      "type": "string",
+                      "enum": ["planning-impact", "dependency-context", "investigation-lead"]
+                    },
+                    "planningRoleRule": {
+                      "type": "string",
+                      "enum": [
+                        "non-goal-excluded",
+                        "regression-boundary",
+                        "adversarially-derived",
+                        "named-by-specification",
+                        "resolved-by-resemblance",
+                        "resemblance-only",
+                        "structural-obligation",
+                        "architectural-consequence",
+                        "reachable-only"
+                      ]
+                    },
+                    "planningRoleReason": {
+                      "type": "string",
+                      "minLength": 1
                     }
                   },
                   "required": [

@@ -1,4 +1,11 @@
-import { evidenceTypesOf, primaryEvidenceType, summariseIndependence } from '@impactgraph/domain';
+import {
+  derivePlanningRole,
+  evidenceTypesOf,
+  planningRoleInputOf,
+  primaryEvidenceType,
+  summariseIndependence,
+  summarisePlanningRoles,
+} from '@impactgraph/domain';
 
 import type {
   EvidenceIndependence,
@@ -7,6 +14,7 @@ import type {
   ImpactEvidenceType,
   KnowledgeGraph,
   NodeId,
+  PlanningSignal,
   RequirementImpact,
 } from '@impactgraph/domain';
 
@@ -121,16 +129,41 @@ const provenanceFor = (
 export interface ProvenanceAssignment {
   readonly analysis: ImpactAnalysis;
   readonly independence: EvidenceIndependence;
+  /** ADR-0025: how much of the analysis is a planning decision rather than reachable context. */
+  readonly planningSignal: PlanningSignal;
 }
+
+/**
+ * The planning role is assigned HERE, in the same pass, because it reads the provenance this
+ * function has just decided. Assigning it earlier would classify every constraint- and
+ * runtime-derived surface as ordinary reachability, and assigning it later would let two consumers
+ * disagree about the same record. The preflight pass re-runs this whole assignment after its
+ * upgrades, so a surface a guard selected is re-roled with the rest.
+ */
+const withDerivedAxes = (
+  impact: RequirementImpact,
+  evidenceProvenance: EvidenceProvenance,
+): RequirementImpact => {
+  const withProvenance = { ...impact, evidenceProvenance };
+  const verdict = derivePlanningRole(planningRoleInputOf(withProvenance));
+  return {
+    ...withProvenance,
+    planningRole: verdict.role,
+    planningRoleRule: verdict.rule,
+    planningRoleReason: verdict.reason,
+  };
+};
 
 export const assignEvidenceProvenance = (input: AssignProvenanceInput): ProvenanceAssignment => {
   const supplied = suppliedIdentifiers(input.specificationText);
-  const impacts = input.analysis.requirementImpacts.map((impact) => ({
-    ...impact,
-    evidenceProvenance: provenanceFor(impact, input, supplied),
-  }));
+  const impacts = input.analysis.requirementImpacts.map((impact) =>
+    withDerivedAxes(impact, provenanceFor(impact, input, supplied)),
+  );
   return {
     analysis: { ...input.analysis, requirementImpacts: impacts },
     independence: summariseIndependence(impacts.map((impact) => impact.evidenceProvenance)),
+    planningSignal: summarisePlanningRoles(
+      impacts.map((impact) => impact.planningRole ?? 'dependency-context'),
+    ),
   };
 };

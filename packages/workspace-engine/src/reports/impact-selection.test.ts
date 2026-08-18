@@ -11,7 +11,8 @@ import type {
 
 // The selection rules the trials made necessary (item 9 + item 4): structural findings first,
 // lexical-only and excluded hidden by default, and the applied defaults echoed back so "20
-// impacts" is distinguishable from "20 impacts, 300 withheld".
+// impacts" is distinguishable from "20 impacts, 300 withheld". ADR-0025 added the role gate: the
+// default answer is the planning decisions, and reachable-only components page separately.
 
 const impact = (
   nodeId: string,
@@ -57,10 +58,28 @@ describe('selectImpacts — defaults', () => {
     impact('sym:pos', 'possible', ['transitive-structural']),
   ]);
 
-  it('hides lexical-only, excluded, and sub-possible tiers by default', () => {
+  it('hides lexical-only, excluded, sub-possible tiers and reachable-only context by default', () => {
     const selection = selectImpacts(analysis);
-    expect(selection.impacts.map((entry) => entry.nodeId)).toEqual(['sym:req', 'sym:pos']);
-    expect(selection.totalMatching).toBe(2);
+    // `sym:pos` is a possible transitive hit on an ordinary domain-model surface — reachable, with
+    // nothing establishing that it changes. ADR-0025 files it as dependency context.
+    expect(selection.impacts.map((entry) => entry.nodeId)).toEqual(['sym:req']);
+    expect(selection.totalMatching).toBe(1);
+  });
+
+  it('returns reachable-only context when the caller asks for that role', () => {
+    const selection = selectImpacts(analysis, { roles: ['dependency-context'] });
+    expect(selection.impacts.map((entry) => entry.nodeId)).toEqual(['sym:pos']);
+  });
+
+  it('promotes a possible finding that reached a contract-bearing surface', () => {
+    const consequence = analysisWith([
+      impact('sym:api', 'possible', ['transitive-structural'], { impactType: 'api-contract' }),
+    ]);
+    expect(selectImpacts(consequence).impacts.map((entry) => entry.nodeId)).toEqual(['sym:api']);
+  });
+
+  it('echoes the roles it applied, so a caller cannot mistake the default for everything', () => {
+    expect(selectImpacts(analysis).appliedFilters.roles).toEqual(['planning-impact']);
   });
 
   it('echoes the defaults it applied, even when the caller set nothing', () => {
@@ -157,7 +176,9 @@ describe('selectImpacts — filters and paging', () => {
   const analysis = analysisWith([
     impact('sym:a', 'required', ['direct-structural']),
     impact('sym:b', 'likely', ['async-event']),
-    impact('sym:c', 'possible', ['transitive-structural']),
+    // A `possible` migration: reachable, and the surface reached carries a contract, so ADR-0025
+    // keeps it in the plan. Chosen deliberately so paging is still tested over three roles-in.
+    impact('sym:c', 'possible', ['transitive-structural'], { impactType: 'migration' }),
   ]);
 
   it('keeps only impacts at or above minLikelihood', () => {

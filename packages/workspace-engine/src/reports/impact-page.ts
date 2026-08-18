@@ -1,6 +1,7 @@
-import { evidenceTypesOf, primaryEvidenceType, provenanceLabel } from '@impactgraph/domain';
+import { evidenceTypesOf, primaryEvidenceType } from '@impactgraph/domain';
 
 import { evidenceLimitations } from './evidence-quality-block.js';
+import { classificationFields } from './impact-line.js';
 import { groupByNode, selectImpacts } from './impact-selection.js';
 import { summaryCounts } from './impact-summary-facts.js';
 
@@ -58,14 +59,7 @@ const rowFor = (
     requirementLabels: [...new Set(entry.requirementLabels)].sort(),
     reason: impact.explanation,
     ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
-    // Absent when the stored analysis predates the provenance axis — absence must never read as
-    // "independently discovered", so nothing is defaulted here (ADR-0017 §5).
-    ...(impact.evidenceProvenance === undefined
-      ? {}
-      : {
-          evidenceProvenance: impact.evidenceProvenance,
-          provenanceLabel: provenanceLabel(impact.evidenceProvenance),
-        }),
+    ...classificationFields(impact),
     dependencyPath: [...impact.dependencyPath],
     evidenceTypes: [...evidenceTypes],
     ...(evidenceFiles === undefined ? {} : { evidenceFiles }),

@@ -91,7 +91,7 @@ describe('impactgraph analyze — the bounded summary (item 9)', () => {
     expect(JSON.stringify(summary).length).toBeLessThan(20_000);
 
     const text = await cli('analyze', 'feature.md');
-    expect(text.lines.some((line) => line.startsWith('Top structural impacts'))).toBe(true);
+    expect(text.lines.some((line) => line.startsWith('Planning impacts'))).toBe(true);
     expect(text.lines.some((line) => line.startsWith('Scope:'))).toBe(true);
   });
 

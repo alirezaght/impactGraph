@@ -1,15 +1,19 @@
 import { err, ok } from '../errors/result.js';
 import { validationError, validationIssue } from '../errors/validation.js';
 import { deepFreeze } from '../freeze.js';
-import { isEvidenceProvenance, provenanceOf } from '../preflight/evidence-provenance.js';
+import { isEvidenceProvenance } from '../preflight/evidence-provenance.js';
 import { blankIdIssue, isValidTimestamp } from '../provenance/evidence.js';
 import { isProvenance, knowledgeCategoryOf } from '../provenance/provenance.js';
 
 import { capLikelihood, isImpactEvidenceType, primaryEvidenceType } from './evidence-basis.js';
+import { planningRoleInputOf } from './impact-accessors.js';
+import { derivePlanningRole, isPlanningRole } from './planning-role.js';
 import { collectProposedStructureIssues } from './proposed-structure.js';
 
 import type { ImpactEvidenceType } from './evidence-basis.js';
+import type { PlanningRole, PlanningRoleRule } from './planning-role.js';
 import type { ProposedStructure } from './proposed-structure.js';
+import type { UnresolvedSurface } from './unresolved-surface.js';
 import type { Result } from '../errors/result.js';
 import type { ValidationError, ValidationIssue } from '../errors/validation.js';
 import type { EvidenceProvenance } from '../preflight/evidence-provenance.js';
@@ -112,6 +116,18 @@ export interface RequirementImpact {
    * absence to `must-change`, preserving the older reading exactly.
    */
   readonly changeExpectation?: ChangeExpectation;
+  /**
+   * Additive field: what this record is FOR — a planning decision, dependency context, or a lead
+   * (ADR-0025). Derived from the axes above by {@link derivePlanningRole}, then stored, so the
+   * classification a reader saw is the classification the artifact keeps. Absent on analyses stored
+   * before the axis existed — read through `planningRoleOf`, which re-derives it rather than
+   * defaulting, because every input it needs is on the record.
+   */
+  readonly planningRole?: PlanningRole;
+  /** The rule that decided `planningRole`, from a closed vocabulary. Auditability, not prose. */
+  readonly planningRoleRule?: PlanningRoleRule;
+  /** One sentence stating why, so a reader can disagree with the classification. */
+  readonly planningRoleReason?: string;
 }
 
 /**
@@ -131,24 +147,6 @@ export const CHANGE_EXPECTATIONS = [
   'preserve',
 ] as const;
 export type ChangeExpectation = (typeof CHANGE_EXPECTATIONS)[number];
-
-/** Absence means the pre-ADR-0022 reading: the surface was expected to change. */
-export const changeExpectationOf = (impact: RequirementImpact): ChangeExpectation =>
-  impact.changeExpectation ?? 'must-change';
-
-/** True when the plan predicts NO diff at this surface, so an unchanged file is the plan working. */
-export const expectsNoChange = (impact: RequirementImpact): boolean =>
-  changeExpectationOf(impact) !== 'must-change';
-
-/** Absence is read as the weakest provenance, never as "unclassified but fine". */
-export const evidenceProvenanceOf = (impact: RequirementImpact): EvidenceProvenance =>
-  provenanceOf(impact.evidenceProvenance);
-
-/** Absence is read as the weakest basis, never as "unclassified but fine". */
-export const evidenceTypesOf = (impact: RequirementImpact): readonly ImpactEvidenceType[] =>
-  impact.evidenceTypes === undefined || impact.evidenceTypes.length === 0
-    ? ['lexical-only']
-    : impact.evidenceTypes;
 
 export const ANALYSIS_WARNING_CODES = [
   'unknown-concept',
@@ -270,6 +268,13 @@ export interface ImpactAnalysis {
    * Absent means the engine asserted no proposed structure, never "unknown".
    */
   readonly proposedStructure?: ProposedStructure | undefined;
+  /**
+   * ADR-0025: specification terms that resolve to no indexed artifact, classified. A separate
+   * field for the same reason as `proposedStructure` — an absence is never merged into
+   * `requirementImpacts`, because the moment it is, it stops being an absence. Absent means the
+   * producer predates the axis, never "every concept resolved".
+   */
+  readonly unresolvedSurfaces?: readonly UnresolvedSurface[] | undefined;
 }
 
 /** Extra facts the caller can supply so proposals are validated against the bound snapshot. */
@@ -341,11 +346,36 @@ const evidenceBasisIssues = (impact: RequirementImpact, path: string): Validatio
 };
 
 /** The additive axes validate on their own so the basis check keeps its single responsibility. */
-const additiveAxisIssues = (impact: RequirementImpact, path: string): ValidationIssue[] =>
-  impact.changeExpectation !== undefined &&
-  !(CHANGE_EXPECTATIONS as readonly string[]).includes(impact.changeExpectation)
-    ? [validationIssue('invalid-type', `${path}.changeExpectation`, 'unknown change expectation')]
-    : [];
+const additiveAxisIssues = (impact: RequirementImpact, path: string): ValidationIssue[] => {
+  const issues: ValidationIssue[] = [];
+  if (
+    impact.changeExpectation !== undefined &&
+    !(CHANGE_EXPECTATIONS as readonly string[]).includes(impact.changeExpectation)
+  ) {
+    issues.push(
+      validationIssue('invalid-type', `${path}.changeExpectation`, 'unknown change expectation'),
+    );
+  }
+  if (impact.planningRole !== undefined && !isPlanningRole(impact.planningRole)) {
+    issues.push(validationIssue('invalid-type', `${path}.planningRole`, 'unknown planning role'));
+  }
+  // A stored role must be the one the rules produce. Without this a producer could file a
+  // resemblance as a planning impact and the whole axis would mean nothing — the same reasoning
+  // that makes an over-claimed tier a rejection rather than a quiet downgrade.
+  if (impact.planningRole !== undefined && impact.evidenceTypes !== undefined) {
+    const derived = derivePlanningRole(planningRoleInputOf(impact)).role;
+    if (derived !== impact.planningRole) {
+      issues.push(
+        validationIssue(
+          'invalid-type',
+          `${path}.planningRole`,
+          `'${impact.planningRole}' contradicts the evidence, which derives '${derived}'`,
+        ),
+      );
+    }
+  }
+  return issues;
+};
 
 const impactIssues = (impact: RequirementImpact, path: string): ValidationIssue[] => {
   const issues: ValidationIssue[] = [

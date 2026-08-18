@@ -11,6 +11,13 @@ import {
   preflightFindingSchema,
   UNMATCHED_CLASS_VALUES,
 } from './plan-assessment.js';
+import {
+  dependencyContextSchema,
+  planningRoleRuleSchema,
+  planningRoleSchema,
+  planningSignalSchema,
+  unresolvedSurfaceSchema,
+} from './planning-role.js';
 
 /**
  * The bounded analyze document (item 9: "Default outputs were hundreds of kilobytes and exceeded
@@ -94,6 +101,15 @@ const summaryImpactSchema = z
     evidenceProvenance: z.enum(EVIDENCE_PROVENANCE_VALUES).optional(),
     /** The reader-facing word for it: an echo is 'confirmation', everything else 'discovery'. */
     provenanceLabel: z.enum(['confirmation', 'discovery', 'lead']).optional(),
+    /**
+     * Additive v1 (ADR-0025): what this record is FOR. Absent on analyses produced before the axis
+     * existed; a consumer that finds it absent re-derives it rather than assuming a default,
+     * because every input the derivation reads is on the record.
+     */
+    planningRole: planningRoleSchema.optional(),
+    planningRoleRule: planningRoleRuleSchema.optional(),
+    /** Why it landed there, so a reader can disagree with the classification. */
+    planningRoleReason: z.string().min(1).optional(),
   })
   .strict();
 
@@ -114,6 +130,9 @@ const unmatchedRequirementSchema = z
   })
   .strict();
 
+// `unresolvedSurfaces` supersedes this (ADR-0025) — the same terms, classified. Both are emitted:
+// the flat array keeps existing consumers working, so the removal can be a separate, announced
+// change rather than a silent break.
 const unresolvedConceptSchema = z
   .object({
     concept: z.string().min(1),
@@ -222,6 +241,8 @@ const impactCountsSchema = z
      * registered; absent otherwise, because "all in this one" is noise for a single repo.
      */
     byRepository: z.record(z.number().int().min(0)).optional(),
+    /** Additive v1 (ADR-0025): decisions vs context vs leads over the whole analysis. */
+    byPlanningRole: z.record(z.number().int().min(0)).optional(),
   })
   .strict();
 
@@ -255,6 +276,13 @@ export const impactFiltersSchema = z
     includeLexicalOnly: z.boolean().optional(),
     includeExcluded: z.boolean().optional(),
     includeFullPaths: z.boolean().optional(),
+    /**
+     * ADR-0025: which roles to return. Defaults to `['planning-impact']` — the primary answer.
+     * Ask for `dependency-context` or `investigation-lead` to page the secondary halves, or list
+     * all three for the complete audit set. The applied value is always echoed back, so a caller
+     * can never mistake the default for "this is everything".
+     */
+    roles: z.array(planningRoleSchema).min(1).optional(),
     cursor: z.string().min(1).optional(),
     requirementId: z.string().min(1).optional(),
   })
@@ -317,7 +345,20 @@ export const cliImpactSummarySchema = z
     counts: impactCountsSchema,
     /** Additive v1: is the default view evidence-backed, mixed, or weak — with reasons. */
     evidenceQuality: evidenceQualitySchema.optional(),
+    /** ADR-0025: how the analysis splits between decisions, context and leads. */
+    planningSignal: planningSignalSchema.optional(),
+    /**
+     * The PRIMARY answer: the planning decisions, ranked. ADR-0025 narrowed what qualifies —
+     * structurally reachable components with no evidence of impact moved to `dependencyContext`.
+     */
     topImpacts: z.array(summaryImpactSchema),
+    /** ADR-0025: the secondary half, as counts and entry points rather than a second list. */
+    dependencyContext: dependencyContextSchema.optional(),
+    /**
+     * ADR-0025: specification terms that resolve to no indexed artifact, each with the reading the
+     * evidence best supports AND the readings that stay open. An absent surface is a finding.
+     */
+    unresolvedSurfaces: z.array(unresolvedSurfaceSchema).optional(),
     unmatchedRequirements: z.array(unmatchedRequirementSchema),
     unresolvedConcepts: z.array(unresolvedConceptSchema),
     /**

@@ -1,5 +1,5 @@
 import { primaryEvidenceType } from '../impact/evidence-basis.js';
-import { evidenceTypesOf } from '../impact/impact-analysis.js';
+import { evidenceTypesOf } from '../impact/impact-accessors.js';
 
 import { ARTIFACT_CATEGORIES } from './actual-impact.js';
 

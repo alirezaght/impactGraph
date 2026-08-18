@@ -32,6 +32,21 @@ export const EMPTY_IMPACT_GRAPH: ImpactGraphDto = {
 const categoryOf = (provenance: string | undefined): string | undefined =>
   knowledgeCategoryForProvenance(provenance);
 
+/**
+ * ADR-0025: the role travels with the node so the webview's default view can emphasise decisions
+ * without inventing its own theory of what matters. Absence passes through as absence — a document
+ * produced before the axis says nothing about roles, which the webview reads as "show it".
+ */
+const planningFields = (
+  impact: ImpactDto,
+): Pick<ImpactGraphNodeDto, 'planningRole' | 'planningRoleRule' | 'planningRoleReason'> => ({
+  ...(impact.planningRole === undefined ? {} : { planningRole: impact.planningRole }),
+  ...(impact.planningRoleRule === undefined ? {} : { planningRoleRule: impact.planningRoleRule }),
+  ...(impact.planningRoleReason === undefined
+    ? {}
+    : { planningRoleReason: impact.planningRoleReason }),
+});
+
 const impactNode = (impact: ImpactDto, requirementId: string): ImpactGraphNodeDto => {
   const category = categoryOf(impact.provenance);
   const file = impact.evidenceFiles.find((entry) => !entry.startsWith('commit '));
@@ -52,6 +67,7 @@ const impactNode = (impact: ImpactDto, requirementId: string): ImpactGraphNodeDt
     // ADR-0015: basis and tier cap pass through untouched — absence stays absence.
     ...(impact.evidenceTypes === undefined ? {} : { evidenceTypes: [...impact.evidenceTypes] }),
     ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
+    ...planningFields(impact),
   };
 };
 

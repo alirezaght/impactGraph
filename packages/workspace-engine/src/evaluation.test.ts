@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import {
   evaluateSample,
   fixtureRepoPath,
+  reportPlanningSignal,
   reportPossibleTier,
   SAMPLE_EVALUATIONS,
 } from '@impactgraph/test-kit';
@@ -15,7 +16,11 @@ import { performIndexRun } from './indexing.js';
 import { buildAnalysisForSpecification, submitSpecification } from './specifications.js';
 import { initializeWorkspace } from './workspace.js';
 
-import type { EvaluationResult, PossibleTierReport } from '@impactgraph/test-kit';
+import type {
+  EvaluationResult,
+  PlanningSignalReport,
+  PossibleTierReport,
+} from '@impactgraph/test-kit';
 
 // Story 17.5 — the repeatable §41 evaluation: hand-written ground truth (test-kit) vs the
 // deterministic impact engine on the ts-basic reference repo. Run standalone via
@@ -66,9 +71,11 @@ const analyzeAllSamples = async (
 ): Promise<{
   results: EvaluationResult[];
   possibleReports: (PossibleTierReport & { name: string })[];
+  planningReports: (PlanningSignalReport & { name: string })[];
 }> => {
   const results: EvaluationResult[] = [];
   const possibleReports: (PossibleTierReport & { name: string })[] = [];
+  const planningReports: (PlanningSignalReport & { name: string })[] = [];
   for (const sample of SAMPLE_EVALUATIONS) {
     const submitted = await submitSpecification({
       rootDir: repoDir,
@@ -88,18 +95,65 @@ const analyzeAllSamples = async (
       name: sample.name,
       ...reportPossibleTier(sample, built.value.analysis, built.value.graph, requirementCount),
     });
+    planningReports.push({
+      name: sample.name,
+      ...reportPlanningSignal(sample, built.value.analysis, built.value.graph),
+    });
   }
-  return { results, possibleReports };
+  return { results, possibleReports, planningReports };
+};
+
+/**
+ * ADR-0025. Two numbers, and the second is the one that matters.
+ *
+ * The share says how much of the analysis the primary view now shows; a low share on a broad
+ * specification is the expected result, not a regression. The RETENTION column says whether
+ * narrowing cost anything: a ground-truth direct impact demoted to context would be a smaller
+ * graph that is also a worse one, which is the failure mode this whole change has to avoid.
+ */
+const printPlanningSignal = (
+  reports: readonly (PlanningSignalReport & { name: string })[],
+): void => {
+  // eslint-disable-next-line no-console
+  console.table(
+    reports.map((report) => ({
+      sample: report.name,
+      total: report.total,
+      planning: report.planningImpacts,
+      context: report.dependencyContext,
+      leads: report.investigationLeads,
+      share: report.planningShare.toFixed(2),
+      directRetained: `${String(report.retainedDirectImpacts)}/${String(report.expectedDirectImpacts)}`,
+      possibleBefore: report.possibleStrictBefore?.toFixed(2) ?? '\u2014',
+      possibleAfter: report.possibleStrictAfter?.toFixed(2) ?? '\u2014',
+    })),
+  );
+  const sum = (pick: (report: PlanningSignalReport) => number): number =>
+    reports.reduce((total, report) => total + pick(report), 0);
+  const total = sum((report) => report.total);
+  const planning = sum((report) => report.planningImpacts);
+  // eslint-disable-next-line no-console
+  console.log(
+    [
+      `AGGREGATE planning signal: ${String(planning)} of ${String(total)} impacts are planning decisions (${(planning / total).toFixed(3)})`,
+      `  dependency context ${String(sum((report) => report.dependencyContext))}`,
+      `  investigation leads ${String(sum((report) => report.investigationLeads))}`,
+      `  ground-truth direct impacts retained in the primary view ${String(sum((report) => report.retainedDirectImpacts))}/${String(sum((report) => report.expectedDirectImpacts))}`,
+      `  possible-tier candidates: ${String(sum((report) => report.possibleKept))} of ${String(sum((report) => report.possibleCandidates))} kept in the primary view`,
+      `  of those, ground truth calls unsupported: ${JSON.stringify(reports.flatMap((report) => report.keptButUnsupported))}`,
+    ].join('\n'),
+  );
 };
 
 describe('impact-quality evaluation on the reference repository (PRD §41, §46)', () => {
   let repoDir: string;
   let results: EvaluationResult[] = [];
   let possibleReports: (PossibleTierReport & { name: string })[] = [];
+  let planningReports: (PlanningSignalReport & { name: string })[] = [];
 
   beforeAll(async () => {
     repoDir = await prepareIndexedFixture();
-    ({ results, possibleReports } = await analyzeAllSamples(repoDir));
+    ({ results, possibleReports, planningReports } = await analyzeAllSamples(repoDir));
   }, 120_000);
 
   afterAll(() => {
@@ -191,6 +245,43 @@ describe('impact-quality evaluation on the reference repository (PRD §41, §46)
       ].join('\n'),
     );
     expect(total).toBeGreaterThan(0);
+  });
+
+  /**
+   * ADR-0025. Two numbers, and the second is the one that matters.
+   *
+   * The share says how much of the analysis the primary view now shows; a low share on a broad
+   * specification is the expected result, not a regression. The RETENTION column says whether
+   * narrowing cost anything: a ground-truth direct impact demoted to context would be a smaller
+   * graph that is also a worse one, which is the failure mode this whole change has to avoid.
+   */
+  it('reports the planning-signal split and what narrowing the primary view cost', () => {
+    printPlanningSignal(planningReports);
+    expect(planningReports.length).toBeGreaterThan(0);
+  });
+
+  it('never demotes a ground-truth direct impact out of the primary planning view', () => {
+    for (const report of planningReports) {
+      expect(report.demotedDirectImpacts, `${report.name}: demoted direct impacts`).toEqual([]);
+    }
+  });
+
+  /**
+   * The precision gate on the tier the noise lived in. Measured before this change: 58 `possible`
+   * candidates across the samples, of which ground truth allowed 7 — strict precision 0.121. The
+   * role axis keeps a handful of them, so the bound is stated in absolute terms: at most two of the
+   * survivors may be candidates ground truth calls unsupported. Loosening the architectural-
+   * consequence rule enough to readmit the traversal would fail here.
+   */
+  it('keeps almost no possible-tier candidate ground truth calls unsupported', () => {
+    const kept = planningReports.flatMap((report) => report.keptButUnsupported);
+    expect(kept.length, `kept unsupported: ${kept.join(', ')}`).toBeLessThanOrEqual(2);
+  });
+
+  it('the primary planning view is strictly smaller than the whole analysis', () => {
+    const total = planningReports.reduce((sum, report) => sum + report.total, 0);
+    const planning = planningReports.reduce((sum, report) => sum + report.planningImpacts, 0);
+    expect(planning).toBeLessThan(total);
   });
 
   it('every possible-tier candidate carries a judgment', () => {

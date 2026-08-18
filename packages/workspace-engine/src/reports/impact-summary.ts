@@ -1,11 +1,4 @@
-import {
-  categorizeIndexWarnings,
-  computeReadiness,
-  reconciledScore,
-  evidenceTypesOf,
-  primaryEvidenceType,
-  provenanceLabel,
-} from '@impactgraph/domain';
+import { categorizeIndexWarnings, computeReadiness, reconciledScore } from '@impactgraph/domain';
 
 import {
   resolveSuppliedIdentifiers,
@@ -14,6 +7,7 @@ import {
 
 import { analysisBlock, decisionBlock } from './decision-block.js';
 import { buildEvidenceQuality, evidenceLimitations } from './evidence-quality-block.js';
+import { impactLine } from './impact-line.js';
 import {
   DEFAULT_TOP_N,
   groupByNode,
@@ -22,6 +16,11 @@ import {
 } from './impact-selection.js';
 import { summaryCounts, unmatchedRequirements, unresolvedConcepts } from './impact-summary-facts.js';
 import { toIndexWarningReportDto } from './index-health-dto.js';
+import {
+  buildDependencyContext,
+  buildPlanningSignal,
+  buildUnresolvedSurfaces,
+} from './planning-blocks.js';
 import { impactedPaths, predictArtifacts } from './predicted-artifacts.js';
 import { buildRequiredActions } from './required-actions.js';
 import { buildUnmatchedBlock } from './unmatched-block.js';
@@ -34,13 +33,13 @@ import type {
   CliImpactSummary,
   EvidenceQualityDto,
   ImpactFilters,
+  PlanningSignalDto,
   WorkspaceCoverageDto,
 } from '@impactgraph/contracts';
 import type {
   ImpactAnalysis,
   IndexFreshness,
   KnowledgeGraph,
-  NodeId,
   PlanAssessment,
   RawIndexWarning,
   Specification,
@@ -113,38 +112,6 @@ const importantWarnings = (
     kept.push({ code: warning.code, message: warning.message });
   }
   return { kept, omitted };
-};
-
-const impactLine = (
-  grouped: GroupedImpact,
-  graph: KnowledgeGraph,
-  includeFullPaths: boolean,
-): CliImpactSummary['topImpacts'][number] => {
-  const { impact } = grouped;
-  const node = graph.nodes.get(impact.nodeId as NodeId);
-  const evidenceTypes = evidenceTypesOf(impact);
-  return {
-    nodeId: impact.nodeId,
-    name: node?.name ?? impact.nodeId,
-    ...(node?.path === undefined || !includeFullPaths ? {} : { path: node.path }),
-    likelihood: impact.likelihood,
-    evidenceType: primaryEvidenceType(evidenceTypes),
-    impactType: impact.impactType,
-    confidence: impact.confidence,
-    hops: Math.max(0, impact.dependencyPath.length - 1),
-    requirementIds: [...new Set(grouped.requirementIds)].sort(),
-    requirementLabels: [...new Set(grouped.requirementLabels)].sort(),
-    reason: impact.explanation,
-    ...(impact.tierCappedBy === undefined ? {} : { tierCappedBy: impact.tierCappedBy }),
-    // Absent when the stored analysis predates the provenance axis — absence must never read as
-    // "independently discovered", so nothing is defaulted here (ADR-0017 §5).
-    ...(impact.evidenceProvenance === undefined
-      ? {}
-      : {
-          evidenceProvenance: impact.evidenceProvenance,
-          provenanceLabel: provenanceLabel(impact.evidenceProvenance),
-        }),
-  };
 };
 
 /**
@@ -225,6 +192,7 @@ const provisionalReasons = (
   input: ImpactSummaryInput,
   coverage: WorkspaceCoverageDto,
   evidenceQuality: EvidenceQualityDto,
+  planning: PlanningSignalDto,
 ): readonly string[] => {
   const reasons: string[] = [];
   if (input.specification.extractionQuality?.provisional === true) {
@@ -240,6 +208,12 @@ const provisionalReasons = (
   // does: the shown impacts are name/meaning matches, not structural findings (item 4).
   if (evidenceQuality.status === 'weak') {
     reasons.push(...evidenceQuality.reasons);
+  }
+  // ADR-0025: an analysis that found things but qualified none of them as a decision is the same
+  // kind of indicative result — and it no longer reaches the verdict above, because the role gate
+  // keeps the resemblances that would have triggered it out of the shown set.
+  if (planning.totalCount > 0 && planning.planningImpactCount === 0) {
+    reasons.push(planning.statement);
   }
   return reasons;
 };
@@ -308,6 +282,7 @@ const blockersBlock = (
 };
 
 const FOLLOW_UP: readonly string[] = [
+  "list_impacts with roles: ['dependency-context','investigation-lead'] — the reachable neighbourhood and the name matches this document deliberately does not lead with",
   'list_impacts — every impact, paginated, with dependency paths and confidence signals',
   'explain_node / explain_edge — provenance, evidence and relationships of one component',
   'get_impact_analysis — the full stored artifact, including any proposed structure',
@@ -332,12 +307,23 @@ const repositoryAttributionOf = (
     ? undefined
     : { graph: input.graph, repositories: input.workspace.repositories };
 
-/** Present only when the pass ran, so absence never reads as "checked, found nothing". */
-export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
+/** Everything the document is assembled from, computed once so the assembler stays readable. */
+interface SummaryParts {
+  readonly selection: ReturnType<typeof selectImpacts>;
+  readonly grouped: readonly GroupedImpact[];
+  readonly unmatched: ReturnType<typeof unmatchedRequirements>;
+  readonly workspaceCoverage: WorkspaceCoverageDto;
+  readonly evidenceQuality: EvidenceQualityDto;
+  readonly planningSignal: PlanningSignalDto;
+  readonly reasons: readonly string[];
+  readonly topImpacts: CliImpactSummary['topImpacts'];
+  readonly unresolved: CliImpactSummary['unresolvedConcepts'];
+}
+
+const partsOf = (input: ImpactSummaryInput): SummaryParts => {
   const { analysis, graph, specification } = input;
   const selection = selectImpacts(analysis, input.filters);
   const grouped = groupByNode(selection.impacts, specification);
-  const unmatched = unmatchedRequirements(specification, analysis);
   const workspaceCoverage = buildWorkspaceCoverage({
     specification,
     analysis,
@@ -345,11 +331,38 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     graph,
   });
   const evidenceQuality = buildEvidenceQuality(grouped);
-  const reasons = provisionalReasons(input, workspaceCoverage, evidenceQuality);
-  const warnings = importantWarnings(analysis);
+  const planningSignal = buildPlanningSignal(analysis);
   const includeFullPaths = input.filters?.includeFullPaths ?? true;
-  const topImpacts = grouped.map((entry) => impactLine(entry, graph, includeFullPaths));
-  const unresolved = unresolvedConcepts(analysis);
+  return {
+    selection,
+    grouped,
+    unmatched: unmatchedRequirements(specification, analysis),
+    workspaceCoverage,
+    evidenceQuality,
+    planningSignal,
+    reasons: provisionalReasons(input, workspaceCoverage, evidenceQuality, planningSignal),
+    topImpacts: grouped.map((entry) => impactLine(entry, graph, includeFullPaths)),
+    unresolved: unresolvedConcepts(analysis),
+  };
+};
+
+/** Present only when the pass ran, so absence never reads as "checked, found nothing". */
+export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary => {
+  const { analysis, graph, specification } = input;
+  const {
+    selection,
+    grouped,
+    unmatched,
+    workspaceCoverage,
+    evidenceQuality,
+    planningSignal,
+    reasons,
+    topImpacts,
+    unresolved,
+  } = partsOf(input);
+  const warnings = importantWarnings(analysis);
+  const dependencyContext = buildDependencyContext(analysis, graph);
+  const unresolvedSurfaces = buildUnresolvedSurfaces(analysis);
   return {
     // ADR-0022 — decision first: the verdict and its one-sentence reading precede the evidence.
     ...decisionBlock(input, {
@@ -369,7 +382,10 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
     coverage: coverageBlock(input, unmatched.length),
     counts: summaryCounts(analysis, repositoryAttributionOf(input)),
     evidenceQuality,
+    planningSignal,
     topImpacts,
+    ...(dependencyContext === undefined ? {} : { dependencyContext }),
+    ...(unresolvedSurfaces === undefined ? {} : { unresolvedSurfaces }),
     ...buildUnmatchedBlock(unmatched, input.preflight?.classifications ?? []),
     unresolvedConcepts: unresolved,
     // The specification's path-shaped identifiers, resolved against the graph — always computable,
@@ -388,6 +404,7 @@ export const buildImpactSummary = (input: ImpactSummaryInput): CliImpactSummary 
       freshness: input.freshness,
       context: input.workspace,
       evidenceQuality,
+      planningSignal,
     }),
     followUp: [...FOLLOW_UP],
   };

@@ -2,6 +2,7 @@ import { isSpeculativeConcept } from '../analyze-specification/statement-analysi
 
 import { coversArchitecturalStem } from './architectural-stem.js';
 import { assessBareFilename, resolveWrittenPath } from './concept-anchor-grade.js';
+import { findByPathSegment, normalize } from './concept-directory-match.js';
 import { assessUbiquity } from './dependency-ubiquity.js';
 import { containerOf, containerRoots } from './top-level-container.js';
 
@@ -86,9 +87,17 @@ export interface ConceptMatchResult {
    * clarification warning can list the candidates instead of just declaring ambiguity.
    */
   readonly pathCandidates: ReadonlyMap<string, readonly string[]>;
+  /**
+   * ADR-0025: for each UNRESOLVED concept, indexed names that came close without matching.
+   *
+   * These used to become impacts. A specification introducing `/threshold-eval/export` produced a
+   * page of existing artifacts whose names contain "export", each defensible and none of them the
+   * answer — the answer was that no such surface exists. They are reported here so the unresolved
+   * surface can say "the vocabularies may differ, here is what is nearby" without any of them
+   * being presented as a prediction of change.
+   */
+  readonly nearMisses: ReadonlyMap<string, readonly string[]>;
 }
-
-const normalize = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 const MAX_MATCHES_PER_CONCEPT = 5;
 
@@ -198,24 +207,6 @@ const findByName = (
   return { exact: exact.sort(byId), similar: similar.sort(byId) };
 };
 
-interface Resolution {
-  readonly mechanism: MatchMechanism;
-  readonly nodes: readonly GraphNode[];
-}
-
-/** Below this many normalized characters, a segment match is a coincidence ("api", "app"). */
-const MIN_SEGMENT_CONCEPT_LENGTH = 6;
-
-/**
- * A service that exists only as a directory — no manifest, no Terraform resource, no node NAMED
- * after it — is still a component a specification can name. A concept equal to a directory
- * segment resolves to the files under that directory, shallowest first, so plans that name such
- * a service can be checked against the constraints that govern its path. Bounded and marked
- * ambiguous: the concept names the container, and which file inside changes stays a guess.
- */
-/** Node types that stand for a whole directory: the manifest-bearing container. */
-const CONTAINER_TYPES = new Set(['package', 'workspace']);
-
 /** Member-level node types a mined (speculative) concept may never claim by name coincidence. */
 const MEMBER_TYPES = new Set([
   'union-literal',
@@ -225,66 +216,20 @@ const MEMBER_TYPES = new Set([
   'translation-key',
 ]);
 
-const inDirectory = (path: string, asPrefix: string | undefined, target: string): number => {
-  const segments = path.split('/');
-  if (asPrefix !== undefined) {
-    return path.startsWith(asPrefix) ? asPrefix.split('/').length - 2 : -1;
-  }
-  return segments
-    .slice(0, -1)
-    .findIndex((segment) => normalize(segment) === target && normalize(segment).length > 0);
-};
-
-interface SegmentHits {
-  readonly containers: GraphNode[];
-  readonly files: { node: GraphNode; depth: number }[];
+interface Resolution {
+  readonly mechanism: MatchMechanism;
+  readonly nodes: readonly GraphNode[];
 }
-
-const collectSegmentHits = (
-  graph: KnowledgeGraph,
-  asPrefix: string | undefined,
-  target: string,
-): SegmentHits => {
-  const hits: SegmentHits = { containers: [], files: [] };
-  for (const node of graph.nodes.values()) {
-    if (node.path === undefined) {
-      continue;
-    }
-    const index = inDirectory(node.path, asPrefix, target);
-    if (index < 0) {
-      continue;
-    }
-    // The manifest-bearing container IS the directory: "apps/mcp-server" names one package, not
-    // its five shallowest files. Only a directory with no container falls back to files.
-    if (CONTAINER_TYPES.has(node.type) && node.path.split('/').length - index === 2) {
-      hits.containers.push(node);
-    } else if (node.type === 'file') {
-      hits.files.push({ node, depth: node.path.split('/').length - index });
-    }
-  }
-  return hits;
-};
-
-const findByPathSegment = (graph: KnowledgeGraph, concept: string): GraphNode[] => {
-  const target = normalize(concept);
-  const asPrefix = concept.includes('/') ? `${concept.replace(/\/+$/, '')}/` : undefined;
-  if (asPrefix === undefined && target.length < MIN_SEGMENT_CONCEPT_LENGTH) {
-    return [];
-  }
-  const { containers, files } = collectSegmentHits(graph, asPrefix, target);
-  if (containers.length > 0) {
-    return containers.sort((a, b) => a.id.localeCompare(b.id));
-  }
-  return files
-    .sort((a, b) => a.depth - b.depth || a.node.id.localeCompare(b.node.id))
-    .map((hit) => hit.node);
-};
 
 /** Mutable diagnostics the resolution pass accumulates alongside the matches. */
 interface MatchDiagnostics {
   readonly notes: string[];
   readonly pathCandidates: Map<string, readonly string[]>;
+  readonly nearMisses: Map<string, readonly string[]>;
 }
+
+/** Bounded: a near-miss list is orientation, not a search result. */
+const MAX_NEAR_MISSES = 5;
 
 const resolve = (
   graph: KnowledgeGraph,
@@ -336,7 +281,7 @@ const resolve = (
       return { mechanism: 'alias', nodes: viaAlias };
     }
   }
-  return fuzzyResolution(graph, concept, usable, direct.similar);
+  return fuzzyResolution({ graph, concept, usable, rawSimilar: direct.similar, diagnostics });
 };
 
 /**
@@ -350,12 +295,41 @@ const resolve = (
  * 21-impact analysis into a 214-impact one. Mining candidates is cheap; the license to fuzz is
  * reserved for names the author actually wrote.
  */
-const fuzzyResolution = (
-  graph: KnowledgeGraph,
-  concept: string,
-  usable: (nodes: readonly GraphNode[]) => GraphNode[],
-  rawSimilar: readonly GraphNode[],
-): Resolution | 'ambiguous' | undefined => {
+interface FuzzyInput {
+  readonly graph: KnowledgeGraph;
+  readonly concept: string;
+  readonly usable: (nodes: readonly GraphNode[]) => GraphNode[];
+  readonly rawSimilar: readonly GraphNode[];
+  readonly diagnostics: MatchDiagnostics;
+}
+
+const fuzzyResolution = ({
+  graph,
+  concept,
+  usable,
+  rawSimilar,
+  diagnostics,
+}: FuzzyInput): Resolution | 'ambiguous' | undefined => {
+  const recordNearMisses = (): undefined => {
+    if (rawSimilar.length > 0) {
+      diagnostics.nearMisses.set(
+        concept,
+        rawSimilar.slice(0, MAX_NEAR_MISSES).map((node) => node.path ?? node.name),
+      );
+    }
+    return undefined;
+  };
+  // ADR-0025: a concept written WITH a separator names one specific place — a route, or a file at
+  // a path. It either resolves to that place (verbatim, suffix, or the directory it names) or it
+  // does not exist here, and a component whose name merely resembles it is a different component,
+  // not a weaker reading of the same one. `/threshold-eval/export` finding `exportJob` is the
+  // failure this closes: the near misses are recorded as vocabulary, never as matches.
+  if (concept.includes('/')) {
+    const bySegment = usable(findByPathSegment(graph, concept));
+    return bySegment.length > 0
+      ? { mechanism: 'path-segment', nodes: bySegment }
+      : recordNearMisses();
+  }
   const speculative = isSpeculativeConcept(concept);
   const similar = speculative ? [] : usable(rawSimilar);
   if (similar.length > 0 && similar.length <= MAX_SIMILAR_MATCHES) {
@@ -366,9 +340,12 @@ const fuzzyResolution = (
     return { mechanism: 'path-segment', nodes: bySegment };
   }
   if (speculative) {
-    return undefined;
+    return recordNearMisses();
   }
-  return similar.length > MAX_SIMILAR_MATCHES || rawSimilar.length > 0 ? 'ambiguous' : undefined;
+  if (similar.length > MAX_SIMILAR_MATCHES || rawSimilar.length > 0) {
+    return 'ambiguous';
+  }
+  return recordNearMisses();
 };
 
 /**
@@ -500,7 +477,11 @@ export const matchConcepts = (
   const matches: ConceptMatch[] = [];
   const unknownConcepts: string[] = [];
   const ambiguousConcepts: string[] = [];
-  const diagnostics: MatchDiagnostics = { notes: [], pathCandidates: new Map() };
+  const diagnostics: MatchDiagnostics = {
+    notes: [],
+    pathCandidates: new Map(),
+    nearMisses: new Map(),
+  };
   // Lazy: the roots scan only runs when an exact name actually resolved to several nodes.
   let cachedRoots: readonly string[] | undefined;
   const roots = (): readonly string[] => (cachedRoots ??= containerRoots(graph));
@@ -535,5 +516,6 @@ export const matchConcepts = (
     ambiguousConcepts,
     eligibilityNotes: [...new Set(diagnostics.notes)].sort(),
     pathCandidates: diagnostics.pathCandidates,
+    nearMisses: diagnostics.nearMisses,
   };
 };

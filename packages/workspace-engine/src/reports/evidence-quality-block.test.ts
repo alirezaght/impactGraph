@@ -128,6 +128,12 @@ const weakImpacts = (): RequirementImpact[] => [
 ];
 
 describe('the bounded summary carries the evidence-quality verdict', () => {
+  /**
+   * ADR-0025 keeps a resemblance-RESOLVED subject in the primary view (hiding it would leave an
+   * empty plan and nothing to correct), so the shown set still contains the fuzzy matches and the
+   * evidence-quality verdict still calls it weak. What changed is that the reader is now told, on
+   * every line, that the component was matched by name rather than named.
+   */
   it('reports weak, marks the analysis provisional, and emits report-limited-evidence', () => {
     const summary = summaryFor(weakImpacts());
     expect(summary.evidenceQuality?.status).toBe('weak');
@@ -136,6 +142,32 @@ describe('the bounded summary carries the evidence-quality verdict', () => {
     expect(summary.analysis.provisional).toBe(true);
     expect(
       summary.analysis.provisionalReasons.some((reason) => reason.includes('structural evidence')),
+    ).toBe(true);
+    expect(
+      summary.requiredActions?.some((action) => action.action === 'report-limited-evidence'),
+    ).toBe(true);
+    expect(summary.topImpacts.every((impact) => impact.planningRole === 'planning-impact')).toBe(
+      true,
+    );
+    expect(
+      summary.topImpacts.every((impact) => impact.planningRoleRule === 'resolved-by-resemblance'),
+    ).toBe(true);
+  });
+
+  /** The same resemblance REACHED by traversal is a lead: it leaves the plan entirely. */
+  it('files a resemblance reached by traversal as a lead and empties the plan', () => {
+    const summary = summaryFor([
+      impact('sym:a', 'likely', ['name-similarity'], {
+        tierCappedBy: 'name-similarity',
+        directness: 'indirect',
+        dependencyPath: ['sym:root', 'sym:a'],
+      }),
+    ]);
+    expect(summary.topImpacts).toHaveLength(0);
+    expect(summary.planningSignal?.investigationLeadCount).toBe(1);
+    expect(summary.dependencyContext?.investigationLeadCount).toBe(1);
+    expect(
+      summary.analysis.provisionalReasons.some((reason) => reason.includes('planning decisions')),
     ).toBe(true);
     expect(
       summary.requiredActions?.some((action) => action.action === 'report-limited-evidence'),

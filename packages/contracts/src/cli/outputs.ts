@@ -13,6 +13,7 @@ import {
   preflightFindingSchema,
   requirementClassificationSchema,
 } from './plan-assessment.js';
+import { planningRoleRuleSchema, planningRoleSchema } from './planning-role.js';
 import { candidateRepositorySchema, repositoryIndexStateSchema } from './repository-state.js';
 
 // Machine-readable CLI output (PRD §20, `--format json`). Every document is versioned and
@@ -228,6 +229,14 @@ const analyzeImpactSchema = z
      * did not support the stronger one — the cap must be visible wherever likelihood is.
      */
     tierCappedBy: impactEvidenceTypeSchema.optional(),
+    /**
+     * Additive v1 field (ADR-0025): what this record is FOR — a planning decision, dependency
+     * context, or a lead. The full document keeps every role; the role says which half a reader
+     * should act on. Absent only from documents produced before the axis existed.
+     */
+    planningRole: planningRoleSchema.optional(),
+    planningRoleRule: planningRoleRuleSchema.optional(),
+    planningRoleReason: z.string().min(1).optional(),
   })
   .strict();
 

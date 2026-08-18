@@ -19,6 +19,8 @@ import {
 
 import { failWith } from './failure.js';
 import { loadCurrentGraph, withIndexStore } from './graphs.js';
+import { unindexedRegisteredRepositories } from './reports/workspace-coverage-block.js';
+import { collectWorkspaceRepositoryContext } from './repository-coverage.js';
 
 import type { Failable } from './failure.js';
 import type {
@@ -271,6 +273,61 @@ const recentHistory = async (rootDir: string): Promise<readonly (readonly string
   return commits.ok ? commits.value : [];
 };
 
+/**
+ * Registered, enabled repositories absent from the current index. Read through the shared roster
+ * computation rather than re-derived, so every surface that mentions coverage agrees.
+ */
+const missingRepositoryCount = async (rootDir: string): Promise<number> => {
+  const context = await collectWorkspaceRepositoryContext(rootDir);
+  return context.ok ? unindexedRegisteredRepositories(context.value).length : 0;
+};
+
+interface OptionalClarifyInput {
+  readonly rootDir: string;
+  readonly specification: Specification;
+  readonly graph: KnowledgeGraph;
+  readonly aliases: Readonly<Record<string, string>>;
+  readonly history: readonly (readonly string[])[];
+  readonly interpreter?: BuildAnalysisOptions['interpreter'];
+}
+
+interface ClarifyOutcome {
+  readonly specification: Specification;
+  readonly options: readonly ArchitecturalOption[];
+  readonly proposedStructure?: ProposedStructure | undefined;
+}
+
+/** No interpreter configured means no clarification pass — the specification passes through. */
+const clarifyIfConfigured = async (
+  input: OptionalClarifyInput,
+): Promise<Failable<ClarifyOutcome>> => {
+  if (input.interpreter === undefined) {
+    return { ok: true, value: { specification: input.specification, options: [] } };
+  }
+  const clarified = await attachClarifications({
+    rootDir: input.rootDir,
+    specification: input.specification,
+    graph: input.graph,
+    interpreter: input.interpreter,
+    aliases: input.aliases,
+    history: input.history,
+  });
+  if (!clarified.ok) {
+    return clarified;
+  }
+  return {
+    ok: true,
+    value: {
+      specification: clarified.value.specification,
+      options: clarified.value.options,
+      proposedStructure: clarified.value.proposedStructure,
+    },
+  };
+};
+
+const analysisIdFor = (specification: Specification): string =>
+  `analysis-${specification.id}-v${String(specification.version)}-${Date.now().toString(36)}`;
+
 /** Build + persist an impact analysis: deterministic candidates first, then the optional
  *  LLM re-classification of that bounded set (§43.5). AI failure keeps the deterministic
  *  analysis fully usable (PRD §8) — the refine pass runs BEFORE the artifact is persisted. */
@@ -290,36 +347,37 @@ export const buildAnalysisForSpecification = async (
     }
     const aliases = aliasesConfig.value?.aliases ?? {};
     const history = await recentHistory(rootDir);
-    let effectiveSpecification = specification;
-    let clarificationOptions: readonly ArchitecturalOption[] = [];
-    let proposedStructure: ProposedStructure | undefined;
-    if (options.interpreter !== undefined) {
-      const clarified = await attachClarifications({
-        rootDir,
-        specification,
-        graph: loaded.value.graph,
-        interpreter: options.interpreter,
-        aliases,
-        history,
-      });
-      if (!clarified.ok) {
-        return clarified;
-      }
-      effectiveSpecification = clarified.value.specification;
-      clarificationOptions = clarified.value.options;
-      proposedStructure = clarified.value.proposedStructure;
+    const clarified = await clarifyIfConfigured({
+      rootDir,
+      specification,
+      graph: loaded.value.graph,
+      aliases,
+      history,
+      ...(options.interpreter === undefined ? {} : { interpreter: options.interpreter }),
+    });
+    if (!clarified.ok) {
+      return clarified;
     }
+    const {
+      specification: effectiveSpecification,
+      options: clarificationOptions,
+      proposedStructure,
+    } = clarified.value;
     const analysis = buildImpactModel({
       specification: effectiveSpecification,
       graph: loaded.value.graph,
       repositorySnapshotId: loaded.value.snapshotId,
-      analysisId: `analysis-${effectiveSpecification.id}-v${String(effectiveSpecification.version)}-${Date.now().toString(36)}`,
+      analysisId: analysisIdFor(effectiveSpecification),
       createdAt: new Date().toISOString(),
       aliases,
       excludedComponents: (aliasesConfig.value?.exclusions ?? []).map((entry) => entry.component),
       history,
       architecturalOptions: clarificationOptions,
       proposedStructure,
+      // ADR-0025: the SAME roster fact the coverage verdict reads. Without it an unresolved
+      // concept in an unindexed repository would be reported as new construction while
+      // `workspaceCoverage` says the repository holding it was never indexed.
+      missingRepositoryCount: await missingRepositoryCount(rootDir),
     });
     if (!analysis.ok) {
       return failWith('internalError', 'impact analysis failed validation');

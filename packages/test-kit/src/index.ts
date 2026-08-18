@@ -59,5 +59,9 @@ export {
 export type { CandidateMovement, GraphMovement, MovementReport, NodeMovement } from './movement.js';
 export { SAMPLE_EVALUATIONS } from './evaluation-samples.js';
 export type { CrossStackEvaluation, ImpactGroundTruth, SampleEvaluation } from './evaluation.js';
-export { evaluateSample, reportPossibleTier } from './evaluation-metrics.js';
-export type { EvaluationResult, PossibleTierReport } from './evaluation-metrics.js';
+export { evaluateSample, reportPlanningSignal, reportPossibleTier } from './evaluation-metrics.js';
+export type {
+  EvaluationResult,
+  PlanningSignalReport,
+  PossibleTierReport,
+} from './evaluation-metrics.js';

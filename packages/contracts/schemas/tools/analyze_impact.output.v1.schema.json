@@ -319,6 +319,13 @@
                 "type": "integer",
                 "minimum": 0
               }
+            },
+            "byPlanningRole": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           },
           "required": ["totalImpacts", "componentCount", "byLikelihood", "byEvidenceType"],
@@ -378,6 +385,45 @@
             }
           },
           "required": ["status", "reasons", "counts"],
+          "additionalProperties": false
+        },
+        "planningSignal": {
+          "type": "object",
+          "properties": {
+            "planningImpactCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dependencyContextCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "investigationLeadCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "planningShare": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "planningImpactCount",
+            "dependencyContextCount",
+            "investigationLeadCount",
+            "totalCount",
+            "planningShare",
+            "statement"
+          ],
           "additionalProperties": false
         },
         "topImpacts": {
@@ -464,6 +510,28 @@
               "provenanceLabel": {
                 "type": "string",
                 "enum": ["confirmation", "discovery", "lead"]
+              },
+              "planningRole": {
+                "type": "string",
+                "enum": ["planning-impact", "dependency-context", "investigation-lead"]
+              },
+              "planningRoleRule": {
+                "type": "string",
+                "enum": [
+                  "non-goal-excluded",
+                  "regression-boundary",
+                  "adversarially-derived",
+                  "named-by-specification",
+                  "resolved-by-resemblance",
+                  "resemblance-only",
+                  "structural-obligation",
+                  "architectural-consequence",
+                  "reachable-only"
+                ]
+              },
+              "planningRoleReason": {
+                "type": "string",
+                "minLength": 1
               }
             },
             "required": [
@@ -477,6 +545,116 @@
               "requirementIds",
               "requirementLabels",
               "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "dependencyContext": {
+          "type": "object",
+          "properties": {
+            "componentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "investigationLeadCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "byImpactType": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "reachedFrom": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "howToInspect": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "componentCount",
+            "investigationLeadCount",
+            "byImpactType",
+            "reachedFrom",
+            "howToInspect"
+          ],
+          "additionalProperties": false
+        },
+        "unresolvedSurfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "concept": {
+                "type": "string",
+                "minLength": 1
+              },
+              "shape": {
+                "type": "string",
+                "enum": ["route", "path", "identifier", "term"]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "new-surface",
+                  "external-dependency",
+                  "coverage-gap",
+                  "terminology-mismatch",
+                  "insufficient-evidence"
+                ]
+              },
+              "alternativeKinds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/unresolvedSurfaces/items/properties/kind"
+                }
+              },
+              "rationale": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requirementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "nearestExisting": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "concept",
+              "shape",
+              "kind",
+              "alternativeKinds",
+              "rationale",
+              "requirementIds",
+              "nearestExisting",
+              "confidence",
+              "label"
             ],
             "additionalProperties": false
           }
@@ -998,6 +1176,13 @@
                 },
                 "includeFullPaths": {
                   "type": "boolean"
+                },
+                "roles": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Tool_analyze_impact_OutputV1/properties/topImpacts/items/properties/planningRole"
+                  },
+                  "minItems": 1
                 },
                 "cursor": {
                   "type": "string",

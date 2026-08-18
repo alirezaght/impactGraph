@@ -26,7 +26,10 @@ export const impactBudgetStatements = (view: GraphView, facts: ImpactViewFacts):
   const budget = view.budget;
   const statements = [
     `${formatCount(totals.impactCount)} predicted impacts on ${formatCount(totals.componentCount)} components, from ${formatCount(totals.requirementsWithImpacts)} of ${formatCount(totals.requirementCount)} requirements. Showing ${formatCount(totals.componentsShown)} of ${formatCount(totals.componentCount)} components across ${formatCount(budget.groupsShown)} of ${formatCount(budget.groups)} ${view.grouping} groups.`,
-    `${formatCount(totals.directCount)} impacts are direct concept matches; ${formatCount(totals.indirectCount)} were reached by dependency traversal, up to ${plural(totals.maxHops, 'hop')} away. An impact reached at two hops is a weaker claim than a direct match, so every row states its hop count.`,
+    // ADR-0025: the old sentence measured the wrong thing. "11 direct, 95 traversed" tells a
+    // reader how the walk went, not what to think about — and the 95 read as 95 predictions.
+    // Hop counts still matter, so they stay; what leads is the split that decides attention.
+    `${formatCount(totals.directCount)} of these are components the specification named directly; ${formatCount(totals.indirectCount)} were reached by traversal, up to ${plural(totals.maxHops, 'hop')} away, so every row states its hop count. Reachability is not impact: components reachable from the change with nothing establishing that they change are filed as dependency context and are not shown here.`,
     `${formatCount(totals.crossGroupHops)} dependency hops cross a group boundary and ${formatCount(totals.crossGroupHopsDrawn)} of those are drawn as aggregated arrows; hops inside a single group (${formatCount(view.edgeTotals.intraGroup)}) are not drawn because the group box already contains both ends.`,
   ];
   if (totals.requirementsWithoutImpacts > 0) {

@@ -266,6 +266,34 @@ deterministic knowledge: it renders as text beside likelihood (plus a `TIER CAPP
 marker, §37 colour-independent) and as a graph facet, and it never restyles the three §3
 knowledge-category badges.
 
+### Planning role and unresolved surfaces (ADR-0025)
+
+The impact record gains one axis and the analysis gains one collection, both **additive**:
+
+- `RequirementImpact.planningRole` (`'planning-impact' | 'dependency-context' |
+'investigation-lead'`) with `planningRoleRule` and `planningRoleReason`. Unlike the other
+  additive axes this one **re-derives on absence** (`planningRoleOf` / `planningRoleVerdictOf`)
+  rather than defaulting: every input the derivation reads is already on the record, so a stored
+  analysis written before the axis existed classifies exactly as a fresh one would. A defaulting
+  accessor would instead push every pre-ADR-0025 analysis into one half of every view.
+  `createImpactAnalysis` rejects a stored role that contradicts the derivation — the same
+  reject-don't-downgrade rule the evidence-basis tier ceiling uses, and for the same reason: a
+  quiet correction hides the producer bug that created it.
+- `ImpactAnalysis.unresolvedSurfaces` — specification terms that resolve to no indexed artifact,
+  each carrying `kind` (the best-supported reading), `alternativeKinds` (the readings the evidence
+  leaves open), `shape`, `rationale`, `requirementIds`, `nearestExisting` and `confidence`. Carried
+  BESIDE `requirementImpacts`, never inside it, for the same reason `proposedStructure` is: the
+  moment an absence becomes an impact it stops being an absence, and no node is ever created for
+  one. Absent means "this producer predates the axis", never "every concept resolved".
+
+On the wire: `cli/planning-role.ts` owns `planningRoleSchema`, `planningRoleRuleSchema`,
+`planningSignalSchema`, `dependencyContextSchema` and `unresolvedSurfaceSchema`; the bounded
+summary, the paginated page and the full analyze document all import from there (ADR-0009 — one
+schema, no diverging near-duplicate). `impactFiltersSchema` gains `roles`, defaulting to
+`['planning-impact']` and always echoed back in `pagination.appliedFilters`, so a caller can never
+mistake the default for the whole. `unresolvedConcepts` is still emitted beside
+`unresolvedSurfaces`; removing it is a separate, announced change.
+
 ### Regression boundaries (ADR-0023)
 
 Three **additive, optional** pieces carry a preservation requirement end to end, each with a

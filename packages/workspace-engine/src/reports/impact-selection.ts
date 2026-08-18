@@ -4,6 +4,8 @@ import {
   evidenceTypesOf,
   isIndependent,
   likelihoodRank,
+  planningRoleOf,
+  planningRoleRank,
   primaryEvidenceType,
 } from '@impactgraph/domain';
 
@@ -13,6 +15,7 @@ import type {
   ImpactEvidenceType,
   KnowledgeGraph,
   NodeId,
+  PlanningRole,
   RequirementImpact,
   Specification,
 } from '@impactgraph/domain';
@@ -35,6 +38,13 @@ export interface SelectionResult {
 
 export const DEFAULT_TOP_N = 20;
 
+/**
+ * ADR-0025: the default answer to "what are the impacts of this specification" is the planning
+ * decisions, not everything the traversal could reach. The other roles are one filter away and the
+ * applied filter is always echoed back, so a caller can never mistake the default for the whole.
+ */
+export const DEFAULT_ROLES: readonly PlanningRole[] = ['planning-impact'];
+
 const DEFAULTS = {
   topN: DEFAULT_TOP_N,
   minLikelihood: 'possible',
@@ -52,15 +62,21 @@ const provenanceClassRank = (impact: RequirementImpact): number =>
   isIndependent(evidenceProvenanceOf(impact)) ? 0 : 1;
 
 /**
- * Rank: strongest tier, then strongest evidence basis, then provenance class (discovery before
- * confirmation), then confidence, then node id.
+ * Rank: planning role, then strongest tier, then strongest evidence basis, then provenance class
+ * (discovery before confirmation), then confidence, then node id.
  *
- * Tier before basis is deliberate. A reader acts on "must this change?" first; the basis explains
- * why. Sorting by basis first would put a `possible` async finding above a `required` structural one.
- * Provenance before confidence is equally deliberate: an echo's confidence is high precisely
- * because the engine matched the name it was given, so confidence must not decide that tie.
+ * Role goes FIRST as of ADR-0025, above the tier it used to lead with. The tier answers "how
+ * strongly is this implicated"; the role answers "is this a decision", and a `required` name match
+ * on a helper is not a decision while a `possible` finding across an event boundary is. Sorting by
+ * tier first put the former above the latter in every mixed list.
+ *
+ * Tier before basis is unchanged and deliberate: within a role a reader acts on "must this change?"
+ * first, and the basis explains why. Provenance before confidence is equally deliberate — an echo's
+ * confidence is high precisely because the engine matched the name it was given, so confidence must
+ * not decide that tie.
  */
 export const byStrength = (a: RequirementImpact, b: RequirementImpact): number =>
+  planningRoleRank(planningRoleOf(a)) - planningRoleRank(planningRoleOf(b)) ||
   likelihoodRank(a.likelihood) - likelihoodRank(b.likelihood) ||
   evidenceStrengthRank(primaryEvidenceType(evidenceTypesOf(a))) -
     evidenceStrengthRank(primaryEvidenceType(evidenceTypesOf(b))) ||
@@ -95,6 +111,7 @@ interface Resolved {
   readonly includeLexical: boolean;
   readonly includeExcluded: boolean;
   readonly minLikelihood: NonNullable<ImpactFilters['minLikelihood']>;
+  readonly roles: readonly PlanningRole[];
 }
 
 const keeps = (
@@ -102,17 +119,23 @@ const keeps = (
   resolved: Resolved,
   filters: ImpactFilters,
 ): boolean => {
-  if (impact.likelihood === 'excluded') {
-    return resolved.includeExcluded;
-  }
   if (filters.requirementId !== undefined && impact.requirementId !== filters.requirementId) {
     return false;
   }
-  // Opting in to lexical-only bypasses the min-likelihood ceiling the same way includeExcluded
-  // does — otherwise "includeLexicalOnly: true to see them" would show nothing under the default
-  // minLikelihood and the advertised opt-in would be a lie.
+  // The two tier-level opt-ins are asks for a NAMED category, so they bypass the role gate the
+  // same way they already bypass the min-likelihood ceiling: `includeExcluded: true` means "show
+  // me what the non-goals ruled out", and answering it with nothing because those records are
+  // filed as context would make the advertised opt-in a lie.
+  if (impact.likelihood === 'excluded') {
+    return resolved.includeExcluded;
+  }
   if (impact.likelihood === 'lexical-only') {
     return resolved.includeLexical && matchesEvidence(impact, filters.evidenceTypes);
+  }
+  // ADR-0025: everything else is gated on the role first. This is the line that stops "the impacts
+  // of this specification" from meaning "everything reachable from anything it mentions".
+  if (!resolved.roles.includes(planningRoleOf(impact))) {
+    return false;
   }
   return (
     likelihoodRank(impact.likelihood) <= resolved.ceiling &&
@@ -131,6 +154,7 @@ export const selectImpacts = (
     includeLexical: filters.includeLexicalOnly ?? DEFAULTS.includeLexicalOnly,
     includeExcluded: filters.includeExcluded ?? DEFAULTS.includeExcluded,
     minLikelihood,
+    roles: filters.roles ?? DEFAULT_ROLES,
   };
   const matching = analysis.requirementImpacts
     .filter((impact) => keeps(impact, resolved, filters))
@@ -157,6 +181,7 @@ const echoFilters = (resolved: Resolved, filters: ImpactFilters): ImpactFilters 
   minLikelihood: resolved.minLikelihood,
   includeLexicalOnly: resolved.includeLexical,
   includeExcluded: resolved.includeExcluded,
+  roles: [...resolved.roles],
   ...(filters.evidenceTypes === undefined ? {} : { evidenceTypes: [...filters.evidenceTypes] }),
   ...(filters.cursor === undefined ? {} : { cursor: filters.cursor }),
   ...(filters.requirementId === undefined ? {} : { requirementId: filters.requirementId }),
@@ -200,7 +225,20 @@ export const groupByNode = (
   }));
 };
 
-/** Repository paths of everything the analysis predicts — the "predicted area" for warnings. */
+/** Impacts in one role, unfiltered and unpaged — the input to the secondary blocks. */
+export const impactsInRole = (
+  analysis: ImpactAnalysis,
+  role: PlanningRole,
+): readonly RequirementImpact[] =>
+  analysis.requirementImpacts.filter((impact) => planningRoleOf(impact) === role);
+
+/**
+ * Repository paths of everything the analysis predicts — the "predicted area" for warnings.
+ *
+ * Deliberately still every predictive tier, not just the planning role. This set answers "did the
+ * indexer fail to read a file we predict a change in", and an indexing gap under a dependency-
+ * context component is just as real a hole in the evidence as one under a planning impact.
+ */
 export const predictedPathsOf = (
   analysis: ImpactAnalysis,
   graph: KnowledgeGraph,

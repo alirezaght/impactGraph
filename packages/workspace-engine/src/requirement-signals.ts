@@ -1,5 +1,16 @@
+import {
+  referencesExternalBoundary,
+  siblingSurfaceIndexed,
+  usesCreationLanguage,
+} from '@impactgraph/application';
+
 import type { RequirementSignalInput } from '@impactgraph/application';
-import type { ImpactAnalysis, KnowledgeGraph } from '@impactgraph/domain';
+import type { ImpactAnalysis } from '@impactgraph/domain';
+
+// The language recognizers moved to `@impactgraph/application` (ADR-0025) so the unresolved-surface
+// classifier reads a requirement with exactly the same vocabulary this classifier does. Re-exported
+// here because existing consumers import `indexedTypes` from this module.
+export { indexedTypes } from '@impactgraph/application';
 
 /**
  * The deterministic classification signals for one requirement, shared by the preflight pass and
@@ -12,50 +23,6 @@ import type { ImpactAnalysis, KnowledgeGraph } from '@impactgraph/domain';
  * response. It is now a roster FACT supplied by the caller: true only when a registered, enabled
  * repository is actually absent from the current index.
  */
-
-/**
- * Language that describes bringing something into existence rather than changing something.
- *
- * The first version of this list held only `add`/`create`/`new`/`introduce`, and a self-run showed
- * why that is too narrow: "Index repository rules as first-class entities" and "Model runtime
- * topology" both create surface, and both fell through to `NO_EVIDENCE` — the honest fallback, but
- * the wrong answer. A specification writes creation as whatever verb suits the noun.
- *
- * Widening this is safe only because it is one signal among several and only ever consulted for a
- * requirement that matched NOTHING. A requirement that modifies existing surface has impacts, so it
- * is never classified at all.
- */
-const CREATION =
-  /\b(add|adds|adding|new|create|creates|creating|introduce|introduces|support for|index|model|models|modelled|emit|emits|expose|exposes|record|records|classify|classifies|derive|derives|represent|represents|extract|extracts|validate|validates)\b/i;
-/** Language that names a system this repository does not contain. */
-const EXTERNAL =
-  /\b(third[- ]party|external (?:service|system|api)|vendor|upstream provider|sendgrid|stripe|twilio)\b/i;
-
-/** Node types that indicate a KIND of surface is indexed at all — the NEW_SURFACE evidence. */
-const SURFACE_KINDS: readonly { readonly pattern: RegExp; readonly types: readonly string[] }[] = [
-  {
-    pattern: /\b(localization|localisation|i18n|translation|locale)\b/i,
-    types: ['locale-bundle', 'translation-key'],
-  },
-  { pattern: /\b(route|endpoint|path)\b/i, types: ['api-endpoint', 'controller', 'handler'] },
-  { pattern: /\b(schema|contract)\b/i, types: ['json-schema', 'openapi-document', 'schema'] },
-  { pattern: /\b(migration)\b/i, types: ['migration'] },
-  { pattern: /\b(feature flag)\b/i, types: ['feature-flag'] },
-  { pattern: /\b(event|topic|queue)\b/i, types: ['topic', 'pubsub-topic', 'domain-event'] },
-];
-
-export const indexedTypes = (graph: KnowledgeGraph): ReadonlySet<string> => {
-  const types = new Set<string>();
-  for (const node of graph.nodes.values()) {
-    types.add(node.type);
-  }
-  return types;
-};
-
-const siblingSurfaceIndexed = (statement: string, types: ReadonlySet<string>): boolean =>
-  SURFACE_KINDS.some(
-    (kind) => kind.pattern.test(statement) && kind.types.some((type) => types.has(type)),
-  );
 
 export interface RequirementSignalContext {
   readonly analysis: ImpactAnalysis;
@@ -85,7 +52,7 @@ export interface RequirementSignalContext {
  * is not — creation language means the file is SUPPOSED to be missing.
  */
 const assertsMissingIdentifier = (statement: string, unresolved: readonly string[]): boolean => {
-  if (unresolved.length === 0 || CREATION.test(statement)) {
+  if (unresolved.length === 0 || usesCreationLanguage(statement)) {
     return false;
   }
   const lower = statement.toLowerCase();
@@ -106,8 +73,8 @@ export const buildRequirementSignals = (
   // EXTERNAL_DEPENDENCY instead of a coverage claim the roster contradicts.
   touchesUnindexedRepository: context.missingRepositoryCount > 0,
   touchesIndexingGap: false,
-  usesCreationLanguage: CREATION.test(statement),
-  referencesExternalBoundary: EXTERNAL.test(statement),
+  usesCreationLanguage: usesCreationLanguage(statement),
+  referencesExternalBoundary: referencesExternalBoundary(statement),
   hasAmbiguousConcept: context.analysis.warnings.some(
     (warning) => warning.code === 'ambiguous-concept' && warning.requirementId === requirementId,
   ),

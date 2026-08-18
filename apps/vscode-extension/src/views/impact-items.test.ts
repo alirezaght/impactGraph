@@ -30,6 +30,8 @@ const analyzeDoc: CliAnalyzeOutput = {
           dependencyPath: ['sym:service'],
           evidenceFiles: ['src/services/deal-service.ts'],
           provenance: 'static-analysis',
+          planningRole: 'planning-impact',
+          planningRoleRule: 'structural-obligation',
         },
         {
           nodeId: 'sym:base',
@@ -41,6 +43,8 @@ const analyzeDoc: CliAnalyzeOutput = {
           dependencyPath: ['sym:service', 'sym:base'],
           evidenceFiles: ['src/services/base-service.ts'],
           provenance: 'static-analysis',
+          planningRole: 'dependency-context',
+          planningRoleRule: 'reachable-only',
         },
       ],
       openQuestions: [],
@@ -50,15 +54,26 @@ const analyzeDoc: CliAnalyzeOutput = {
 };
 
 describe('impact tree mapping (Story 9.2, §18.3/§37)', () => {
-  it('builds requirement → likelihood bucket → impact with text-only indicators', () => {
+  /**
+   * ADR-0025: role buckets sit ABOVE the likelihood buckets. Nothing is hidden — the reachable
+   * neighbour still has its row — but a reader expands decisions before neighbourhoods.
+   */
+  it('builds requirement → role bucket → likelihood bucket → impact with text-only indicators', () => {
     const roots = buildImpactItems(analyzeDoc);
     expect(roots).toHaveLength(1);
-    const buckets = roots[0]?.children ?? [];
-    expect(buckets.map((bucket) => bucket.label)).toEqual(['required', 'likely']);
+    const roles = roots[0]?.children ?? [];
+    expect(roles.map((bucket) => bucket.label)).toEqual([
+      'Planning impacts',
+      'Dependency context (reachable, no evidence of impact)',
+    ]);
+    const buckets = roles[0]?.children ?? [];
+    expect(buckets.map((bucket) => bucket.label)).toEqual(['required']);
     const impact = buckets[0]?.children[0];
     expect(impact?.label).toBe('DealService');
-    // §37: likelihood, type, confidence, provenance are text, not color
-    expect(impact?.description).toBe('required · business-rule · 0.90 · static-analysis');
+    // §37: likelihood, type, confidence, provenance and the deciding rule are text, not color
+    expect(impact?.description).toBe(
+      'required · business-rule · 0.90 · static-analysis · structural-obligation',
+    );
     expect(impact?.impactRef).toEqual({
       analysisId: 'analysis-1',
       requirementId: 'req-1',
@@ -68,7 +83,7 @@ describe('impact tree mapping (Story 9.2, §18.3/§37)', () => {
   });
 
   it('exposes dependency path and clickable evidence as detail children (§18.5)', () => {
-    const impact = buildImpactItems(analyzeDoc)[0]?.children[1]?.children[0];
+    const impact = buildImpactItems(analyzeDoc)[0]?.children[1]?.children[0]?.children[0];
     const labels = impact?.children.map((child) => child.label) ?? [];
     expect(labels.some((label) => label.startsWith('via: sym:service → sym:base'))).toBe(true);
     const file = impact?.children.find((child) => child.kind === 'file');
@@ -82,8 +97,9 @@ describe('impact tree mapping (Story 9.2, §18.3/§37)', () => {
 
   it('likelihood and impact-type filters hide non-matching impacts (§40.4)', () => {
     const filtered = buildImpactItems(analyzeDoc, { likelihoods: ['required'] });
-    const buckets = filtered[0]?.children ?? [];
-    expect(buckets.map((bucket) => bucket.label)).toEqual(['required']);
+    const roles = filtered[0]?.children ?? [];
+    expect(roles.map((bucket) => bucket.label)).toEqual(['Planning impacts']);
+    expect(roles[0]?.children.map((bucket) => bucket.label)).toEqual(['required']);
     expect(filtered[0]?.description).toBe('1 impact(s)');
 
     const none = buildImpactItems(analyzeDoc, { impactTypes: ['migration'] });

@@ -17,12 +17,14 @@ interface Props {
 }
 
 const LIKELIHOODS = ['required', 'likely', 'possible', 'unlikely'] as const;
+const PLANNING_ROLES = ['planning-impact', 'dependency-context', 'investigation-lead'] as const;
 const GROUPINGS: readonly { value: GroupBy; label: string }[] = [
   { value: 'context', label: 'Context' },
   { value: 'application', label: 'Application' },
   { value: 'requirement', label: 'Requirement' },
   { value: 'impact-type', label: 'Impact type' },
   { value: 'likelihood', label: 'Likelihood' },
+  { value: 'planning-role', label: 'Planning role' },
   { value: 'knowledge', label: 'Knowledge category' },
 ];
 
@@ -75,6 +77,46 @@ const Toggle = ({
     <input id={id} type="checkbox" checked={checked} onChange={onToggle} />
     {label}
   </label>
+);
+
+/**
+ * The two tier-level facets. Planning role leads, and it is the only facet here that starts with a
+ * SELECTION rather than with "everything": "what does this specification touch" means the
+ * decisions, not everything reachable from them (ADR-0025). Clearing it widens the view to the
+ * whole analysis, and the legend says which state you are in — a bounded view that does not
+ * announce it is bounded reads as "this was everything".
+ */
+const TierFacets = ({
+  filters,
+  onChange,
+}: {
+  readonly filters: GraphFilters;
+  readonly onChange: (filters: GraphFilters) => void;
+}): JSX.Element => (
+  <>
+    <CheckboxSet
+      legend={
+        filters.planningRoles.length === 0
+          ? 'Planning role — showing every finding, including reachable-only context'
+          : 'Planning role — clear to include dependency context and leads'
+      }
+      idPrefix="planning-role"
+      options={PLANNING_ROLES}
+      selected={filters.planningRoles}
+      onToggle={(value) => {
+        onChange({ ...filters, planningRoles: toggle(filters.planningRoles, value) });
+      }}
+    />
+    <CheckboxSet
+      legend="Likelihood"
+      idPrefix="likelihood"
+      options={LIKELIHOODS}
+      selected={filters.likelihoods}
+      onToggle={(value) => {
+        onChange({ ...filters, likelihoods: toggle(filters.likelihoods, value) });
+      }}
+    />
+  </>
 );
 
 const SearchAndScale = ({
@@ -161,15 +203,7 @@ export const GraphControls = ({
   <form className="graph-controls" aria-label="Graph filters and grouping">
     <SearchAndScale filters={filters} onChange={onChange} />
     <Selectors filters={filters} onChange={onChange} />
-    <CheckboxSet
-      legend="Likelihood"
-      idPrefix="likelihood"
-      options={LIKELIHOODS}
-      selected={filters.likelihoods}
-      onToggle={(value) => {
-        onChange({ ...filters, likelihoods: toggle(filters.likelihoods, value) });
-      }}
-    />
+    <TierFacets filters={filters} onChange={onChange} />
     <CheckboxSet
       legend="Impact type"
       idPrefix="impact-type"

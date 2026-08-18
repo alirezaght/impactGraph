@@ -40,6 +40,14 @@
         "includeFullPaths": {
           "type": "boolean"
         },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["planning-impact", "dependency-context", "investigation-lead"]
+          },
+          "minItems": 1
+        },
         "cursor": {
           "type": "string",
           "minLength": 1

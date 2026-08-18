@@ -268,7 +268,6 @@ export {
 export {
   IMPACT_LIKELIHOODS,
   PREDICTIVE_LIKELIHOODS,
-  evidenceTypesOf,
   IMPACT_TYPES,
   IMPACT_DIRECTNESS,
   USER_DECISION_KINDS,
@@ -278,11 +277,18 @@ export {
   markImpactAnalysisReviewed,
   supersedeImpactAnalysis,
   addUserDecision,
-  evidenceProvenanceOf,
   CHANGE_EXPECTATIONS,
-  changeExpectationOf,
-  expectsNoChange,
 } from './impact/impact-analysis.js';
+// How to READ a stored impact — what each absent additive field means (one place, on purpose).
+export {
+  changeExpectationOf,
+  evidenceProvenanceOf,
+  evidenceTypesOf,
+  expectsNoChange,
+  planningRoleInputOf,
+  planningRoleOf,
+  planningRoleVerdictOf,
+} from './impact/impact-accessors.js';
 
 // ADR-0017 — repository constraints, preflight findings, plan assessment, runtime topology.
 export type {
@@ -432,6 +438,36 @@ export type {
   WorkspaceCoverageStatus,
   WorkspaceCoverageVerdict,
 } from './impact/workspace-coverage.js';
+export {
+  derivePlanningRole,
+  isPlanningRole,
+  PLANNING_ROLE_RULES,
+  PLANNING_ROLES,
+  planningRoleRank,
+  summarisePlanningRoles,
+} from './impact/planning-role.js';
+export type {
+  PlanningRole,
+  PlanningRoleInput,
+  PlanningRoleRule,
+  PlanningRoleVerdict,
+  PlanningSignal,
+} from './impact/planning-role.js';
+export {
+  classifyUnresolvedSurface,
+  CONCEPT_SHAPES,
+  conceptShapeOf,
+  isPrimarySurface,
+  isUnresolvedSurfaceKind,
+  UNRESOLVED_SURFACE_KINDS,
+  unresolvedSurfaceLabel,
+} from './impact/unresolved-surface.js';
+export type {
+  ConceptShape,
+  UnresolvedSurface,
+  UnresolvedSurfaceKind,
+  UnresolvedSurfaceSignals,
+} from './impact/unresolved-surface.js';
 export { assessEvidenceQuality } from './impact/evidence-quality.js';
 export type {
   EvidenceQualityContext,

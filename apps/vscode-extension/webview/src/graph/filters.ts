@@ -10,7 +10,13 @@ import type { ImpactGraphEdgeDto } from '@impactgraph/contracts';
 // Filters may hide inferred knowledge; they may never restyle it to look deterministic (§3).
 
 export type GroupBy =
-  'context' | 'application' | 'requirement' | 'impact-type' | 'likelihood' | 'knowledge';
+  | 'context'
+  | 'application'
+  | 'requirement'
+  | 'impact-type'
+  | 'likelihood'
+  | 'planning-role'
+  | 'knowledge';
 
 export interface GraphFilters {
   readonly search: string;
@@ -22,6 +28,13 @@ export interface GraphFilters {
    * knowledge — it narrows impacts by WHY they were selected, never by knowledge category.
    */
   readonly evidenceTypes: readonly string[];
+  /**
+   * ADR-0025 planning-role facet. Unlike every other facet here, EMPTY IS NOT "everything" — the
+   * default is `['planning-impact']`, because "what does this specification touch" means the
+   * decisions, not everything reachable from them. Clearing it shows the whole analysis, and the
+   * control says so, so the reader is never left guessing whether the view is the whole view.
+   */
+  readonly planningRoles: readonly string[];
   readonly minConfidence: number;
   /** §18.4 "show inferred relationships only". */
   readonly inferredOnly: boolean;
@@ -44,6 +57,8 @@ export const DEFAULT_FILTERS: GraphFilters = {
   impactTypes: [],
   likelihoods: [],
   evidenceTypes: [],
+  // The one facet that defaults to a selection rather than to "everything" (ADR-0025).
+  planningRoles: ['planning-impact'],
   minConfidence: 0,
   inferredOnly: false,
   directness: 'all',
@@ -74,6 +89,16 @@ const matchesFacets = (node: GraphViewNode, filters: GraphFilters): boolean => {
     return false;
   }
   if (!matchesEvidenceBasis(node, filters.evidenceTypes)) {
+    return false;
+  }
+  // An analysis produced before the role axis reports no role on any node. Treating that as a
+  // failed match would blank the graph for every stored analysis, so absence passes: the axis
+  // narrows what a role-bearing document shows, it never hides a document that predates it.
+  if (
+    filters.planningRoles.length > 0 &&
+    node.planningRole !== undefined &&
+    !filters.planningRoles.includes(node.planningRole)
+  ) {
     return false;
   }
   if (filters.directness !== 'all' && node.directness !== filters.directness) {
@@ -143,6 +168,7 @@ const SIMPLE_GROUPS: Readonly<
   application: { of: (node) => node.application, absent: 'no application' },
   'impact-type': { of: (node) => node.impactType, absent: 'no impact type' },
   likelihood: { of: (node) => node.likelihood, absent: 'dependency path' },
+  'planning-role': { of: (node) => node.planningRole, absent: 'unclassified' },
   knowledge: { of: (node) => node.knowledgeCategory, absent: 'unclassified' },
 };
 

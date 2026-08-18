@@ -93,7 +93,7 @@ describe('decision-scoped impact export (ADR-0022)', () => {
     const note = decision.impact?.warnings.find((entry) => entry.code === 'decision-scope');
 
     expect(note?.message).toContain('3 of 5 predicted impacts shown');
-    expect(note?.message).toContain('2 weaker match');
+    expect(note?.message).toContain('The other 2 are dependency context or name-match leads');
   });
 
   it('keeps the every-surface view available for the reader who wants it', () => {

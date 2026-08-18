@@ -1,5 +1,5 @@
 import { knowledgeCategoryForProvenance } from '@impactgraph/contracts';
-import { evidenceTypesOf } from '@impactgraph/domain';
+import { isPrimarySurface, planningRoleOf, unresolvedSurfaceLabel } from '@impactgraph/domain';
 
 import { factsFor, groupLabelFor, planImpactCells } from './graph-impact-cells.js';
 import { impactEdges } from './graph-impact-edges.js';
@@ -21,6 +21,7 @@ import type {
   ImpactViewFacts,
   ImpactWarningRow,
 } from './graph-impact-model.js';
+import type { UnresolvedSurfaceRow } from './graph-impact-model.js';
 import type { RenderCategory } from './graph-render-category.js';
 import type { GraphGrouping, GraphView } from './graph-view-model.js';
 import type { ImpactAnalysis, Specification } from '@impactgraph/domain';
@@ -54,16 +55,6 @@ export interface ImpactViewInput {
 /** The decision view's node budget: small enough to read, large enough to show the neighbourhood. */
 export const DECISION_MAX_NODES = 20;
 
-/** Bases that make a surface worth drawing: a name resemblance is a lead, not a decision. */
-const STRONG_BASES = new Set([
-  'direct-structural',
-  'transitive-structural',
-  'async-event',
-  'external-contract',
-  'field-data-flow',
-  'configuration-asset',
-]);
-
 const categoryOf = (provenance: string): RenderCategory =>
   knowledgeCategoryForProvenance(provenance) ?? 'unknown';
 
@@ -86,20 +77,24 @@ const drawableAnalysis = (analysis: ImpactAnalysis): ImpactAnalysis => {
 };
 
 /**
- * The decision scope: strong-tier surfaces on structural evidence, plus anything the specification
- * named outright (a confirmation is a decision surface even when its basis is a name match).
+ * The decision scope, as of ADR-0025: the surfaces whose planning role says they are a decision.
+ *
+ * This used to be a filter expression living here — strong tier AND a structural basis, OR named by
+ * the specification — which meant the diagram had its own private theory of what mattered while
+ * `list_impacts`, the summary, and the CLI each had another. The theory is now one derivation on
+ * the record, so every surface draws, ranks and pages the same set, and a reader who disagrees
+ * argues with a stored rule rather than with four different filters.
+ *
+ * It is also strictly WIDER than the old expression in one direction that matters: a `possible`
+ * finding that crossed an event, contract, data-flow or configuration boundary is now drawn. Those
+ * are the consequences a reader cannot get from the specification's own filenames, and they were
+ * exactly what the tier-first filter excluded.
  */
 const decisionAnalysis = (analysis: ImpactAnalysis): ImpactAnalysis => ({
   ...analysis,
-  requirementImpacts: analysis.requirementImpacts.filter((impact) => {
-    if (impact.likelihood !== 'required' && impact.likelihood !== 'likely') {
-      return false;
-    }
-    return (
-      impact.evidenceProvenance === 'USER_SUPPLIED' ||
-      evidenceTypesOf(impact).some((type) => STRONG_BASES.has(type))
-    );
-  }),
+  requirementImpacts: analysis.requirementImpacts.filter(
+    (impact) => planningRoleOf(impact) === 'planning-impact',
+  ),
 });
 
 const scopedAnalysis = (input: ImpactViewInput): ImpactAnalysis =>
@@ -165,7 +160,7 @@ const scopeNote = (input: ImpactViewInput): readonly ImpactWarningRow[] => {
   return [
     {
       code: 'decision-scope',
-      message: `Decision view: ${String(kept)} of ${String(all)} predicted impacts shown — the strong tier plus what the specification named. ${String(all - kept)} weaker match(es) are excluded here; list_impacts (or \`view: 'impact'\`) has them all.`,
+      message: `Decision view: ${String(kept)} of ${String(all)} predicted impacts shown — the planning decisions. The other ${String(all - kept)} are dependency context or name-match leads: structurally reachable, with nothing establishing that they change. list_impacts with roles: ['dependency-context','investigation-lead'] (or \`view: 'impact'\`) has them all.`,
     },
   ];
 };
@@ -182,6 +177,7 @@ const impactFactsOf = (
   // still state what the scope left out, so nothing is silently hidden.
   const impacts = scopedAnalysis(input).requirementImpacts;
   const proposed = proposedFacts(input.analysis);
+  const surfaces = unresolvedSurfaceRows(input.analysis);
   const spec = input.specification;
   return {
     analysisId: input.analysis.id,
@@ -218,8 +214,31 @@ const impactFactsOf = (
     }),
     warnings: [...scopeNote(input), ...buildWarningRows(input.analysis.warnings)],
     ...(proposed === undefined ? {} : { proposed }),
+    ...(surfaces.length === 0 ? {} : { unresolvedSurfaces: surfaces }),
   };
 };
+
+/** Written commitments first: a route the author named and a prose word are different findings. */
+const unresolvedSurfaceRows = (analysis: ImpactAnalysis): readonly UnresolvedSurfaceRow[] =>
+  [...(analysis.unresolvedSurfaces ?? [])]
+    .sort(
+      (a, b) =>
+        Number(isPrimarySurface(b)) - Number(isPrimarySurface(a)) ||
+        b.confidence - a.confidence ||
+        a.concept.localeCompare(b.concept),
+    )
+    .map((surface) => ({
+      concept: surface.concept,
+      label: unresolvedSurfaceLabel(surface),
+      shape: surface.shape,
+      kind: surface.kind,
+      alternativeKinds: [...surface.alternativeKinds],
+      rationale: surface.rationale,
+      requirementIds: [...surface.requirementIds],
+      nearestExisting: [...surface.nearestExisting],
+      confidence: surface.confidence,
+      primary: isPrimarySurface(surface),
+    }));
 
 export const buildImpactView = (input: ImpactViewInput): GraphView => {
   const cellInput = cellInputOf(input);

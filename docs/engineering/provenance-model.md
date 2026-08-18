@@ -118,6 +118,21 @@ computations until re-derived under the current snapshot. Approved analyses whos
 moved on stay valid _as records of what was approved_ (PRD §40.3) but are marked stale for
 decision-making purposes.
 
+## Role is not provenance (ADR-0025)
+
+`planningRole` says what a record is FOR — a planning decision, dependency context, or a lead. It
+is **derived** from provenance, evidence basis, tier, impact type, change expectation and
+directness; it never replaces any of them and never crosses a knowledge category. A
+`dependency-context` impact is still a deterministic fact with full evidence and a dependency path;
+it is filed as context because nothing establishes that it must change, not because it is less
+trustworthy. Demoting a record's role is therefore not a provenance operation: no supersession is
+created, no history is rewritten, and the record answers all seven questions below exactly as it
+did.
+
+The rule that produced the role (`planningRoleRule`) and its sentence (`planningRoleReason`) are
+stored with it, so "why is this in my plan" is answerable from stored data alone — the same
+standard every other claim is held to.
+
 ## The questions the system must always answer
 
 For every displayed or exported claim, the model must be able to answer, from stored data alone:

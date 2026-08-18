@@ -7,6 +7,7 @@ import type {
   ImpactRequirementRow,
   ImpactRow,
   ImpactViewFacts,
+  UnresolvedSurfaceRow,
 } from './graph-impact-model.js';
 
 // §37 tree parity: the diagram is never the only access path. Everything the picture encodes — and
@@ -159,6 +160,56 @@ export const warningsTable = (facts: ImpactViewFacts): string =>
           escapeXml(warning.message),
         ]),
       ),
+      `</tbody>`,
+    ].join(''),
+  );
+
+const surfaceCells = (entry: UnresolvedSurfaceRow): string[] => [
+  `${entry.primary ? badge('written commitment') : badge('prose term')} <code>${escapeXml(entry.concept)}</code>`,
+  escapeXml(entry.shape),
+  badge(entry.kind),
+  entry.alternativeKinds.length === 0
+    ? 'no other reading is supported'
+    : entry.alternativeKinds.map((kind) => escapeXml(kind)).join(', '),
+  escapeXml(entry.rationale),
+  entry.requirementIds.length === 0
+    ? 'whole specification'
+    : entry.requirementIds.map((id) => `<code>${escapeXml(id)}</code>`).join(', '),
+  entry.nearestExisting.length === 0
+    ? 'nothing close in the index'
+    : entry.nearestExisting.map((name) => `<code>${escapeXml(name)}</code>`).join(', '),
+  entry.confidence.toFixed(2),
+];
+
+/**
+ * The absences, as a first-class section rather than a warning nobody reads.
+ *
+ * "Nearest existing" is the column that stops this from recreating the noise it replaces: those
+ * names are reported HERE, as evidence that two vocabularies may differ, and never as impacts —
+ * a component whose name resembles a route the repository does not serve is a different component,
+ * not a weaker reading of the same one.
+ */
+export const unresolvedSurfacesTable = (
+  surfaces: readonly UnresolvedSurfaceRow[],
+): string =>
+  section(
+    'unresolved-surfaces-heading',
+    'Unresolved and new surfaces',
+    'Terms the specification names that resolve to no indexed artifact. Each carries the reading the evidence best supports AND the readings that stay open — "nothing matches" is consistent with building it, calling it, indexing the repository that holds it, or renaming the concept, and those are opposite plans. Nothing here was created as a graph node.',
+    [
+      `<thead>`,
+      headerRow([
+        'Concept',
+        'Written as',
+        'Best reading',
+        'Still open',
+        'What to do',
+        'Requirement',
+        'Nearest existing (vocabulary, not impacts)',
+        'Conf.',
+      ]),
+      `</thead><tbody>`,
+      ...surfaces.map((entry) => row(surfaceCells(entry))),
       `</tbody>`,
     ].join(''),
   );

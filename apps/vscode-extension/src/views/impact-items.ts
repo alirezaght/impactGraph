@@ -19,6 +19,23 @@ export interface ImpactTreeNode {
 
 const LIKELIHOOD_ORDER = ['required', 'likely', 'possible', 'unlikely'] as const;
 
+/**
+ * ADR-0025: the tree groups by planning role FIRST, then by likelihood inside it.
+ *
+ * Likelihood buckets alone put "a test helper imports the module we are touching" (possible) in the
+ * same shape as "the payment webhook now receives a new field" (also possible), and the tree opened
+ * on whichever had more rows. Nothing is hidden — every impact still has a row — but the reader
+ * expands decisions before neighbourhoods.
+ */
+const ROLE_ORDER = [
+  { role: 'planning-impact', label: 'Planning impacts' },
+  { role: 'dependency-context', label: 'Dependency context (reachable, no evidence of impact)' },
+  { role: 'investigation-lead', label: 'Investigation leads (name or meaning matches)' },
+] as const;
+
+/** Absent means the document predates the axis; treated as a decision so nothing is buried. */
+const roleOf = (impact: ImpactDto): string => impact.planningRole ?? 'planning-impact';
+
 type ImpactDto = CliAnalyzeOutput['requirements'][number]['impacts'][number];
 
 const impactNode = (
@@ -28,6 +45,9 @@ const impactNode = (
 ): ImpactTreeNode => {
   const details: ImpactTreeNode[] = [
     { kind: 'detail', label: `type: ${impact.impactType} (${impact.directness})`, children: [] },
+    ...(impact.planningRoleReason === undefined
+      ? []
+      : [{ kind: 'detail' as const, label: impact.planningRoleReason, children: [] }]),
     {
       kind: 'detail',
       label: `confidence: ${impact.confidence.toFixed(2)}`,
@@ -54,7 +74,7 @@ const impactNode = (
   return {
     kind: 'impact',
     label: impact.name,
-    description: `${impact.likelihood} · ${impact.impactType} · ${impact.confidence.toFixed(2)}${impact.provenance === undefined ? '' : ` · ${impact.provenance}`}`,
+    description: `${impact.likelihood} · ${impact.impactType} · ${impact.confidence.toFixed(2)}${impact.provenance === undefined ? '' : ` · ${impact.provenance}`}${impact.planningRoleRule === undefined ? '' : ` · ${impact.planningRoleRule}`}`,
     tooltip: impact.name,
     children: details,
     impactRef: { analysisId, requirementId, nodeId: impact.nodeId, name: impact.name },
@@ -80,23 +100,46 @@ const byRequirement = (output: CliAnalyzeOutput, options: ImpactViewOptions): Im
       label: requirement.statement,
       description: `${String(visible.length)} impact(s)`,
       tooltip: requirement.statement,
-      children: LIKELIHOOD_ORDER.flatMap((likelihood) => {
-        const impacts = visible.filter((impact) => impact.likelihood === likelihood);
-        if (impacts.length === 0) {
-          return [];
-        }
-        return [
+      children: roleBuckets(output.analysis.id, requirement.id, visible),
+    };
+  });
+
+const likelihoodBuckets = (
+  analysisId: string,
+  requirementId: string,
+  impacts: readonly ImpactDto[],
+): ImpactTreeNode[] =>
+  LIKELIHOOD_ORDER.flatMap((likelihood) => {
+    const matching = impacts.filter((impact) => impact.likelihood === likelihood);
+    return matching.length === 0
+      ? []
+      : [
           {
             kind: 'bucket' as const,
             label: likelihood,
-            description: String(impacts.length),
-            children: impacts.map((impact) =>
-              impactNode(output.analysis.id, requirement.id, impact),
-            ),
+            description: String(matching.length),
+            children: matching.map((impact) => impactNode(analysisId, requirementId, impact)),
           },
         ];
-      }),
-    };
+  });
+
+const roleBuckets = (
+  analysisId: string,
+  requirementId: string,
+  impacts: readonly ImpactDto[],
+): ImpactTreeNode[] =>
+  ROLE_ORDER.flatMap((entry) => {
+    const matching = impacts.filter((impact) => roleOf(impact) === entry.role);
+    return matching.length === 0
+      ? []
+      : [
+          {
+            kind: 'bucket' as const,
+            label: entry.label,
+            description: String(matching.length),
+            children: likelihoodBuckets(analysisId, requirementId, matching),
+          },
+        ];
   });
 
 const byImpactType = (output: CliAnalyzeOutput, options: ImpactViewOptions): ImpactTreeNode[] => {
