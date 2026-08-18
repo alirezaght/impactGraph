@@ -1,7 +1,7 @@
 # ADR-0025 — Separate planning impact from dependency context, and model absence as a finding
 
 Date: 2026-08-18
-Status: Proposed
+Status: Accepted
 Extends: ADR-0015 (evidence basis and bounded output), ADR-0016 (architecture-aware concept
 matching), ADR-0017 (evidence provenance), ADR-0022 (decision-first outputs), ADR-0023 (evidence
 grades). Constrains ADR-0005 (graph view) further.
